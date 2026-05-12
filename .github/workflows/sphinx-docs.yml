@@ -27,9 +27,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install sphinx sphinx-rtd-theme
-          # Add any other requirements from requirements.txt or docs/requirements.txt
-          # pip install -r docs/requirements.txt
+          pip install sphinx sphinx-rtd-theme myst-parser
       
       - name: Build documentation
         run: |
