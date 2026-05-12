@@ -1,0 +1,137 @@
+variables:
+  UV_VERSION: "0.11.9"
+  PYTHON_VERSION: "3.12"
+  BASE_LAYER: trixie-slim
+  # GitLab CI creates a separate mountpoint for the build directory,
+  # so we need to copy instead of using hard links.
+  UV_LINK_MODE: copy
+  UV_BASE_IMAGE: "ghcr.io/astral-sh/uv:$UV_VERSION-python$PYTHON_VERSION-$BASE_LAYER"
+  PROJECT_BUILD_IMAGE: "artifactory.gns.cri.nz/gns/gsolve-base:python$PYTHON_VERSION"
+  GIT_DEPTH: 1
+  # UV_CACHE_DIR: ".uv-cache"
+
+
+
+# stages: [build, test, deploy-docs, release]
+stages: [build, test, release, docs]
+# -------------------------------------------------------
+# Build base image — on master when deps change, or on MR/feature branches
+# -------------------------------------------------------
+build-gsolve-base:
+  stage: build
+  tags:
+    - linux
+  script:
+    - echo "Building image ${PROJECT_BUILD_IMAGE} based on ${UV_BASE_IMAGE}" 
+    - docker build --build-arg BASE_IMAGE=$UV_BASE_IMAGE -t "${PROJECT_BUILD_IMAGE}" .
+    - echo "Pushing image ${PROJECT_BUILD_IMAGE}"
+    - docker push "${PROJECT_BUILD_IMAGE}"
+  rules:
+    - changes:
+      - "uv.lock"
+      - "Dockerfile"
+      - ".gitlab-ci.yml"
+      - ".python-version"
+      when: always
+      allow_failure: false
+    - when: manual
+      allow_failure: true
+
+# -------------------------------------------------------
+# Test 
+# -------------------------------------------------------
+run-tests:
+  stage: test
+  needs:
+    - job: build-gsolve-base
+  when: always
+  allow_failure: false
+  tags:
+    - docker
+  image: ${PROJECT_BUILD_IMAGE}
+  script:
+    - uv run --dev --cache-dir=/uv_cache --locked python -m pytest --cov-report term --cov
+  coverage: '/TOTAL.*\s+(\d+%)/'
+
+# -------------------------------------------------------
+# build packages
+# -------------------------------------------------------
+build-packages:
+  stage: release
+  tags:
+    - docker
+  image: ${PROJECT_BUILD_IMAGE}
+  script:
+    - uv build --cache-dir=/uv_cache
+  artifacts:
+    paths:
+      - dist/*.whl
+      - dist/*.tar.gz
+    expire_in: 1 week
+  needs:
+    - job: run-tests
+
+# -------------------------------------------------------
+# release packages to PyPI — only on master, only after build and tests pass
+# -------------------------------------------------------
+release-packages:
+  stage: release
+  tags:
+    - docker
+  needs:
+    - job: build-packages
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: manual
+  image: ${PROJECT_BUILD_IMAGE}
+  script:
+    - uv publish --cache-dir=/uv_cache --repository pypi --dry-run
+  allow_failure: true
+
+
+# -------------------------------------------------------
+# Build docs — only on master, only after tests pass
+# -------------------------------------------------------
+build-docs:
+  stage: docs
+  tags:
+    - docker
+  needs:
+    - job: run-tests
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: always
+      allow_failure: false
+    - changes:
+      - "docs/source/*"
+    - when: manual
+      allow_failure: true
+  image: ${PROJECT_BUILD_IMAGE}
+  script:
+    - uv run --cache-dir=/uv_cache --group docs --locked -- sphinx-build --fresh-env --write-all -b html  -w docs/build/warnings.txt docs/source docs/build/html
+  artifacts:
+    paths:
+      - docs/build/html
+      - docs/build/warnings.txt
+    expire_in: 2 days
+
+# deploy-docs:
+#   image: sphinxdoc/sphinx
+#   tags:
+#     - docker
+#   stage: docs
+#   needs:
+#     - job: build-docs
+#   rules:
+#     - if: '$CI_COMMIT_BRANCH == "master"'
+#       when: on_success
+#   before_script:
+#     - apt-get update && apt-get install -y build-essential gcc gfortran python3-dev
+#     - pip3 install -e .
+#   script:
+#     - pip3 install -r docs/requirements.txt
+#     - sphinx-build -b html docs public
+#   artifacts:
+#     paths:
+#       - public
+#     expire_in: 2 days

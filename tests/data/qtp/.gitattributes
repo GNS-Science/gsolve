@@ -1,0 +1,3 @@
+# ensure qtp outputs retain windows encodings and line endings
+qtp_*.txt text eol=crlf working-tree-encoding=ISO-8859-1
+qtp_*.csv text eol=crlf working-tree-encoding=ISO-8859-1

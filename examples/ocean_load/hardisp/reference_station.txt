@@ -1,0 +1,2 @@
+site_id,Meter,datetime,Grav,TC_Grav,Tide,Lat,Long,Long_Level,Cross_Level,Temp,Volts,Counter,Height,loop,gravity
+CBWU,D37,11/24/2024T23:10:04, -55.286,-55.262,-0.024,-38.152898,176.081267,-1935,17947,49.2,11.8,0.000,0.000,1,0

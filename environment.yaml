@@ -1,0 +1,17 @@
+name: gsolve
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pandas
+  - ca-certificates
+  - openssl
+  - notebook
+  - certifi
+  - matplotlib
+  - sphinx
+  - myst-parser
+  - pytest
+  - pytest-cov
+  - openpyxl
+prefix: /home/adrianmb/miniforge3/envs/gsolve
