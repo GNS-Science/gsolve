@@ -27,11 +27,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e ".[dev]"
     
-    - name: Lint with flake8 (optional)
+    - name: Lint with ruff
       run: |
-        pip install flake8
-        flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 src/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        pip install ruff
+        ruff check src/ tests/
+        ruff format src/ tests/ --check
       continue-on-error: true
     
     - name: Run tests
