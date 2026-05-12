@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/GNS-Science/gsolve/branch/main/graph/badge.svg)](https://codecov.io/gh/GNS-Science/gsolve)
+
 # GSolve
 
 Gsolve, a Python computer library by Earth Sciences New Zealand (formerly GNS Science) to transform relative gravity survey measurements to absolute gravity values and gravity anomalies and disturbances.  
