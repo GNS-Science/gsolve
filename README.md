@@ -1,4 +1,6 @@
 [![codecov](https://codecov.io/gh/GNS-Science/gsolve/branch/main/graph/badge.svg)](https://codecov.io/gh/GNS-Science/gsolve)
+![GitHub License](https://img.shields.io/github/license/GNS-Science/gsolve)
+
 
 # gSolve
 
