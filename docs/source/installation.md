@@ -1,5 +1,7 @@
 # Installation
 
-cd to where you have cloned the gsolve repo and ```pip install .```
+Install from PyPI using `pip`:
 
-Then ```import gsolve```
+```bash
+pip install gsolve
+```
