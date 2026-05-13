@@ -31,7 +31,7 @@ jobs:
       run: uv venv
     
     - name: Install dependencies
-      run: uv pip install --python .venv -e ".[dev]"
+      run: uv sync --all-groups
     
     - name: Run tests
       run: uv run pytest tests/ -v
@@ -65,11 +65,8 @@ jobs:
     - name: Create virtual environment
       run: uv venv
     
-    - name: Install dependencies
-      run: uv pip install --python .venv build
-    
     - name: Build distribution
-      run: uv run python -m build
+      run: uv run --with build python -m build
     
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1

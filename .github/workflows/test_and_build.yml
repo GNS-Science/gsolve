@@ -33,7 +33,7 @@ jobs:
       run: uv venv
     
     - name: Install dependencies
-      run: uv pip install --python .venv -e ".[dev]"
+      run: uv sync --all-groups
     
     - name: Lint with ruff
       run: |
@@ -77,14 +77,11 @@ jobs:
     - name: Create virtual environment
       run: uv venv
     
-    - name: Install build dependencies
-      run: uv pip install --python .venv build twine
-    
     - name: Build distribution
-      run: uv run python -m build
+      run: uv run --with build python -m build
     
     - name: Check distribution with twine
-      run: uv run twine check dist/*
+      run: uv run --with twine twine check dist/*
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v5
