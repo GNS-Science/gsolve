@@ -1,6 +1,6 @@
-# GSolve CLI manual
+# gSolve CLI manual
 
-GSolve CLI or gsolve-cli is a comand-line interface to run relative
+gSolve CLI or gsolve-cli is a comand-line interface to run relative
 gravity data adjustment in a terminal.
 
 ## Installation

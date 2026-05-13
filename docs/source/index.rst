@@ -10,7 +10,7 @@
 
         .. raw:: html
 
-            <h1 class="display-1">GSolve</h1>
+            <h1 class="display-1">gSolve</h1>
 
         .. div:: sd-fs-3
 
@@ -23,7 +23,7 @@
             :width: 200px
             :class: sd-m-auto dark-light
 
-**GSolve** is a Python library for processing gravity data.
+**gSolve** is a Python library for processing terrestrial gravity data.
 
 It includes common processing steps, like drift, tide and network adjustment, as well as calculation of corrections for free air, simple and complete Bouguer anomalies, including terrain_corrections.
 
@@ -37,7 +37,7 @@ It includes common processing steps, like drift, tide and network adjustment, as
         :class-title: sd-fs-5
         :class-card: sd-p-3
 
-        New to GSolve? Start here!
+        New to gSolve? Start here!
 
         .. button-ref:: installation
             :click-parent:
@@ -45,7 +45,7 @@ It includes common processing steps, like drift, tide and network adjustment, as
             :outline:
             :expand:
 
-    .. grid-item-card:: :octicon:`book` GSolve theory
+    .. grid-item-card:: :octicon:`book` gSolve theory
         :text-align: center
         :class-title: sd-fs-5
         :class-card: sd-p-3
@@ -73,7 +73,7 @@ It includes common processing steps, like drift, tide and network adjustment, as
             :outline:
             :expand:
 
-            Examples of how to use GSolve
+            Examples of how to use gSolve
 
 
 

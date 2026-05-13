@@ -1,8 +1,8 @@
 # Calculating gravity anomalies
 
-GSolve calculates three types of gravity anomaly, Free Air Anomaly, Simple Bouguer Anomaly and Complete Bouguer Anomaly. GSolve anomalies calculate normal gravity on the ellipsoid surface.
+gSolve calculates three types of gravity anomaly, Free Air Anomaly, Simple Bouguer Anomaly and Complete Bouguer Anomaly. gSolve anomalies calculate normal gravity on the ellipsoid surface.
 
-GSolve gravity anomalies are calculated as follows.
+gSolve gravity anomalies are calculated as follows.
 
 ## Free Air Anomaly
 

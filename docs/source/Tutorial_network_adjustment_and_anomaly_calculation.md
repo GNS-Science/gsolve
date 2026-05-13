@@ -1,4 +1,4 @@
-# Running gsolve for network adjustment on relative gravity readings
+# Running gSolve for network adjustment on relative gravity readings
 
 ```{tip}  Example script to process the Okataina data in the examples folder.
 ```
@@ -43,13 +43,13 @@ ref_site_file = data_path / "absolute_gravity" / "base_stations.csv"
 corr_table_file = data_path / "correction_tables" / "G106.csv"
 ```
 
-The calibration factor for your meter (determined in calibration survey). Previously referred to as the "beta factor" in older Gsolve versions.
+The calibration factor for your meter (determined in calibration survey). Previously referred to as the "beta factor" in older gSolve versions.
 
-In previous gui-based Gsolve versions the calibration factor (then called beta_factor) was output as a correction to a unit factor of 1 i.e. a beta_factor was a small number close to 0.
+In previous gui-based gSolve versions the calibration factor (then called beta_factor) was output as a correction to a unit factor of 1 i.e. a beta_factor was a small number close to 0.
 
 To convert your old beta_factor to a calibration factor use  ```calibration_factor = 1 - beta_factor```
 
-```{tip}  If you calculated the calibration factor using GSolve version 5 then just use the calibration factor as is.
+```{tip}  If you calculated the calibration factor using gSolve version 5 then just use the calibration factor as is.
 ```
 
 Note the calibration factor is used as ```gcorr = reading * calibration_factor```
@@ -171,7 +171,7 @@ survey = GravitySurvey(obs, sites)
 
 ## Run the network adjustment
 
-Here we use solve method "2", see [gsolve algorithms](gsolve_algorithms.md) documentation.  We process each loop individually
+Here we use solve method "2", see [gSolve algorithms](gsolve_algorithms.md) documentation.  We process each loop individually
 and apply a 99 percentile cutoff filter to the residuals.  As this is not a calibration
 survey we do not need to calculate the calibration factor
 

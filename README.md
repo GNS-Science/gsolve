@@ -1,8 +1,12 @@
+![gSolve logo](docs/source/_static/gsolve_logo.png)
+    
 [![codecov](https://codecov.io/gh/GNS-Science/gsolve/branch/main/graph/badge.svg)](https://codecov.io/gh/GNS-Science/gsolve)
+![GitHub License](https://img.shields.io/github/license/GNS-Science/gsolve)
 
-# GSolve
 
-Gsolve, a Python computer library by Earth Sciences New Zealand (formerly GNS Science) to transform relative gravity survey measurements to absolute gravity values and gravity anomalies and disturbances.  
+# gSolve
+
+gSolve, a Python computer library by Earth Sciences New Zealand (formerly GNS Science) to transform relative gravity survey measurements to absolute gravity values and gravity anomalies and disturbances.  
 
 It is suitable for time varying gravity as well as Bouguer gravity.  
 
@@ -53,24 +57,24 @@ Example scripts are provided to demonstrate the software capability.
 
 # Support
 
-Full documentation is available here. [GSolve](https://tanuki.gns.cri.nz/gravity-processing/gsolve/)
+Full documentation is available here. [gSolve](https://silver-spork-5vqw3le.pages.github.io/fundamentals.html)
 
 # Authors and acknowledgment
 
-GSolve builds on many previous authors.  
+gSolve builds on many previous authors.  
 
 The current author team is Adrian Benson, Alison Kirkby, Craig Miller, Aleksandr Spesivtsev, Vaughan Stagpoole.
 
 This version supersedes previous Gsolve versions e.g.
 McCubbine, J., Tontini, F. C., Stagpoole, V., Smith, E., & O’Brien, G. (2018). Gsolve, a Python computer program with a graphical user interface to transform relative gravity survey measurements to absolute gravity values and gravity anomalies. SoftwareX, 7, 129–137. 
 
-# How to cite GSolve  
+# How to cite gSolve  
 
 Link to JOSS paper here when it is ready.
 
 # System requirements
 
-Python 3.11+
+Python 3.12+
 
 # License
 

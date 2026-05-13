@@ -12,7 +12,7 @@ The figure below illustrates how prisms are constructed and assigned densities.
 
 ![prism_setup](terrain_correction.png)
 
-Terrain correction calculations in GSolve works by estimating the gravity effect of the topography in a series of zones around the observation site. Each zone has a minimum and maximum distance.
+Terrain correction calculations in gSolve works by estimating the gravity effect of the topography in a series of zones around the observation site. Each zone has a minimum and maximum distance.
 
 The user imports the appropriate topography (or bathymetry) grid and observation location data.  Terrain and water densities, and minimum and maximum calculation distances are also required to be supplied.
 
@@ -26,13 +26,13 @@ Bathymetry grids must have negative values.
 
 To avoid duplicate calculations the following tips are useful.
 
-```{tip} GSolve can handle DEM that have both topography and ocean bathymetry in the same grid.
+```{tip} gSolve can handle DEM that have both topography and ocean bathymetry in the same grid.
 ```
 
-```{tip} Gsolve land only DEM should have bathymetry areas set to 0m.  Land values are positive.
+```{tip} gSolve land only DEM should have bathymetry areas set to 0m.  Land values are positive.
 ```
 
-```{tip} Gsolve bathymetry grids should have land areas set to 0m.  Bathymetry values are negative.
+```{tip} gSolve bathymetry grids should have land areas set to 0m.  Bathymetry values are negative.
 ```
 
 ```{tip} Grids and station coordinates must be in cartesian form.  DEM must be supplied as gridded data, not x,y,z files.
@@ -42,7 +42,7 @@ In ```TerrainCorrectionParameters``` there is an option ```compute_bathymetry```
 
 The ```Sites``` object has a method ```sample_elevation()``` which can be used to extract the value of the DEM at the station location.  This can be useful if the DEM values are preferred to the surveyed positions or if you want to convert station ellipsoidal heights to orthometric (assuming the DEM is in orthometric heights).  A new column (```output_col=```) is created in the sites object for the interpolated DEM height which can be used in the computations through setting the ```site_height_field``` in the ```corrector.compute()```.
 
-Gsolve will read most grid formats readable by GDAL.
+gSolve will read most grid formats readable by GDAL.
 
 Densities are supplied in kg/m3.
 
@@ -70,7 +70,7 @@ Terrain correction calculations over water bodies require bathymetry grids for e
 
 Bathymetry grids need to be in elevation (i.e., negative numbers below sea level).
 
-Calculating the terrain corrections over water bodies is a one-step process (unlike older GSolve no "airgap" calculation is required).  Ensure the station elevation matches the DEM at each location.
+Calculating the terrain corrections over water bodies is a one-step process (unlike older gSolve no "airgap" calculation is required).  Ensure the station elevation matches the DEM at each location.
 
 In the oceans a density of 1640 is used for bathymetry grids (assuming land density of 2670 and water density 1030 kg/m3). This gives a correction of 1640 below the water surface and 2670 above the water surface.
 
