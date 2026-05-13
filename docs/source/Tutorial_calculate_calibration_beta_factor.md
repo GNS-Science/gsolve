@@ -3,7 +3,7 @@
 ```{tip}  Example script to process the calibration data in the examples folder.
 ```
 
-Here is an example on how to use GSolve to calculate the ```calibration_factor```.  The ```calibration_factor``` scales the readings against a set of well constrained absolute stations on a calibration range.  Note that the calibration_factor is calculated using un-corrected data and is solved as part of the network adjustment.
+Here is an example on how to use gSolve to calculate the ```calibration_factor```.  The ```calibration_factor``` scales the readings against a set of well constrained absolute stations on a calibration range.  Note that the calibration_factor is calculated using un-corrected data and is solved as part of the network adjustment.
 
 Once the calibration_factor is calculated you can use the previous tutorial to apply it to your measurements.
 

@@ -1,7 +1,7 @@
 # Project Authors
 
 The following people have made contributions to the project (in alphabetical
-order by last name) and are considered "The GSolve Developers":
+order by last name) and are considered "The gSolve Developers":
 
 * Adrian Benson - Earth Sciences New Zealand, New Zealand
 * Alison Kirkby - Earth Sciences New Zealand, New Zealand

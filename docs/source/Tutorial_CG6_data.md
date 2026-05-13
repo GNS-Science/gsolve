@@ -1,6 +1,6 @@
 # CG6 data
 
-GSolve can import CG6 data from the instrument format file (not the Lynx format file) using the `CG6Data` class from the `scintrex` module.
+gSolve can import CG6 data from the instrument format file (not the Lynx format file) using the `CG6Data` class from the `scintrex` module.
 
 ```{tip}  Example script to process CG6 data can be found in the examples folder.
 ```
@@ -40,7 +40,7 @@ cg6data = CG6Data.from_file(instrument_file, loop_from_line=True)
 cg6data.set_loop(time_gap="12h", loop_start=1)
 ```
 
-## Prepare GSolve objects
+## Prepare gSolve objects
 
 Both observations and sites objects can be created directly from the cg6data.
 
