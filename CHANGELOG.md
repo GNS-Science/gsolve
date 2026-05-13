@@ -4,7 +4,7 @@
 
 Release date: 14 May 2026
 
-This is the first release on github, migrated from internal GNS gitlab.
+This is the first release on GitHub, migrated from internal GNS GitLab.
 
 New features:
 
