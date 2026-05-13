@@ -26,6 +26,9 @@ jobs:
       with:
         enable-cache: true
     
+    - name: Create virtual environment
+      run: uv venv
+    
     - name: Install dependencies
       run: uv pip install -e ".[dev]"
     
@@ -57,11 +60,14 @@ jobs:
       with:
         enable-cache: true
     
+    - name: Create virtual environment
+      run: uv venv
+    
     - name: Install dependencies
       run: uv pip install build
     
     - name: Build distribution
-      run: python -m build
+      run: uv run python -m build
     
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
