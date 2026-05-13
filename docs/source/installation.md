@@ -1,5 +1,7 @@
 # Installation
 
-gsolve is available on pip.  
+Install from PyPI using `pip`:
 
+```bash
 pip install gsolve
+```
