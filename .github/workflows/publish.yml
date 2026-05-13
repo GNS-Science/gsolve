@@ -33,7 +33,7 @@ jobs:
     
     environment:
       name: pypi
-      url: https://pypi.org/p/${{ github.event.repository.name }}
+      url: https://pypi.org/project/${{ github.event.repository.name }}/
     
     permissions:
       id-token: write
