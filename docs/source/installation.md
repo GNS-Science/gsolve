@@ -1,5 +1,5 @@
 # Installation
 
-cd to where you have cloned the gsolve repo and ```pip install .```
+gsolve is available on pip.  
 
-Then ```import gsolve```
+pip install gsolve
