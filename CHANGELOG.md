@@ -2,7 +2,9 @@
 
 ## Version 5.6.0
 
-Release date: 24 April 2026
+Release date: 14 May 2026
+
+This is the first release on github, migrated from internal GNS gitlab.
 
 New features:
 
@@ -12,6 +14,4 @@ New features:
 Maintenance: 
 
 * Bug fix for terrain corrections
- 
- 
  
