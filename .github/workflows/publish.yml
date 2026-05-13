@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -36,6 +39,7 @@ jobs:
     
     permissions:
       id-token: write
+      contents: read
     
     steps:
     - uses: actions/checkout@v5
