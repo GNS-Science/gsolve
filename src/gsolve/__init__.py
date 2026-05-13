@@ -5,7 +5,7 @@ import importlib.metadata as _im
 try:
     __version__ = _im.version("gsolve")
 except _im.PackageNotFoundError:
-    __version__ = "5.6.0"
+    __version__ = "5.6.0"  # pragma: no cover
 
 from gsolve.meter_conversion import LaCosteRombergDialConverter
 from gsolve.observations import GravityObservations, GravitySurvey
