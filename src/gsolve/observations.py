@@ -629,7 +629,7 @@ class GravityObservations(GSolveTable):
         )
         self.set_column(column_name, tcorr)
         identifier = tide_corrector.identifier(**kwargs)
-        self.earthtide_correction_method = identifier
+        self._earthtide_correction_method = identifier
         # self.set_column(f"{column_name}_method", identifier)
 
     def apply_ocean_load_correction(

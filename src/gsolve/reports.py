@@ -17,7 +17,7 @@
 # Copyright (c) 2025 Earth Sciences New Zealand.
 
 from pathlib import Path
-from typing import Literal
+from typing import Any
 
 import pandas as _pd
 
@@ -205,7 +205,6 @@ class GSolveReport:
         # after gsolve run, 'active' indicates if obs was used in solution
         # rename to 'included_in_solution' for clarity
         df = df.rename(columns={"active_duplicate": "included_in_solution"})
-
         # add flag for if site has a gsolve solution
         i_included_in_solution = df.columns.get_loc("included_in_solution")
         if not isinstance(i_included_in_solution, int):
@@ -376,12 +375,20 @@ class GSolveReport:
 
         all_params = []
 
+        def _format_value(x: Any) -> str | float | int | bool:  # noqa: ANN401
+            if isinstance(x, _pd.Timedelta):
+                return x.total_seconds()
+            elif isinstance(x, Path):
+                return str(x)
+            return x
+
         for section, param in self.params.items():
             df: _pd.DataFrame = (
                 param.to_series(series_name="value", index_name="parameter")
                 .to_frame()
                 .reset_index()
             )
+            df.iloc[:, 1] = df.iloc[:, 1].map(_format_value)
             df.insert(0, "section", section)
             all_params.append(df)
 
