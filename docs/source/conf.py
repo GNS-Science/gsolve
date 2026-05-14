@@ -28,19 +28,18 @@ sys.path.insert(0, os.path.abspath("../../src"))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "GSolve"
-copyright = "2025, Adrian Benson, Alison Kirkby, Craig Miller, Aleksandr Spesivtsev, Vaughan Stagpoole, GNS Science"
+project = "gSolve"
+copyright = "2026, Adrian Benson, Alison Kirkby, Craig Miller, Aleksandr Spesivtsev, Vaughan Stagpoole, Earth Sciences New Zealand"
 author = "Adrian Benson, Alison Kirkby, Craig Miller, Aleksandr Spesivtsev, Vaughan Stagpoole"
-release = "5.4.0"
-version = "5.4"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The full version, including alpha/beta/rc tags.
-# from gsolve import __version__ as version
-# release = version
+from gsolve import __version__
+
+release = __version__
 # The short X.Y version.
 # version = ".".join(release.split(".")[:2])
 
