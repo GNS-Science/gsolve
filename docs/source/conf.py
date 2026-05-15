@@ -86,6 +86,7 @@ autodoc_default_options = {
 
 html_theme = "sphinx_book_theme"
 html_title = "gSolve"
+html_title = "gSolve"
 html_logo = "_static/gsolve_logo.png"
 html_static_path = ["_static"]
 html_theme_options = {
@@ -101,5 +102,6 @@ html_theme_options = {
 }
 html_context = {
     "display_version": True,  # Ensure version is displayed
+    "version": release,  # Pass version variable to templates
     "version": release,  # Pass version variable to templates
 }
