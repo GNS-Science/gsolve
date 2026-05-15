@@ -22,16 +22,12 @@ jobs:
         python-version: '3.12'
     
     - name: Install uv
-      uses: astral-sh/setup-uv@v4
+      uses: astral-sh/setup-uv@v8.1.0
       with:
-        version: "0.5.11"
         enable-cache: true
     
-    - name: Create virtual environment
-      run: uv venv
-    
     - name: Install dependencies
-      run: uv sync --all-groups
+      run: uv sync --all-groups --locked
     
     - name: Run tests
       run: uv run pytest tests/ -v
@@ -57,16 +53,12 @@ jobs:
         python-version: '3.12'
     
     - name: Install uv
-      uses: astral-sh/setup-uv@v4
+      uses: astral-sh/setup-uv@v8.1.0
       with:
-        version: "0.5.11"
         enable-cache: true
     
-    - name: Create virtual environment
-      run: uv venv
-    
     - name: Build distribution
-      run: uv run --with build python -m build
+      run: uv build
     
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
