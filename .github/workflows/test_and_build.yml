@@ -72,7 +72,7 @@ jobs:
       run: uv run --with twine twine check dist/*
     
     - name: Upload artifacts
-      uses: actions/upload-artifact@v7.0.1
+      uses: actions/upload-artifact@v7
       with:
         name: distributions-${{ matrix.os }}
         path: dist/
