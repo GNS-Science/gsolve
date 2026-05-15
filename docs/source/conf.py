@@ -85,17 +85,17 @@ autodoc_default_options = {
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_book_theme"
-html_title = "GSolve"
+html_title = "gSolve"
 html_logo = "_static/gsolve_logo.png"
 html_static_path = ["_static"]
 html_theme_options = {
     "show_navbar_depth": 1,
-    "repository_provider": "gitlab",
-    "repository_url": "https://git.gns.cri.nz/gravity-processing/gsolve",
-    "repository_branch": "master",
+    "repository_provider": "github",
+    "repository_url": "https://github.com/GNS-Science/gsolve",
+    "repository_branch": "main",
     "use_repository_button": True,
 }
 html_context = {
     "display_version": True,  # Ensure version is displayed
-    "version": version,  # Pass version variable to templates
+    "version": release,  # Pass version variable to templates
 }
