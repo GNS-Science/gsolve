@@ -52,6 +52,9 @@ build-backend = "hatchling.build"
 [tool.hatch.version]
 source = "uv-dynamic-versioning"
 
+[tool.uv-dynamic-versioning]
+fallback-version = "5.X.X"
+
 [dependency-groups]
 docs = [
     "myst-parser>=5.0.0",
