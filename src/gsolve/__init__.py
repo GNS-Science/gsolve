@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import importlib.metadata as _im
+import importlib.metadata
 
 try:
-    __version__ = _im.version("gsolve")
-except _im.PackageNotFoundError:
-    __version__ = "5.6.0"  # pragma: no cover
+    __version__ = importlib.metadata.version(__name__)
+except importlib.metadata.PackageNotFoundError:
+    __version__ = "5.X.X.dev"
 
 from gsolve.meter_conversion import LaCosteRombergDialConverter
 from gsolve.observations import GravityObservations, GravitySurvey

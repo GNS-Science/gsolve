@@ -616,7 +616,6 @@ wheels = [
 
 [[package]]
 name = "gsolve"
-version = "5.6.0"
 source = { editable = "." }
 dependencies = [
     { name = "boule" },
