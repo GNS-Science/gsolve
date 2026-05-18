@@ -28,19 +28,18 @@ sys.path.insert(0, os.path.abspath("../../src"))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "GSolve"
-copyright = "2025, Adrian Benson, Alison Kirkby, Craig Miller, Aleksandr Spesivtsev, Vaughan Stagpoole, GNS Science"
+project = "gSolve"
+copyright = "2026, Adrian Benson, Alison Kirkby, Craig Miller, Aleksandr Spesivtsev, Vaughan Stagpoole, Earth Sciences New Zealand"
 author = "Adrian Benson, Alison Kirkby, Craig Miller, Aleksandr Spesivtsev, Vaughan Stagpoole"
-release = "5.4.0"
-version = "5.4"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The full version, including alpha/beta/rc tags.
-# from gsolve import __version__ as version
-# release = version
+from gsolve import __version__
+
+release = __version__
 # The short X.Y version.
 # version = ".".join(release.split(".")[:2])
 
@@ -86,17 +85,17 @@ autodoc_default_options = {
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_book_theme"
-html_title = "GSolve"
+html_title = "gSolve"
 html_logo = "_static/gsolve_logo.png"
 html_static_path = ["_static"]
 html_theme_options = {
     "show_navbar_depth": 1,
-    "repository_provider": "gitlab",
-    "repository_url": "https://git.gns.cri.nz/gravity-processing/gsolve",
-    "repository_branch": "master",
+    "repository_provider": "github",
+    "repository_url": "https://github.com/GNS-Science/gsolve",
+    "repository_branch": "main",
     "use_repository_button": True,
 }
 html_context = {
     "display_version": True,  # Ensure version is displayed
-    "version": version,  # Pass version variable to templates
+    "version": release,  # Pass version variable to templates
 }

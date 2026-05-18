@@ -934,7 +934,7 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
         - ``4`` : Tamura (1987), 1200 waves.
         - ``7`` : Hartmann and Wenzel (1995), 12935 waves.
         - ``8`` (Default) : Kudryavtsev (2004), 28806 waves (highest resolution).
-        
+
         See ETERNA/pygtide for the full list of available catalogues.
     tidalcompo : int, default 0
         The tidal component to calculate. The default 0 is earth tide gravity, but other

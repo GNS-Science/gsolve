@@ -161,23 +161,12 @@ cython_debug/
 gsolve.code-workspace
 docs/generated/*
 .vscode/settings.json
-fake_data.ipynb
-miller2020.ipynb
-test_meter_correction.ipynb
-test_miller copy.ipynb
-test_miller.ipynb
-test_orig_algorithm.ipynb
-test1.ipynb
-.xxxxxxdevcontainer/devcontainer.json
-.xxxxxxdevcontainer/Dockerfile
 .vscode/launch.json
 /*.ipynb
 examples/scintrex/CG-6_0680_DRFT_CAL2.dat
 examples/scintrex/CG-6_0680_TEST1.dat
 examples/scintrex/lynx_CG6_0041_20220719_Final_1HZ.DAT
 examples/scintrex/lynx_CG6_0041_20220719_Final_FILT.DAT
-run.bat
-examples/surveys/terrain_corrections/wellington1m_lidar.tif
 tuhua_data/*
 paeroa_data/*
 /*.dat

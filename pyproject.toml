@@ -1,6 +1,6 @@
 [project]
 name = "gsolve"
-version = "5.6.0"
+dynamic = ["version"]   # version = "5.6.0"
 description = "A Python package for processing gravity survey data."
 requires-python = ">=3.12"
 authors = [
@@ -15,9 +15,14 @@ license-files = ["LICENSE"]
 readme = "README.md"
 classifiers = [
     "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
 ]
 dependencies = [
     "boule==0.5.*",
@@ -34,15 +39,21 @@ dependencies = [
 dev = ["pytest>=9.0.3", "pytest-cov>=7.1.0", "pytest-datadir>=1.8.0", "ruff"]
 
 [project.urls]
-Repository = "https://git.gns.cri.nz/gravity-processing/gsolve.git"
-# Homepage = "https://example.com"
-# Documentation = "https://readthedocs.org"
-# Issues = "https://github.com/me/spam/issues"
-# Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
+Repository = "https://github.com/GNS-Science/gsolve"
+# Homepage = "https://github.com/GNS-Science/gsolve"
+Documentation = "https://gns-science.github.io/gsolve/"
+Issues = "https://github.com/GNS-Science/gsolve/issues"
+Changelog = "https://github.com/GNS-Science/gsolve/blob/main/CHANGELOG.md"
 
 [build-system]
-requires = ["uv_build>=0.11.8,<0.12"]
-build-backend = "uv_build"
+requires = ["hatchling", "uv-dynamic-versioning"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
+
+[tool.uv-dynamic-versioning]
+fallback-version = "5.X.X"
 
 [dependency-groups]
 docs = [
@@ -63,6 +74,9 @@ dev = [
     "pytest-datadir>=1.8.0",
     "ruff"
 ]
+
+[tool.uv]
+required-version = ">=0.11.8"
 
 
 # ------------------------------

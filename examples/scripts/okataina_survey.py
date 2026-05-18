@@ -18,7 +18,7 @@
 import pathlib
 
 try:
-    import contextily as cx  # ty:ignore[unresolved-import]
+    import contextily as cx  # pyright: ignore[reportMissingImports] # ty:ignore[unresolved-import]
 except ImportError:
     has_contextily = False
 else:
@@ -104,7 +104,7 @@ obs.apply_earth_tide_correction(sites, tide_corrector=longman)
 # Step 1: generate the input file for QTP using the site and observation datetimes.
 # - this has been run, uncomment code below to generate a new file.
 
-#generate_qtp_input(
+# generate_qtp_input(
 s = obs.data.site_id.to_numpy()
 generate_qtp_input(
     site_id=s,
@@ -112,7 +112,7 @@ generate_qtp_input(
     latitude=sites.data.loc[s, "latitude"].to_numpy(),
     longitude=sites.data.loc[s, "longitude"].to_numpy(),
     elevation=sites.data.loc[s, "height_ellipsoidal"].to_numpy(),
-    output_file=ocean_load_path / "okataina_qtp_input.csv"
+    output_file=ocean_load_path / "okataina_qtp_input.csv",
 )
 
 # step 2: run QTP externally to generate the output file (not shown here)
