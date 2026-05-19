@@ -92,16 +92,16 @@ wheels = [
 
 [[package]]
 name = "boule"
-version = "0.5.0"
+version = "0.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "numpy" },
     { name = "scipy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6f/cb/ba840a6f38c045310ac223edc799a69842a959f549aeea3fee0644472e83/boule-0.5.0.tar.gz", hash = "sha256:fde5908b8a88f0f05ccbf23f2aa422b9d81a2a3e6ed6c1ce65afda0bb6254717", size = 33514, upload-time = "2024-10-22T21:35:43.393Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/05/3e/36215c05560b9daadaccbd05950cbe30484c91605dbc15c4ea1b690e9ffd/boule-0.6.0.tar.gz", hash = "sha256:ee74bec713b9694154aaffafc8ba99f448e6cd1bd59b73b9986804570c7fcad3", size = 32133, upload-time = "2026-03-30T13:53:37.336Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3e/a1/fff65b40476cbdd2626aca3f744347921aca9656638277302679c2a608d2/boule-0.5.0-py3-none-any.whl", hash = "sha256:374129df477a4551db9cdfae7fb1578f9d3f1978f826f5d60bd0eab98ba31f15", size = 37180, upload-time = "2024-10-22T21:35:42.026Z" },
+    { url = "https://files.pythonhosted.org/packages/3f/c2/680c115640f145466db2d9988484141d0822856a13ca9eade47f6301d846/boule-0.6.0-py3-none-any.whl", hash = "sha256:8b4812d088c12d64bc2ab9e7cdfa6a33d624cf7227de9d281fc4ff976dc73f39", size = 32516, upload-time = "2026-03-30T13:53:36.023Z" },
 ]
 
 [[package]]
@@ -658,7 +658,7 @@ docs = [
 
 [package.metadata]
 requires-dist = [
-    { name = "boule", specifier = "==0.5.*" },
+    { name = "boule", specifier = "==0.6.*" },
     { name = "harmonica", specifier = "<0.8" },
     { name = "pandas", extras = ["excel", "plot"], specifier = "<3" },
     { name = "pygtide", specifier = ">=0.8.2" },
