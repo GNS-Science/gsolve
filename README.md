@@ -3,6 +3,8 @@
 [![codecov](https://codecov.io/gh/GNS-Science/gsolve/branch/main/graph/badge.svg)](https://codecov.io/gh/GNS-Science/gsolve)
 ![GitHub License](https://img.shields.io/github/license/GNS-Science/gsolve)
 [![Publish to PyPI](https://github.com/GNS-Science/gsolve/actions/workflows/publish.yml/badge.svg)](https://github.com/GNS-Science/gsolve/actions/workflows/publish.yml)
+[![Pypi version](https://img.shields.io/pypi/v/gsolve)
+
 
 
 # gSolve
@@ -24,10 +26,11 @@ Process gravity data for time change microgravity and Bouguer surveys.
 ## Algorithm
 
 * calculate the meter calibration correction, beta.
-* corrects for earth tide using Longman and ETERNA formula.
-* option to correct for ocean loading using pyhardisp
+* corrects for earth tide using Longman and [ETERNA](https://github.com/hydrogeoscience/pygtide/) formula.
+* option to correct for ocean loading using [pyhardisp](https://github.com/craigmillernz/pyhardisp).
 * correct for drift across loops or whole survey.
 * network adjustment with three different network adjustment algorithms depending on user requirements.
+# calibrate meters to absolute values.
 * residuals can be filtered using a percentile cut filter.  
 
 ## Corrections
@@ -58,7 +61,7 @@ Example scripts are provided to demonstrate the software capability.
 
 # Support
 
-Full documentation is available here. [gSolve](https://silver-spork-5vqw3le.pages.github.io/fundamentals.html)
+Full documentation is available here. [gSolve](https://gns-science.github.io/gsolve/)
 
 # Authors and acknowledgment
 
