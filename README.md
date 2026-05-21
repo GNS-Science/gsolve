@@ -1,9 +1,9 @@
 ![gSolve logo](docs/source/_static/gsolve_logo.png)
     
-[![codecov](https://codecov.io/gh/GNS-Science/gsolve/branch/main/graph/badge.svg)](https://codecov.io/gh/GNS-Science/gsolve)
+![codecov](https://codecov.io/gh/GNS-Science/gsolve/branch/main/graph/badge.svg)](https://codecov.io/gh/GNS-Science/gsolve)
 ![GitHub License](https://img.shields.io/github/license/GNS-Science/gsolve)
-[![Publish to PyPI](https://github.com/GNS-Science/gsolve/actions/workflows/publish.yml/badge.svg)](https://github.com/GNS-Science/gsolve/actions/workflows/publish.yml)
-[![Pypi version](https://img.shields.io/pypi/v/gsolve)
+![Publish to PyPI](https://github.com/GNS-Science/gsolve/actions/workflows/publish.yml/badge.svg)](https://github.com/GNS-Science/gsolve/actions/workflows/publish.yml)
+![Pypi version](https://img.shields.io/pypi/v/gsolve)
 
 
 
