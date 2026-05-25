@@ -345,8 +345,8 @@ class GravityAnomalies(GSolveTable):
         "free_air_correction": DataFieldSpecification(
             "free_air_correction", float, required=False, default=_np.nan
         ),
-        "bouguer_slab": DataFieldSpecification(
-            "bouguer_slab", float, required=False, default=_np.nan
+        "bouguer_slab_correction": DataFieldSpecification(
+            "bouguer_slab_correction", float, required=False, default=_np.nan
         ),
         "bouguer_slab_curvature_corrected": DataFieldSpecification(
             "bouguer_slab_curvature_corrected", float, required=False, default=_np.nan

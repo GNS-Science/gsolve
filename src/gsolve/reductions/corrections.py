@@ -47,6 +47,7 @@ __all__ = [
 
 
 def normal_gravity_at_stn_elevation(
+    longitude: ArrayLike,
     latitude: ArrayLike,
     height_ellipsoidal: ArrayLike,
     ellipsoid: Literal["WGS84", "GRS80"] | boule.Ellipsoid = "GRS80",
@@ -69,9 +70,11 @@ def normal_gravity_at_stn_elevation(
 
     Parameters
     ----------
+    longitude : array-like
+        The geodetic longitude in decimal degrees.
     latitude : array-like
         The geodetic latitude in decimal degrees.
-    height_ellipsoidal : array_likefloat or array-like
+    height_ellipsoidal : float or array-like
         The ellipsoidal height in meters.
     ellipsoid: 'WGS84', 'GRS80' or boule.Ellipsoid, default 'GRS80'
         The ellipsoid to use for normal gravity calculation.
@@ -106,7 +109,7 @@ def normal_gravity_at_stn_elevation(
         raise ValueError(f"Unknown ellipsoid '{ellipsoid}': must be 'WGS84' or 'GRS80'")
 
     return e.normal_gravity(
-        latitude=latitude, height=height_ellipsoidal, si_units=si_units
+        coordinates=(longitude, latitude, height_ellipsoidal), si_units=si_units
     )
 
 
@@ -577,6 +580,7 @@ class GravityCorrections(GSolveTable):
 
     _known_fields = {
         "site_id": DataFieldSpecification("site_id", str, required=True),
+        "longitude": DataFieldSpecification("longitude", float, required=False),
         "latitude": DataFieldSpecification("latitude", float, required=False),
         "height_ellipsoidal": DataFieldSpecification(
             "height_ellipsoidal", float, required=False, legacy_name="height"
@@ -697,17 +701,17 @@ class GravityCorrectionProvider:
         Parameters
         ----------
         sites : GravitySites | DataFrame
-            An object providing site latitude and ellipsoidal height, and indexed
+            An object providing site longitude, latitude and ellipsoidal height, and indexed
             by ``'site_id'``. If `sites` is a DataFrame, it is expected to have columns named
-            ``'latitude'`` and ``'height_ellipsoidal'``, unless alternative columns are
+            ``'longitude'``, ``'latitude'`` and ``'height_ellipsoidal'``, unless alternative columns are
             specified using the `column_names` argument.
         corrections : str | Sequence[str], optional
             An array or string of corrections to compute.  By default compute all
             corrections required for generating a Bouguer anomaly as specified in
             ``self.params``.
         column_names : dict[str, str] | None, optional
-            A dictionary mapping dexpected columns ``latitude`` and ``height_ellipsoidal``
-            to alternative column names. E.g. ``{'latitude': 'lat', 'height_ellipsoidal': 'height'}``.
+            A dictionary mapping expected columns ``longitude``, ``latitude`` and ``height_ellipsoidal``
+            to alternative column names. E.g. ``{'longitude': 'lon', 'latitude': 'lat', 'height_ellipsoidal': 'height'}``.
         include_coords : bool, default False
             If True, include site latitude and height in output.
 
@@ -717,7 +721,11 @@ class GravityCorrectionProvider:
             Object containing computed gravity corrections and the correction parameters.
 
         """
-        _cols = {"latitude": "latitude", "height_ellipsoidal": "height_ellipsoidal"}
+        _cols = {
+            "longitude": "longitude",
+            "latitude": "latitude",
+            "height_ellipsoidal": "height_ellipsoidal",
+        }
         if column_names is not None:
             _cols.update(column_names)
 
@@ -731,6 +739,7 @@ class GravityCorrectionProvider:
                 f"'{type(sites)}'"
             )
 
+        lon = sites_df[_cols["longitude"]].to_numpy()
         lat = sites_df[_cols["latitude"]].to_numpy()
         ht = sites_df[_cols["height_ellipsoidal"]].to_numpy()
         idx = sites_df.index.copy()
@@ -749,13 +758,17 @@ class GravityCorrectionProvider:
         else:
             _corrs = self.params.bouguer_correction_fields()
 
-        df = pd.DataFrame(index=idx, data={"latitude": lat, "height_ellipsoidal": ht})
+        df = pd.DataFrame(
+            index=idx,
+            data={"longitude": lon, "latitude": lat, "height_ellipsoidal": ht},
+        )
         for c in _corrs:
             df[c] = np.nan
 
         k = "normal_gravity_at_stn_elevation"
         if k in _corrs:
             df[k] = normal_gravity_at_stn_elevation(
+                longitude=lon,
                 latitude=lat,
                 height_ellipsoidal=ht,
                 ellipsoid=self.params.ellipsoid,  # type: ignore[arg-type]
@@ -799,7 +812,13 @@ class GravityCorrectionProvider:
             )
 
         if not include_coords:
-            df = df.drop(columns=[_cols["latitude"], _cols["height_ellipsoidal"]])
+            df = df.drop(
+                columns=[
+                    _cols["longitude"],
+                    _cols["latitude"],
+                    _cols["height_ellipsoidal"],
+                ]
+            )
         _df_dict = {str(k): v for k, v in df.to_dict("list").items()}
         return GravityCorrections(params=self.params, site_id=idx, **_df_dict)
 

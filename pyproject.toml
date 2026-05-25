@@ -25,7 +25,7 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-    "boule==0.5.*",
+    "boule==0.6.*",
     "harmonica<0.8",
     "pandas[excel,plot]<3",
     "pygtide>=0.8.2",
