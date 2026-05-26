@@ -94,6 +94,7 @@ html_theme_options = {
     "repository_url": "https://github.com/GNS-Science/gsolve",
     "repository_branch": "main",
     "use_repository_button": True,
+    "extra_navbar": f"<p>Version: {release}</p>",
 }
 html_context = {
     "display_version": True,  # Ensure version is displayed
