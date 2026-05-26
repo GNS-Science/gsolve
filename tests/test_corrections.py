@@ -65,42 +65,45 @@ def _make_sites(
 
 class TestNormalGravityAtStnElevation:
     def test_scalar_at_equator_sea_level(self):
-        g = normal_gravity_at_stn_elevation(latitude=0.0, height_ellipsoidal=0.0)
+        g = normal_gravity_at_stn_elevation(
+            longitude=0.0, latitude=0.0, height_ellipsoidal=0.0
+        )
         # GRS80 equatorial normal gravity is ~978032.7 mGal
         assert pytest.approx(g, rel=1e-4) == 978032.67715
 
     def test_si_units(self):
-        g_mgal = normal_gravity_at_stn_elevation(0.0, 0.0, si_units=False)
-        g_si = normal_gravity_at_stn_elevation(0.0, 0.0, si_units=True)
+        g_mgal = normal_gravity_at_stn_elevation(0.0, 0.0, 0.0, si_units=False)
+        g_si = normal_gravity_at_stn_elevation(0.0, 0.0, 0.0, si_units=True)
         assert pytest.approx(g_si, rel=1e-6) == g_mgal * 1e-5
 
     def test_wgs84_ellipsoid(self):
-        g = normal_gravity_at_stn_elevation(0.0, 0.0, ellipsoid="WGS84")
+        g = normal_gravity_at_stn_elevation(0.0, 0.0, 0.0, ellipsoid="WGS84")
         assert g > 0
 
     def test_boule_ellipsoid_object(self):
-        g = normal_gravity_at_stn_elevation(0.0, 0.0, ellipsoid=boule.GRS80)
+        g = normal_gravity_at_stn_elevation(0.0, 0.0, 0.0, ellipsoid=boule.GRS80)
         assert g > 0
 
     def test_negative_height_raises(self):
         with pytest.raises(ValueError, match="heights must be >= 0"):
-            normal_gravity_at_stn_elevation(0.0, -1.0)
+            normal_gravity_at_stn_elevation(0.0, 0.0, -1.0)
 
     def test_bad_ellipsoid_raises(self):
         with pytest.raises(ValueError, match="Unknown ellipsoid"):
-            normal_gravity_at_stn_elevation(0.0, 0.0, ellipsoid="GRS67")
+            normal_gravity_at_stn_elevation(0.0, 0.0, 0.0, ellipsoid="GRS67")
 
     def test_array_input(self):
+        lons = np.array([0.0, 0.0, 0.0])
         lats = np.array([0.0, -45.0, -90.0])
         hts = np.array([0.0, 0.0, 0.0])
-        g = normal_gravity_at_stn_elevation(lats, hts)
+        g = normal_gravity_at_stn_elevation(lons, lats, hts)
         assert g.shape == (3,)
         # gravity at pole > gravity at equator
         assert g[2] > g[0]
 
     def test_gravity_decreases_with_height(self):
-        g0 = normal_gravity_at_stn_elevation(0.0, 0.0)
-        g100 = normal_gravity_at_stn_elevation(0.0, 100.0)
+        g0 = normal_gravity_at_stn_elevation(0.0, 0.0, 0.0)
+        g100 = normal_gravity_at_stn_elevation(0.0, 0.0, 100.0)
         assert g100 < g0
 
 
@@ -416,7 +419,11 @@ class TestGravityCorrectionProvider:
 
     def test_compute_with_dataframe(self):
         df = pd.DataFrame(
-            {"latitude": [-45.0, 0.0], "height_ellipsoidal": [100.0, 0.0]},
+            {
+                "longitude": [0.0, 0.0],
+                "latitude": [-45.0, 0.0],
+                "height_ellipsoidal": [100.0, 0.0],
+            },
             index=pd.Index(["A", "B"], name="site_id"),
         )
         provider = GravityCorrectionProvider()
@@ -450,6 +457,7 @@ class TestGravityCorrectionProvider:
         gc = provider.compute(
             sites, corrections=["free_air_correction"], include_coords=True
         )
+        assert "longitude" in gc.data.columns
         assert "latitude" in gc.data.columns
         assert "height_ellipsoidal" in gc.data.columns
 

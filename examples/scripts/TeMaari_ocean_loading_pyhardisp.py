@@ -24,8 +24,6 @@ Created on Wed Feb 25 16:23:07 2026
 import pathlib
 
 from gsolve import (
-    GravityAnomalies,
-    GravityCorrectionParameters,
     GravityObservations,
     GravitySites,
     GravitySurvey,
@@ -35,6 +33,7 @@ from gsolve import (
 from gsolve.reports import GSolveReport
 from gsolve.tide.earth_tide import LongmanTidalCorrection
 from gsolve.tide.ocean_load import HardispOceanLoadCorrector
+
 # %%
 data_path = pathlib.Path(__file__).parent.parent
 
@@ -52,13 +51,13 @@ calibration_factor = 1 - -0.0019
 # %%
 # Read in observations
 obs = GravityObservations.from_excel(
-    survey_file, sheet_name='obs', parse_split_datetime=False
-    )
+    survey_file, sheet_name="obs", parse_split_datetime=False
+)
 
 # Read in site location information
 sites = GravitySites.from_excel(survey_file, sheet_name="Locations")
 
-# set which reference stations are used in this survey (must be in sites). In 
+# set which reference stations are used in this survey (must be in sites). In
 # this case i just set TGKB to be 0.0 mGal
 ref_sites = ReferenceGravity(site_id="TGKB", gravity=0.0)
 _ = sites.set_reference_gravity(ref_sites)
@@ -111,4 +110,3 @@ print(results.obs_solution)
 
 
 report = GSolveReport(observations=obs, sites=sites, results=results)
-
