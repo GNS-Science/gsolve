@@ -94,7 +94,10 @@ html_theme_options = {
     "repository_url": "https://github.com/GNS-Science/gsolve",
     "repository_branch": "main",
     "use_repository_button": True,
-    "extra_navbar": f"<p>Version: {release}</p>",
+    # Render version in the logo block (left sidebar) under the logo image.
+    "logo": {
+        "text": f"gSolve\nVersion {release}",
+    },
 }
 html_context = {
     "display_version": True,  # Ensure version is displayed
