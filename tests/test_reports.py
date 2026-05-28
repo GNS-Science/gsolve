@@ -109,7 +109,7 @@ class TestGSolveReportAssembly:
         results = _make_results(obs)
 
         with pytest.raises(ValueError, match="must be provided"):
-            GSolveReport(observations=None, sites=sites, results=results)  # ty: ignore[arg-type]
+            GSolveReport(observations=None, sites=sites, results=results)  # type: ignore[arg-type]
 
     def test_assembly_builds_site_obs_loop_tables(self) -> None:
         obs = _make_observations()
@@ -160,8 +160,8 @@ class TestGSolveReportTerrainCorrectionConsistency:
                 observations=obs,
                 sites=sites,
                 results=results,
-                anomalies=anomalies,  # ty: ignore[arg-type]
-                terrain_corrections=terrain_bad,  # ty: ignore[arg-type]
+                anomalies=anomalies,  # type: ignore[arg-type]
+                terrain_corrections=terrain_bad,  # type: ignore[arg-type]
             )
 
     def test_consistent_terrain_corrections_are_accepted(self) -> None:
@@ -184,8 +184,8 @@ class TestGSolveReportTerrainCorrectionConsistency:
             observations=obs,
             sites=sites,
             results=results,
-            anomalies=anomalies,  # ty: ignore[arg-type]
-            terrain_corrections=terrain_ok,  # ty: ignore[arg-type]
+            anomalies=anomalies,  # type: ignore[arg-type]
+            terrain_corrections=terrain_ok,  # type: ignore[arg-type]
         )
 
         assert report.terrain_correction_data is not None
@@ -277,10 +277,10 @@ class TestGSolveReportToExcel:
             observations=obs,
             sites=sites,
             results=results,
-            terrain_corrections=terrain_ok,  # ty: ignore[arg-type]
+            terrain_corrections=terrain_ok,  # type: ignore[arg-type]
         )
-        # Keep this test focused on worksheet-writing flow; terrain parameters are
-        # currently stored as plain dict values which are not metadata-serializable.
+        # Keep this test focused on worksheet-writing flow; in this test setup the
+        # dummy terrain parameters are plain dict values (not metadata-serializable).
         report.params = {
             k: v for k, v in report.params.items() if hasattr(v, "to_series")
         }
