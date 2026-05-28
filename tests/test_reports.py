@@ -63,7 +63,7 @@ def _make_results(obs: GravityObservations) -> GSolveResults:
     obs_input = obs.data.loc[:, ["site_id", "loop", "loop_tdelta"]].copy()
     obs_input = obs_input.rename(columns={"loop_tdelta": "timedelta"})
     ref_input = pd.DataFrame(
-        {"absolute_gravity": [1000.2, 1001.2]},
+        {"reference_gravity": [1000.2, 1001.2]},
         index=pd.Index(["A", "B"], name="site_id"),
     )
 
