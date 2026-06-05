@@ -61,11 +61,16 @@ extensions = [
     "sphinx_copybutton",
     "sphinx_design",
 ]
+
+# numpydoc configuration
 numpydoc_show_class_members = False
+numpydoc_show_inherited_class_members = False
+numpydoc_attributes_as_param_list = False
+numpydoc_validation_checks = {"all"}
+
 
 myst_enable_extensions = ["amsmath"]
 
-templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 source_suffix = {
@@ -74,12 +79,17 @@ source_suffix = {
 }
 
 autosummary_generate = True
+autosummary_generate_overwrite = True
+
+templates_path = ["_templates"]
+
 # -- Options for autodoc -----------------------------------------------------
 autodoc_default_options = {
     "members": True,
     "undoc-members": True,
     "show-inheritance": True,
 }
+autodoc_typehints = "none"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -105,3 +115,6 @@ html_context = {
     "version": release,  # Pass version variable to templates
     "version": release,  # Pass version variable to templates
 }
+
+# The name of the Pygments (syntax highlighting) style to use.
+pygments_style = "sphinx"
