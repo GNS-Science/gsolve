@@ -141,7 +141,7 @@ Plot the observed data for each loop to check for input errors.  Here we plot fo
 obs.plot_observed_data(2, "datetime", "meter_reading_mgal")
 ```
 
-![observed data](Figure_1.png)
+![observed data](_static/Figure_1.png)
 
 ### Plot a network map
 
@@ -161,7 +161,7 @@ if has_contextily:
     fig.savefig(str(obs_path) + "/ Okataina_network_map.png")
 ```
 
-![network map](Okataina_network_map.png)
+![network map](_static/Okataina_network_map.png)
 
 ### Create a survey object using observations and site objects
 
@@ -200,8 +200,8 @@ results.plot_residual_drift(loop=2, filename=str(obs_path) + "/ Okataina_residua
 results.plot_residual_cdf(loop=2, filename=str(obs_path) + "/ Okataina_residual_cdf.png")
 ```
 
-![residual_drift](Figure_2.png)
-![residual_cdf](Figure_3.png)
+![residual_drift](_static/Figure_2.png)
+![residual_cdf](_static/Figure_3.png)
 
 ### Save output files
 

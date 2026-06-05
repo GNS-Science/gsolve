@@ -10,7 +10,7 @@ Gravity values are calculated at the exact coordinate location supplied.
 
 The figure below illustrates how prisms are constructed and assigned densities.
 
-![prism_setup](terrain_correction.png)
+![prism_setup](_static/terrain_correction.png)
 
 Terrain correction calculations in gSolve works by estimating the gravity effect of the topography in a series of zones around the observation site. Each zone has a minimum and maximum distance.
 
