@@ -1,34 +1,53 @@
+=============
 API Reference
 =============
 
-.. automodule:: gsolve
-   :members:
-   :undoc-members:
-   :show-inheritance:
+This section contains per-module API documentation.
 
-.. automodule:: gsolve.tide.earth_tide
-   :members:
-   :undoc-members:
-   :show-inheritance:
+Observations and Site Data
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: gsolve.tide.ocean_load
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. toctree::
+   :maxdepth: 1
 
-.. automodule:: gsolve.scintrex
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   observations
+   sites
+   survey
+   .. scintrex
+   .. meter_conversion
 
-.. automodule:: gsolve.reductions.corrections
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. toctree::
+   :maxdepth: 1
 
-.. automodule:: gsolve.reductions.anomalies
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   reductions_anomalies
+..    gsolve_algorithms
+..    gsolve_outputs
+..    reports
+..    tide_earth_tide
+..    tide_ocean_load
+
+.. .. toctree::
+..    :maxdepth: 1
+..    :caption: Reductions
+
+..    reductions_corrections_module
+..    reductions_corrections
+..    reductions_anomalies
+..    reductions_terrain_corrections
+
+.. .. toctree::
+..    :maxdepth: 1
+..    :caption: Core
+
+..    core_data
+..    core_excel_io
+..    core_summary_functions
+..    core_typing
+..    core_utils
+..    core_xr_accessor
+..    core_xr_methods
+
+
+
 
 
