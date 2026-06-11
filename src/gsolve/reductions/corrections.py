@@ -506,22 +506,23 @@ class GravityCorrectionParameters(GSolveParameters):
 
     Parameters
     ----------
-    ellipsoid : "WGS84" or "GRS80" (default)
-        The reference ellipsoid used in normal gravity
-    density_crust: float, default = 2670.0
-        Density of crust in Mg.m**-3
-    density_water: float, default = 1030.0
-        Density of water in Mg.m**-3
-    spherical_cap_radius: float, defult = 166735.0
-        The radius in km of the circular cap correction.  The default
-        166735.0 km is equivalent to 1.5 degrees of arc for a spherical earth.
-    use_curvature_corrected: bool, default True
-        Specify the type of Bouguer correction to compute and use in subsequent
-        anomaly calculations. If True, bouguer corrections are curvature corrected.
-        If False, bouguer corrections are for an infinite horizotal slab.
-    use_atmospheric_correction: bool, default True
-        Whether to include atmospheric correction in gravity corrections and
-        subsequent anomaly calculations.
+    ellipsoid : {"GRS80", "WGS84"}, default "GRS80"
+        The reference ellipsoid for normal gravity calculations.
+    density_crust : float, default = 2670.0
+        Density of crust in Mg/m-3
+    density_water : float, default = 1030.0
+        Density of water in Mg/m-3
+    spherical_cap_radius : float, default = 166735.0
+        The radius in km of the circular cap correction used in spherical
+        Bouguer corrections.  The default 166735.0 km is equivalent to 1.5 degrees
+        of arc for a spherical earth.
+    use_curvature_corrected : bool, default True
+        Specify the type of Bouguer correction to compute. If True, bouguer
+        corrections are computed for a curved slab of diameter `spherical_cap_radius`.
+        If False, bouguer corrections are computed for an infinite horizontal slab.
+    use_atmospheric_correction : bool, default True
+        Whether to apply an atmospheric correction when computing gravity corrections and
+        subsequent anomalies.
     free_air_gradient : float, default 0.3087691
         The free air gradient in mGal/m.
     """
@@ -535,8 +536,15 @@ class GravityCorrectionParameters(GSolveParameters):
     free_air_gradient: float = 0.3087691
 
     def bouguer_correction_fields(self) -> list[str]:
-        """Return tuple of names of correction methods required for
-        specified Bouguer method."""
+        """Corrections required to compute Bouguer correction using specified method.
+
+        Returns
+        -------
+        method_names : list of str
+            Correction methods mapping to correction functions defined in
+            ``gsolve.reductions.corrections``.
+
+        """
         bc_fields: list[str] = ["normal_gravity_at_ellipsoid", "free_air_correction"]
         if self.use_atmospheric_correction:
             bc_fields.append("atmospheric_correction")
@@ -545,7 +553,13 @@ class GravityCorrectionParameters(GSolveParameters):
         return bc_fields
 
     def bouguer_correction_type(self) -> str:
-        """Return the name specified of Bouguer correction method."""
+        """Return specified Bouguer correction method.
+
+        Returns
+        -------
+        str
+            "bouguer_slab_curvature_corrected" or "bouguer_slab_correction"
+        """
         if self.use_curvature_corrected:
             return "bouguer_slab_curvature_corrected"
         else:
