@@ -85,7 +85,7 @@ templates_path = ["_templates"]
 
 # -- Options for autodoc -----------------------------------------------------
 autodoc_default_options = {
-    "members": True,
+    "members": False,
     "undoc-members": True,
     "show-inheritance": True,
 }
