@@ -179,3 +179,6 @@ do_not_track/
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+docs/_build
+docs/source/api/generated
+docs/source/api/api/*
