@@ -2,7 +2,7 @@
 
 [Gsolve](index.rst) has four main data objects called [`GravityObservations`](#observations), [`GravitySites`](#sites), [`ReferenceGravity`](#reference-gravity) and [`GravitySurvey`](#surveys).
 
-For processing beyond a network adjustment (i.e. to Complete Bouguer anomaly) there are [`GravityCorrections`](#gravity-corrections), [`TerrainCorrector`](#Terrain corrections) and [`GravityAnomalies`](#gravity-anomalies) and finally a [`GSolveReports`](#output-files) class for output results files.
+For processing beyond a network adjustment (i.e. to Complete Bouguer anomaly) there are [`GravityCorrections`](#gravity-corrections), [`TerrainCorrector`](terrain_corrections.md) and [`GravityAnomalies`](#gravity-anomalies) and finally a [`GSolveReports`](#output-files) class for output results files.
 
 A [command line interface](gsolve_cli_manual.md) is available for network adjustment processing.
 
