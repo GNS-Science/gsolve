@@ -29,7 +29,7 @@ from gsolve.reductions.corrections import (
     GravityCorrectionProvider,
     GravityCorrections,
 )
-from gsolve.reductions.terrain_corrections import TerrainCorrectionData
+from gsolve.reductions.terrain_corrections import TerrainCorrectionData, TerrainCorrectionParameters
 from gsolve.sites import GravitySites
 
 __all__ = [
@@ -372,7 +372,7 @@ class GravityAnomalies(GSolveTable):
         terrain_corrections: TerrainCorrectionData | None = None,
     ) -> None:
         self.params: GravityCorrectionParameters
-        self.tcorr_params: dict[str, GravityCorrectionParameters] = {}
+        self.tcorr_params: dict[str, TerrainCorrectionParameters] = {}
         self.data: _pd.DataFrame
 
         precomputed_corrections: GravityCorrections | None = None
