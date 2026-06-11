@@ -57,41 +57,54 @@ __all__ = [
 class GravitySites(GSolveTable):
     """Class to store gravity site/station data and metadata.
 
-    Attributes
-    ----------
-    data : DataFrame
-        Gravity site/station information stored as a pandas DataFrame.
-        The data fields (i.e. columns) required by GSolve are have explicitly
-        defined names, dtypes and default values. The preferred method for setting
-        fields is to use the :meth:`gsolve.core.data.GSolveTable.set_columns` method.
-        Other fields may be added to ``obj.data`` as required, but will
-        be ignored by gsolve.
+    Gravity site/station information stored as a pandas DataFrame.
+    The data fields (i.e. columns) required by GSolve have explicitly
+    defined names, dtypes and default values. The preferred method for setting
+    fields is to use the :meth:`obj.set_column` method.
+    Other fields may be added to ``obj.data`` as required, but will
+    be ignored by gsolve.
 
-        The defined fields are:
+    The defined fields are:
 
-            * Fields that must be defined at object creation:
+    **Mandatory Fields** - Must be defined at object creation.
 
-                - `site_id`, index, *str*: unique station identifier.
-                - `latitude`, *float*: station latitude in decimal degrees.
-                - `longitude`, *float*: station longitude in decimal degrees.
-                - `height_ellipsoidal`, *float*: elevation relative to the ellipsoid.
+    ==================== ======= =======================================================
+    Name                 Type    Description
+    ==================== ======= =======================================================
+    site_id              *str*   unique site identifier, set as obj.data.index
+    latitude             *float* site latitude in decimal degrees.
+    longitude            *float* site longitude in decimal degrees.
+    height_ellipsoidal   *float* site elevation relative to the ellipsoid in meters.
+    ==================== ======= =======================================================
 
-            * Fields that will be created with default values if not specified at object creation
+    **Required Fields** - Will be created with default values if not specified. Must be
+    at least partially set for computing drift.
 
-                - `reference_gravity`, *float*: reference gravity value at that site, NaN
-                  if unknown. Typically absolute gravity, but could be set to some arbitrary
-                  value if no reference gravity data are available. At least one `reference_gravity`
-                  value must be set for solve for drift.
-                - `gsolve_tie`, *bool*: indicates whether this site is to be used as
-                  "tie" when solving for drift. At least one site with a `reference_gravity`
-                  value must be set as a `gsolve_tie`.
+    ======================= ======= ========= ===============================================
+    Name                    Type    Default   Description
+    ======================= ======= ========= ===============================================
+    reference_gravity       *float* ``NaN``   Reference gravity value at that site. Typically
+                                              absolute gravity, but could be set to some
+                                              arbitrary value if no reference gravity data
+                                              are available. At least one `reference_gravity`
+                                              value must be set for solve for drift.
+    gsolve_tie              *bool*  ``False`` Indicates whether a site is to be used as "tie"
+                                              when solving for drift. At least one site with
+                                              a `reference_gravity` value must be set as a
+                                              `gsolve_tie`.
+    ======================= ======= ========= ===============================================
 
-            * Cartesian coordinates. These are not required for gsolve,
-              but are required for calculating terrain corrections.
 
-                - easting, *float*: site locations in some cartesian coordinate system
-                - northing, *float*: site locations in some cartesian coordinate system
-                - height_orthometric, *float*: height of site above some datum
+    **Cartesian coordinates** - Not required for network adjustment, but are required
+    for calculating terrain corrections.
+
+    ==================== ======= =======================================================
+    Name                 Type    Description
+    ==================== ======= =======================================================
+    `easting`            *float* site locations in some cartesian coordinate system
+    `northing`           *float* site locations in some cartesian coordinate system
+    `height_orthometric` *float* height of site above some datum
+    ==================== ======= =======================================================
 
     Parameters
     ----------

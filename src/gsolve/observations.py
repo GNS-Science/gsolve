@@ -16,6 +16,8 @@
 
 # Copyright (c) 2025 Earth Sciences New Zealand.
 
+"""Classes for handling gravity observations and pre-processing."""
+
 import dataclasses
 import pathlib
 import warnings as _warnings
@@ -104,13 +106,38 @@ class GravityObservationsParameters(GSolveParameters):
     def to_excel(
         self,
         fname: FilePath,
-        sheet_name: str | None = "observation_parameters",
+        sheet_name: str = "observation_parameters",
         if_workbook_exists: IfWorkbookExists = "append",
         if_sheet_exists: IfSheetExists = "replace",
         parameter_name_label: str = "parameter",
         parameter_value_label: str = "value",
         **kwargs,
     ) -> None:
+        """Write parameters to an Excel file.
+
+        Parameters
+        ----------
+        fname : FilePath
+            The path to the Excel file.
+        sheet_name : str, default "observation_parameters"
+            The name of the worksheet to write the parameters to.
+        if_workbook_exists : {"append, "replace", "error"}, default "append"
+            What to do if the workbook/file already exists.
+        if_sheet_exists : {"replace", "error", "new"}, default "replace"
+            What to do if the worksheet already exists.
+        parameter_name_label : str, default "parameter"
+            The label for the parameter names.
+        parameter_value_label : str, default "value"
+            The label for the parameter values.
+        **kwargs : Any
+            Additional keyword arguments passed to `write_excel_worksheet`.
+
+        See Also
+        --------
+        gsolve.core.excel_io.write_excel_worksheet : for full documentation
+            of the `if_workbook_exists` and `if_sheet_exists` parameters.
+
+        """
         params_ds = self.to_series(
             index_name=parameter_name_label, series_name=parameter_value_label
         )
@@ -122,14 +149,6 @@ class GravityObservationsParameters(GSolveParameters):
             params_ds["fixed_time_datum"]
         ):
             params_ds["fixed_time_datum"] = "first"
-
-        if sheet_name is None:
-            sheet_name = getattr(self, "_default_excel_sheet_name", None)
-            if sheet_name is None:
-                raise ValueError(
-                    "sheet_name is None and object has no "
-                    "_default_excel_sheet_name attribute."
-                )
 
         write_excel_worksheet(
             df=prepare_writable_df(
@@ -147,32 +166,41 @@ class GravityObservations(GSolveTable):
     """
     Class to store and process gravity observations.
 
+    The GravityObservations class is effectively a wrapper around a pandas DataFrame,
+    that provides a mechanism for ensuring data integrity and additional functionality
+    for handling gravity observations. These methods are sufficient to perform most
+    tasks, however, users are free to manipulate the ``data`` attribute directly as
+    needed, with the caveat that doing so bypasses data validation and integrity checks.
+
+    In general users will not need to instantiate this class directly, but will instead
+    use the `from_excel()` or `from_dataframe()` class methods to create an instance.
+
     Parameters
     ----------
-    site_id : ArrayLike
+    site_id : array_like
         Observation site identifier.
-    datetime : ArrayLike
+    datetime : array_like
         The observation datetime in a format parseable by ``pandas.to_datetime()``
         method. All datetimes will be converted to UTC with timezone information
         removed.
-    meter_id : ArrayLike
+    meter_id : array_like
         Gravity meter identifier.
-    meter_reading : ArrayLike, optional
+    meter_reading : array_like, optional
         Observed meter reading in meter units. At least one of ``meter_reading`` or
         ``meter_reading_mgal`` must be specified.
-    meter_reading_mgal : ArrayLike, optional
+    meter_reading_mgal : array_like, optional
         Observed meter readings in mGal.  At least one of ``meter_reading`` or
         ``meter_reading_mgal`` must be specified.
-    obs_id : ArrayLike, optional
+    obs_id : array_like, optional
         Array-like object containing unique observation identifiers. If omitted,
         unique identifiers will be generated from the ``site_id`` and
         ``datetime`` fields.
-    loop : ArrayLike, optional
+    loop : array_like, optional
         Array-like object containing survey loop identifiers. If omitted,
         all observations will be assigned to loop '1'.
-    active : ArrayLike, optional
-        Array-like object indicating whether an observation is 'active' (True) or
-        inactive (False). Only 'active' observations will be included as a datapoints
+    active : array_like, optional
+        Array-like object indicating whether an observation is 'active' (``True``) or
+        inactive (``False``). Only 'active' observations will be included as a datapoints
         in network adjustment. All observations are considered active by default.
     timedelta_unit : TimedeltaConvertibleTypes, default "1h"
         Time interval unit for timedelta calculations. The default is '1h' (i.e. 1 hour),
@@ -182,21 +210,22 @@ class GravityObservations(GSolveTable):
         of the earliest observation will be used.
     **kwargs
         Additional keyword arguments can be used to specify additional fields to be
-        included in the ``data`` DataFrame attribute.
-        .
+        included in the ``data`` DataFrame attribute. If any field defined in `kwargs`
+        match a 'known' field, then the associated `DataFieldSpecification` will be used
+        to validate and coerce the data before it is added to the ``data`` DataFrame.
 
     Attributes
     ----------
     data : pandas.DataFrame
         DataFrame containing the gravity observations, gravity reductions and other
         derived information.
-
     params : GravityObservationsParameters
-        A container class to store parameters.
+        A container class to store parameters related to reduction and pre-processing
+        of gravity observations.
     _known_fields : dict[str, DataFieldSpecification]
-        A dictionary of 'known' field name and their associated DataFieldSpecification,
-        which defines the expected data type, default value, and other metadata for
-        that field. If data are added using the ``set_column(name, value,...)``,
+        A dictionary of 'known' field names and their associated DataFieldSpecifications,
+        which define the expected data type, default value, and other metadata for
+        each field. If data are added using the ``set_column(name, value,...)``,
         and 'name' is in ``_known_fields``, the associated DataFieldSpecification
         will be used to validate and coerce the data before it is added to the
         ``obj.data`` dataframe.
@@ -371,12 +400,12 @@ class GravityObservations(GSolveTable):
         Parameters
         ----------
         idx : ArrayLike, str or None, default is None
-            The obs_id values to set as the index of ``obj.data``. Behaiviour
+            The obs_id values to set as the index of ``obj.data``. Behaviour
             depends on the dtype of `idx`. If `idx` is:
 
               - ``None`` : a default obs_id will be auto-generated
                 using the ``_default_index_generator()`` method.
-              - ``str`` : `idx` is assumed to be the name of a column
+              - ``str`` : `idx` is assumed to be the name of an existing column
                 in ``obj.data`` to be used to set as the index. Equivalent to
                 ``obj.data.set_index(idx)``. Note that the index will be renamed
                 to `obs_id`.
@@ -398,9 +427,10 @@ class GravityObservations(GSolveTable):
         Raises
         ------
         ValueError
-
+            If ``obs_id`` contains duplicate values and `duplicated_obs_id` is set to 'error'.
+        TypeError
+            If `idx` is not None, a string or an array-like of obs_id values.
         """
-
         if idx is None:
             # use autogenerated obs_id
             new_idx = self._default_index_generator()
@@ -443,7 +473,17 @@ class GravityObservations(GSolveTable):
 
     @property
     def loop_ids(self) -> list[str]:
-        """Return unique survey loop id's sorted by loop start time."""
+        """Return unique survey loop id's sorted by loop start time.
+
+        Returns
+        -------
+        list of str
+
+        Raises
+        ------
+        ValueError
+            If 'loop' and/or 'datetime' columns are missing from ``obj.data``.
+        """
         if "loop" not in self.data.columns or "datetime" not in self.data.columns:
             raise ValueError("'loop' and/or 'datetime' columns are missing")
         loops = self.data["loop"].unique().tolist()
@@ -454,12 +494,22 @@ class GravityObservations(GSolveTable):
 
     @property
     def starttime(self) -> _pd.Timestamp:
-        """Earlest observation datetime"""
+        """Earliest observation datetime.
+
+        Returns
+        -------
+        pandas.Timestamp
+        """
         return self.data["datetime"].min()
 
     @property
     def endtime(self) -> _pd.Timestamp:
-        """Latest observation datetime."""
+        """Latest observation datetime.
+
+        Returns
+        -------
+        pandas.Timestamp
+        """
         return self.data["datetime"].max()
 
     def timedelta_unit(self) -> _pd.Timedelta:
@@ -467,6 +517,10 @@ class GravityObservations(GSolveTable):
 
         Can be any valid argument for `pandas.Timedelta()`. The default
         is '1h' (i.e. 1 hour), meaning survey time is in decimal hours.
+
+        Returns
+        -------
+        pandas.Timedelta
 
         ..  warning::
             Setting a ``time_delta`` unit that is very small in conjunction
@@ -696,7 +750,7 @@ class GravityObservations(GSolveTable):
         calibration_factor : float or array_like
             The gravity meter `calculate_calibration`. Default is 1.0
         meter_id : str, default None
-            Set `calibration_factor` for specifed `meter_id` only. If data
+            Set `calibration_factor` for specified `meter_id` only. If data
             contains multiple gravity meters, `meter_id` must be specified.
 
         Raises
@@ -726,7 +780,7 @@ class GravityObservations(GSolveTable):
             self.data.loc[this_meter, c_label] = float(calibration_factor)
 
     def calculate_tide_corrected_gravity(self) -> None:
-        """Calculate corrected gravity values and assign to column 'gravity_corr'"""
+        """Calculate corrected gravity values and assign to column 'gravity_corr'."""
         reading = self.data["meter_reading_mgal"]
         calibration_factor = self.data.get("calibration_factor", 1.0)
         etide_corr = self.data.get("earth_tide_corr", 0.0)
