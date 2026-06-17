@@ -97,7 +97,7 @@ class GravityObservationsParameters(GSolveParameters):
         if name == "timedelta_unit":
             value = _pd.Timedelta(value)
         elif name == "fixed_time_datum":
-            if value is None or _pd.isnull(value):
+            if value is None or _pd.isna(value):
                 value = _pd.NaT
             else:
                 value = to_naive_utc_datetime(value)
@@ -515,12 +515,20 @@ class GravityObservations(GSolveTable):
     def timedelta_unit(self) -> _pd.Timedelta:
         """Time interval unit used for calculating survey timedelta.
 
-        Can be any valid argument for `pandas.Timedelta()`. The default
-        is '1h' (i.e. 1 hour), meaning survey time is in decimal hours.
-
         Returns
         -------
         pandas.Timedelta
+
+        """
+        return self._timedelta_unit
+
+    def set_timedelta_unit(
+        self, unit: TimedeltaScalar, set_tdelta: bool = True
+    ) -> None:
+        """Set time interval unit used for calculating survey timedelta.
+
+         Can be any valid argument for `pandas.Timedelta()`. The default
+        is '1h' (i.e. 1 hour), meaning survey time is in decimal hours.
 
         ..  warning::
             Setting a ``time_delta`` unit that is very small in conjunction
@@ -529,12 +537,14 @@ class GravityObservations(GSolveTable):
             Results may then be incorrect due to floating point rounding
             errors.
 
-        """
-        return self._timedelta_unit
+        Parameters
+        ----------
+        unit : TimedeltaScalar
+            The time interval unit to use.
+        set_tdelta : bool, default=True
+            Whether to update the timedelta values immediately.
 
-    def set_timedelta_unit(
-        self, unit: TimedeltaScalar, set_tdelta: bool = True
-    ) -> None:
+        """
         self._timedelta_unit = _pd.Timedelta(unit)
         if set_tdelta:
             self.set_tdelta()
@@ -572,8 +582,12 @@ class GravityObservations(GSolveTable):
             The time datum to use.  If None then fixed time datum is
             removed.
 
+        Raises
+        ------
+        TypeError
+            If `t` is specified, but is not interpretable as a `pandas.Timestamp`.
         """
-        if t is None or _pd.isnull(t):
+        if t is None or _pd.isna(t):
             self._fixed_time_datum = None
         else:
             _t = to_naive_utc_datetime(t)
@@ -589,7 +603,13 @@ class GravityObservations(GSolveTable):
             self.set_tdelta()
 
     def params(self) -> GravityObservationsParameters:
-        """Return parameters as a `GravityObservationsParameters` object."""
+        """Return parameters as a `GravityObservationsParameters` object.
+
+        Returns
+        -------
+        GravityObservationsParameters
+            The parameters object.
+        """
         return GravityObservationsParameters(
             timedelta_unit=self._timedelta_unit,
             fixed_time_datum=self._fixed_time_datum,
@@ -673,7 +693,7 @@ class GravityObservations(GSolveTable):
         if tide_corrector is None:
             tide_corrector = LongmanTidalCorrection()
 
-        tcorr = tide_corrector.tidal_correction(
+        et_corr = tide_corrector.tidal_correction(
             lat=sites.data.loc[ids, "latitude"].to_numpy(),
             lon=sites.data.loc[ids, "longitude"].to_numpy(),
             elev=sites.data.loc[ids, "height_ellipsoidal"].to_numpy(),
@@ -681,7 +701,7 @@ class GravityObservations(GSolveTable):
             site_id=self.data["site_id"],
             **kwargs,
         )
-        self.set_column(column_name, tcorr)
+        self.set_column(column_name, et_corr)
         identifier = tide_corrector.identifier(**kwargs)
         self._earthtide_correction_method = identifier
         # self.set_column(f"{column_name}_method", identifier)
@@ -693,7 +713,8 @@ class GravityObservations(GSolveTable):
         if_not_matched: Literal["error", "warn"] = "error",
         **kwargs,
     ) -> None:
-        """Get ocean loading corrections and store in column `column_name`.
+        """
+        Get ocean loading corrections and store in column `column_name`.
 
         This method calls the ``ocean_load_correction()`` method of the provided
         `ocean_load_corrector` object to retrieve ocean loading corrections for
@@ -711,17 +732,21 @@ class GravityObservations(GSolveTable):
             The column name to store the ocean loading correction.
         if_not_matched : {'error', 'warn'}, default 'error'
             Behaviour when an observation cannot be matched with the corrections
-            provided by the `ocean_load_corrector`. E.G. for the timeseries based
+            provided by the `ocean_load_corrector`. E.g. for the timeseries based
             corrector `QuickTideTimeSeries`, if datetimes are outside the range of
             the time series. Options are:
 
                 - 'error' : raise a ValueError.
-                - 'warn' : issue a warning, and return nan for unmatched observations.
+                - 'warn' : issue a warning, and set unmatched observations to NaN.
 
         kwargs : dict
             Additional keyword arguments passed to the provider's
             ``ocean_load_correction()`` method.
 
+        Raises
+        ------
+        TypeError
+            If `corrector` does not implement the `OceanLoadCorrectionProvider` protocol.
         """
         if not isinstance(corrector, OceanLoadCorrectionProvider):
             raise TypeError(
@@ -734,7 +759,7 @@ class GravityObservations(GSolveTable):
             if_not_matched=if_not_matched,
             **kwargs,
         )
-        self.set_column(column_name, corrections)
+        self.set_column(label=column_name, data=corrections)
         self._ocean_load_correction_method = corrector.identifier()
 
     def set_calibration_factor(
@@ -791,13 +816,21 @@ class GravityObservations(GSolveTable):
         self.set_column("gravity_corr", gcorr)
 
     def set_tdelta(self) -> None:
-        """Calculate time delta for survey and loop observations and
-        assign to columns "survey_tdelta","loop_tdelta".
+        """Calculate time delta for survey and loop observations.
 
-        The datum for survey_tdelta is the earliest observation (i.e self.starttime),
-        while the datum for loop_tdelta is the earliest observation in each loop.
+        Columns "survey_tdelta" and "loop_tdelta" are added and/or updated.
+        The default "fixed_time_datum" is None, meaning that for:
 
-        The default datum(s) can be overridden by calling `set_fixed_time_datum()`
+            - "survey_tdelta" the datum is the earliest observation (i.e self.starttime),
+            - "loop_tdelta" the datum is the earliest observation in each loop.
+
+        The default can be overridden by calling `set_fixed_time_datum()`, in which case
+        both "survey_tdelta" and "loop_tdelta" will use the same fixed_time_datum.
+
+        See Also
+        --------
+        fixed_time_datum : Get the fixed time datum used for timedelta calculations.
+        set_fixed_time_datum : Set the fixed time datum used for timedelta calculations.
 
         """
         datetime_col = "datetime"
@@ -837,15 +870,15 @@ class GravityObservations(GSolveTable):
         obs_id: str | Iterable[str] | None = None,
         site_id: str | Iterable[str] | None = None,
         loop: str | Iterable[str] | None = None,
-        add_metadata: bool = False,
     ) -> None:
-        """Activate observations.
+        """
+        Set the "active" flag/field to ``True`` for specified observations.
 
-        Only 'active' observations are included in gsolve solutions.
-        By default, all observations are considered 'active'. This method
-        allows for the reactivation of observations that were  specified
-        as inactive in the input data or by calling the `deactivate`
-        method.
+        The "active" flag controls which observations are included in a
+        gsolve network adjustment.  Observations are set as
+        ``active==True``, unless explicitly. This method allows for the reactivation
+        of observations that were set as inactive in the input data or by calling the
+        ``deactivate``method.
 
         Parameters
         ----------
@@ -855,22 +888,11 @@ class GravityObservations(GSolveTable):
             The `site_id` of the observations to activate.
         loop : str or array_like, optional
             The `loop` of the observations to activate.
-        add_metadata : bool, default=False
-            Not implemented.
-
-        Raises
-        ------
-        Value Error :
-            If any of the specified `obs_id`, `site_id` or `loop` are not
-            in the data.
 
         See Also
         --------
         deactivate : equivalent function to deactivate observations.
         """
-        if add_metadata:
-            raise NotImplementedError("add_metadata not implemented")
-
         self._activate_deactivate(True, obs_id, site_id, loop)
 
     def deactivate(
@@ -878,9 +900,9 @@ class GravityObservations(GSolveTable):
         obs_id: str | Iterable[str] | None = None,
         site_id: str | Iterable[str] | None = None,
         loop: str | Iterable[str] | None = None,
-        add_metadata: bool = False,
     ) -> None:
-        """Deactivate observations.
+        """
+        Set the "active" flag/field to ``False`` for specified observations.
 
         Deactivated observations are not included in gsolve solutions.
 
@@ -892,15 +914,11 @@ class GravityObservations(GSolveTable):
             The `site_id` of the observations to deactivate.
         loop : str or array_like, optional
             The `loop` of the observations to deactivate.
-        add_metadata : bool, default=False
-            Not implemented.
 
         See Also
         --------
         activate : Activate observations
         """
-        if add_metadata:
-            raise NotImplementedError("add_metadata not implemented")
         self._activate_deactivate(False, obs_id, site_id, loop)
 
     def _activate_deactivate(
@@ -910,15 +928,27 @@ class GravityObservations(GSolveTable):
         site_id: str | Iterable[str] | None = None,
         loop: str | Iterable[str] | None = None,
     ) -> None:
-        """Activate or deactivate observations.
+        """
+        Activate or deactivate observations.
 
         Use the activate and deactivate methods rather than calling
         this method directly.
 
-        See Also
-        --------
-        activate : Activate observations
-        deactivate: Deactivate observations
+        Parameters
+        ----------
+        obs_id : str or array_like, optional
+            The `obs_id` of the observations to deactivate.
+        site_id : str or array_like, optional
+            The `site_id` of the observations to deactivate.
+        loop : str or array_like, optional
+            The `loop` of the observations to deactivate.
+
+        Raises
+        ------
+        ValueError
+            If any specified `obs_id`, `site_id` or `loop` values are not found in the data.
+        TypeError
+            If any input is not a string or iterable of strings.
         """
 
         def _parse_inputs(o: str | Iterable[str] | None) -> list[str]:
@@ -931,9 +961,11 @@ class GravityObservations(GSolveTable):
             else:
                 raise TypeError(f"invalid input of type '{type(o).__name__}'")
 
+        # parse all args first to check for errors before modifying data
         _obs_id = _parse_inputs(obs_id)
         _site_id = _parse_inputs(site_id)
         _loop = _parse_inputs(loop)
+
         if _obs_id:
             missing = [oi for oi in _obs_id if oi not in self.data.index.to_list()]
             if missing:
@@ -1162,6 +1194,7 @@ class GravityObservations(GSolveTable):
     ) -> tuple[_plt.Figure, _plt.Axes]:
         """
         Plot network map showing connections between stations.
+
         Station markers are scaled according to the number of occupations
 
         Parameters
@@ -1182,8 +1215,8 @@ class GravityObservations(GSolveTable):
 
         Returns
         -------
-        A figure showing connections between sites as well as a tuple containing the
-        figure and axis objects (fig, ax).
+        (matplotlib.figure.Figure, matplotlib.axes.Axes)
+            The figure and axes objects created by this method.
 
         """
         if "marker" not in kwargs:
