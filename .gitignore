@@ -182,3 +182,4 @@ do_not_track/
 docs/_build
 docs/source/api/generated
 docs/source/api/api/*
+docs/zz/*
