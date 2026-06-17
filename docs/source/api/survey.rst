@@ -1,10 +1,11 @@
-===================
+=========================
+Survey
+=========================
+
 GravitySurvey
-===================
+=============
 .. currentmodule:: gsolve
 
-Object Creation
-~~~~~~~~~~~~~~~
 .. autosummary::
    :toctree: api/
 
@@ -18,4 +19,11 @@ Object Creation
    GravitySurvey.set_reference_gravity
    GravitySurvey.solve_lstsq
 
+Functions
+---------
+.. currentmodule:: gsolve.observations
 
+.. autosummary::
+   :toctree: api/
+
+   combine_gravity_surveys

@@ -39,15 +39,34 @@ Data Export
    GravitySites.to_excel
    GravitySites.write_to_csv
 
-Internal Methods
-~~~~~~~~~~~~~~
+================
+ReferenceGravity
+================
+.. currentmodule:: gsolve
+
 .. autosummary::
    :toctree: api/
 
-   GravitySites._check_bad_site_ids
-   GravitySites._data_ok
-   GravitySites._default_excel_sheet_name
-   GravitySites._get_writable_df
-   GravitySites._index_field
-   GravitySites._known_fields
+   ReferenceGravity
+   ReferenceGravity.copy
+   ReferenceGravity.from_csv
+   ReferenceGravity.from_dataframe
+   ReferenceGravity.from_dict
+   ReferenceGravity.from_excel
+   ReferenceGravity.known_fields
+   ReferenceGravity.required_fields
+   ReferenceGravity.set_column
+   ReferenceGravity.to_excel
+   ReferenceGravity.write_to_csv
+
+=========
+Functions
+=========
+.. currentmodule:: gsolve.sites
+
+.. autosummary::
+   :toctree: api/
+
+   combine_gravity_sites
+   combine_reference_gravity
 
