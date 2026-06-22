@@ -13,41 +13,44 @@ Observations and Site Data
    observations
    sites
    survey
-   .. scintrex
-   .. meter_conversion
+   scintrex
+   meter_conversion
 
+Tidal Corrections
+~~~~~~~~~~~~~~~~~
 .. toctree::
    :maxdepth: 1
 
-   reductions_anomalies
-..    gsolve_algorithms
-..    gsolve_outputs
-..    reports
-..    tide_earth_tide
-..    tide_ocean_load
+   tide_earth_tide
+   tide_ocean_load
 
-.. .. toctree::
-..    :maxdepth: 1
-..    :caption: Reductions
+gSolve Algorithms
+~~~~~~~~~~~~~~~~
+.. toctree::
+   :maxdepth: 1
 
-..    reductions_corrections_module
-..    reductions_corrections
-..    reductions_anomalies
-..    reductions_terrain_corrections
+   gsolve_algorithms
+   reports
 
-.. .. toctree::
-..    :maxdepth: 1
-..    :caption: Core
+Reductions and Anomalies
+~~~~~~~~~~~~~~~~~~~~~~~~
+.. toctree::
+   :maxdepth: 1
 
-..    core_data
-..    core_excel_io
-..    core_summary_functions
-..    core_typing
-..    core_utils
-..    core_xr_accessor
-..    core_xr_methods
+   anomalies_corrections
+   reductions_terrain_corrections
 
 
+Utils and Internal Functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. toctree::
+   :maxdepth: 1
+
+   core_data
+   core_excel_io
+   core_utils
+   xarray_methods
+   core_typing
 
 
 

@@ -1,5 +1,5 @@
-gsolve.core._typing
-===================
+Type Hinting and Protocols
+==========================
 
 .. automodule:: gsolve.core._typing
    :members:

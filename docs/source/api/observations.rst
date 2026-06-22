@@ -1,11 +1,13 @@
-=========================
-Observation and Site Data
-=========================
+======================================
+Gravity Observations
+======================================
+
 
 GravityObservations
 ===================
+
 A class for handling gravity observation data, including methods for data manipulation,
-correction .
+correction.
 
 .. currentmodule:: gsolve
 
@@ -77,18 +79,11 @@ Plotting
    GravityObservations.plot_network_map
    GravityObservations.plot_site_visits
 
-Functions
----------
-.. currentmodule:: gsolve.observations
-
-.. autosummary::
-   :toctree: api/
-
-   combine_gravity_observations
-
-=============================
 GravityObservationsParameters
 =============================
+A class for storing parameters and metadata related to reductions of data
+in a GravityObservations object.
+
 .. currentmodule:: gsolve.observations
 
 .. autosummary::
@@ -99,11 +94,16 @@ GravityObservationsParameters
    GravityObservationsParameters.copy
    GravityObservationsParameters.default_values
    GravityObservationsParameters.non_default_values
-   GravityObservationsParameters.fixed_time_datum
-   GravityObservationsParameters.timedelta_unit
-   GravityObservationsParameters.earthtide_correction_method
-   GravityObservationsParameters.ocean_load_correction_method
    GravityObservationsParameters.summary
    GravityObservationsParameters.to_dict
    GravityObservationsParameters.to_excel
    GravityObservationsParameters.to_series
+
+Functions
+=========
+.. currentmodule:: gsolve.observations
+
+.. autosummary::
+   :toctree: api/
+
+   combine_gravity_observations

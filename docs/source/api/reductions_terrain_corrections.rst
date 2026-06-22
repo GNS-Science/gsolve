@@ -1,6 +1,8 @@
 ===========================
 TerrainCorrectionParameters
 ===========================
+Set parameters for a terrain correction computation.
+
 .. currentmodule:: gsolve
 
 .. autosummary::
@@ -10,18 +12,10 @@ TerrainCorrectionParameters
    TerrainCorrectionParameters.from_dataframe
    TerrainCorrectionParameters.from_series
 
-   TerrainCorrectionParameters.dem_source
-   TerrainCorrectionParameters.density_dataset_source
-   TerrainCorrectionParameters.distance_mask_type
-   TerrainCorrectionParameters.non_default_values
-   TerrainCorrectionParameters.sea_level_elevation
-   TerrainCorrectionParameters.terrain_density
-   TerrainCorrectionParameters.water_density
-   TerrainCorrectionParameters.default_values
-   TerrainCorrectionParameters.compute_bathymetry
-   TerrainCorrectionParameters.compute_topography
-
    TerrainCorrectionParameters.summary
+   TerrainCorrectionParameters.default_values
+   TerrainCorrectionParameters.non_default_values
+
    TerrainCorrectionParameters.copy
    TerrainCorrectionParameters.to_dict
    TerrainCorrectionParameters.to_excel
@@ -30,6 +24,8 @@ TerrainCorrectionParameters
 ================
 TerrainCorrector
 ================
+Compute terrain coorections for a set of stations.
+
 .. currentmodule:: gsolve
 
 .. autosummary::
@@ -43,22 +39,35 @@ TerrainCorrector
 =====================
 TerrainCorrectionData
 =====================
+Class to store and manage terrain corrections produced by a TerrainCorrector.
+
 .. currentmodule:: gsolve
 
 .. autosummary::
    :toctree: api/
 
    TerrainCorrectionData
+   TerrainCorrectionData.create_empty
+   TerrainCorrectionData.from_excel
    TerrainCorrectionData.from_csv
    TerrainCorrectionData.from_dataframe
    TerrainCorrectionData.copy
-   TerrainCorrectionData.create_empty
-   TerrainCorrectionData.from_excel
+   TerrainCorrectionData.set_corrections
    TerrainCorrectionData.get_corrections
    TerrainCorrectionData.known_fields
    TerrainCorrectionData.required_fields
-   TerrainCorrectionData.set_column
-   TerrainCorrectionData.set_corrections
    TerrainCorrectionData.to_csv
    TerrainCorrectionData.to_excel
    TerrainCorrectionData.write_to_csv
+
+=========
+Functions
+=========
+.. currentmodule:: gsolve.reductions.terrain_corrections
+
+.. autosummary::
+   :toctree: api/
+
+   calculate_terrain_correction
+   tcorr_harmonica_bathymetry
+   tcorr_harmonica_topography
