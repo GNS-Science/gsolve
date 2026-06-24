@@ -194,20 +194,21 @@ class GravitySites(GSolveTable):
         excel_file: FilePath,
         sheet_name: str | int | list[int | str] | None = None,
         ignore_unknown_fields: bool = True,
-        parse_split_datetime: bool = True,
         mapper: Renamer | None = None,
         **kwargs,
-    ) -> "GravitySites":
-        """Read a GravitySites object from an excel workbook.
+    ) -> Self:
+        """
+        Create a GravitySites object from an excel workbook.
 
         Parameters
         ----------
         excel_file : str or PathLike
             The excel workbook to read from.
-        sheet_name : str | int, optional
-            The worksheet name or location within ``excel_file``. If not
-            specified. attempt to read from the standard sheet name 'sites'
-            and then from the legacy sheet name 'Locations'
+        sheet_name : str, int or array-like, optional
+            The worksheet to read specified as name (str) or sheet index (int,0-based).
+            If an array-like is provided, attempt to read the first existing worksheet.
+            If sheet_name is not specified, then attempt to read from the standard
+            worksheet names ["sites", "Locations"].
         ignore_unknown_fields : bool, default True
             If True, columns that have no defined specification are dropped.
             Use ``GravitySites.known_fields()`` to return a list of the
@@ -216,7 +217,7 @@ class GravitySites(GSolveTable):
             Dict-like or function transformations to apply to column names before
             creating object. See ``DataFrame.rename`` method for full documentation
         kwargs :
-            Arguments passed to ``pandas.read_excel`` method.
+            Keyword arguments are passed to ``pandas.read_excel`` method.
 
         Returns
         -------
@@ -416,7 +417,23 @@ class GravitySites(GSolveTable):
         bool_to_int: bool = True,
         include_unknown_fields: bool = False,
     ) -> _pd.DataFrame:
-        """Return a DataFrame suitable for writing to a file."""
+        """
+        Return GravitySite data as a DataFrame suitable for writing to an excel or csv file.
+
+        Parameters
+        ----------
+        normalize_column_names : bool, default=True
+            If True, convert column names to snake case.
+        bool_to_int : bool, default=True
+            If True, convert boolean True/False to 1/0.
+        include_unknown_fields : bool, default=False
+            If True, include columns that are not defined as known fields.
+
+        Returns
+        -------
+        DataFrame
+            A DataFrame suitable for writing to a file.
+        """
         cols: list[str] = [
             str(c) for c in self.known_fields() if c in self.data.columns
         ]
@@ -431,10 +448,8 @@ class GravitySites(GSolveTable):
 
     def write_to_csv(
         self,
-        fname: FilePath,
+        csv_file: FilePath,
         normalize_column_names: bool = True,
-        expand_datetime: str | None = None,
-        drop_datetime: bool = False,
         bool_to_int: bool = True,
         include_unknown_fields: bool = False,
         **kwargs,
@@ -444,14 +459,14 @@ class GravitySites(GSolveTable):
         Parameters
         ----------
         csv_file : str or PathLike
-            The path to the excel file.
+            The name/path of the csv file to write to.
         normalize_column_names : bool, default True
             Convert columns name to snake case.
         bool_to_int : bool, default True
             Convert boolean True/False to 1,0.
         include_unknown_fields : bool, default False
-            Include fields not in the known fields.
-        **kwargs
+            Include columns that are not defined as known fields.
+        kwargs
             Additional keyword arguments passed to `pandas.DataFrame.to_csv`.
 
         See Also
@@ -467,7 +482,7 @@ class GravitySites(GSolveTable):
             normalize_column_names=normalize_column_names,
             bool_to_int=bool_to_int,
             include_unknown_fields=include_unknown_fields,
-        ).to_csv(fname, **kwargs)
+        ).to_csv(csv_file, **kwargs)
 
     def to_excel(
         self,
@@ -487,7 +502,8 @@ class GravitySites(GSolveTable):
         excel_file : str or PathLike
             The excel workbook to write to.
         sheet_name : str, default None
-            The name of the worksheet to write to.
+            The name of the worksheet to write to. If not specifed then use the
+            default sheet name "sites".
         normalize_column_names : bool, default True
             Convert columns name to snake case.
         bool_to_int : bool, default True
@@ -498,7 +514,7 @@ class GravitySites(GSolveTable):
             Behaviour if the excel file already exists.
         if_sheet_exists : {"error", "replace", "new"}, default "error"
             Behaviour if the worksheet already exists.
-        **kwargs
+        kwargs
             Additional keyword arguments passed to `pandas.DataFrame.to_excel`.
 
         See Also
@@ -606,19 +622,6 @@ def _siteid_exists(site_id: str, other: _pd.DataFrame | GSolveTable) -> bool:
 class ReferenceGravity(GSolveTable):
     """Class providing a simple mechanism for merging reference gravity data.
 
-    Attributes
-    ----------
-    data : DataFrame
-        The reference gravity data indexed by `site_id`. The defined fields
-        are:
-
-            - ``'gravity'`` : (float) The reference gravity value for the site.
-            - ``'active'`` : (bool) Indicates whether the site should be used
-                as an active "gsolve_tie" when merged into a ``GravitySites``.
-
-        Other fields may be added to ``obj.data`` as required, but will
-        be ignored by gsolve.
-
     Parameters
     ----------
     site_id : array_like
@@ -628,9 +631,21 @@ class ReferenceGravity(GSolveTable):
     active, array_like or bool, default True
         An array indicating whether a site should be set as an active
         "gsolve_tie" when merged into a ``GravitySites``.
-    **kwargs : dict[str, array_like]
+    kwargs
         Additional fields to be added to the site data.
 
+    Attributes
+    ----------
+    data : DataFrame
+        The reference gravity data indexed by `site_id`. The defined fields
+        are:
+
+            - ``'gravity'`` : (float) The reference gravity value for the site.
+            - ``'active'`` : (bool) Indicates whether the site should be used
+                as an active "gsolve_tie" when merged into a ``GravitySites`` object.
+
+        Other fields may be added to ``obj.data`` as required, but will
+        be ignored by gsolve.
     """
 
     _known_fields: dict[str, DataFieldSpecification] = {
@@ -646,7 +661,7 @@ class ReferenceGravity(GSolveTable):
         site_id: _npt.ArrayLike,
         gravity: _npt.ArrayLike,
         active: _npt.ArrayLike | bool = True,
-        **kwargs: dict[str, _npt.ArrayLike],
+        **kwargs: _npt.ArrayLike,
     ) -> None:
         _site_id = to_1d_ndarray(site_id).astype(str)
 
@@ -694,7 +709,23 @@ class ReferenceGravity(GSolveTable):
         include_unknown_fields: bool = False,
         bool_to_int: bool = True,
     ) -> _pd.DataFrame:
-        """Return a DataFrame suitable for writing to a file."""
+        """
+        Return GravitySite data as a DataFrame suitable for writing to an excel or csv file.
+
+        Parameters
+        ----------
+        normalize_column_names : bool, default=True
+            If True, convert column names to snake case.
+        bool_to_int : bool, default=True
+            If True, convert boolean True/False to 1/0.
+        include_unknown_fields : bool, default=False
+            If True, include columns that are not defined as known fields.
+
+        Returns
+        -------
+        DataFrame
+            A DataFrame suitable for writing to a file.
+        """
         cols = [c for c in self.known_fields() if c in self.data.columns]
         if include_unknown_fields:
             cols.extend(c for c in self.data.columns if c not in cols)
@@ -707,7 +738,7 @@ class ReferenceGravity(GSolveTable):
 
     def write_to_csv(
         self,
-        fname: FilePath,
+        csv_file: FilePath,
         normalize_column_names: bool = True,
         expand_datetime: str | None = None,
         drop_datetime: bool = False,
@@ -721,7 +752,7 @@ class ReferenceGravity(GSolveTable):
             normalize_column_names=normalize_column_names,
             bool_to_int=bool_to_int,
             include_unknown_fields=include_unknown_fields,
-        ).to_csv(fname, **kwargs)
+        ).to_csv(csv_file, **kwargs)
 
     def to_excel(
         self,
@@ -738,7 +769,7 @@ class ReferenceGravity(GSolveTable):
 
         Parameters
         ----------
-        fname : str or PathLike
+        excel_file : str or PathLike
             The path to the excel file.
         sheet_name : str, default None
             The name of the worksheet to write to.
@@ -804,6 +835,8 @@ class ReferenceGravity(GSolveTable):
             Reference site data as a dictionary where keys are ``'site_id'``
             and values are either the reference gravity (float) or a sequence
             of (reference gravity, active) where active is a boolean
+        set_active : bool, default True
+            If a `data` values is a float, then set the "active" field to this value.
 
         Returns
         -------
