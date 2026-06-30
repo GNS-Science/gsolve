@@ -112,7 +112,7 @@ extend-include = ["*.ipynb"]
 # Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
 # McCabe complexity (`C901`) by default.
 select = ["ANN", "D", "DOC", "PD", "NPY"]
-ignore = ["ANN101", "ANN102", "ANN003", "D105", "DOC502"]
+ignore = ["ANN101", "ANN102", "ANN003", "D105", "DOC502", "DOC501"]
 preview = true
 
 [tool.ruff.lint.per-file-ignores]
