@@ -55,7 +55,7 @@ class GSolveReport:
         calculated from adjusted gravity results.
     terrain_corrections: TerrainCorrectionData, optional
         Terrain corrections for sites. Not required if terrain correction data
-        are already included in the `anomalies` object.
+        are already included in the ``anomalies`` object.
 
     Attributes
     ----------
@@ -73,11 +73,11 @@ class GSolveReport:
         reducing input data, performing network adjustment and calculating anomalies.
         The dictionary provides the following keys:
 
-            - 'observations' : `GravityObservationsParameters`.
-            - 'solution' : `GSolveSolutionParameters`.
-            - 'anomalies' : `GravityCorrectionParameters`, if `anomalies` argument provided.
+                        - 'observations' : GravityObservationsParameters.
+                        - 'solution' : GSolveSolutionParameters.
+                        - 'anomalies' : GravityCorrectionParameters, if ``anomalies`` argument provided.
             - 'terrain_corrections': dict of terrain correction parameters of the form
-              {"zone_id": `TerrainCorrectionParameters`}.
+                            {"zone_id": TerrainCorrectionParameters}.
 
     """
 
@@ -123,11 +123,11 @@ class GSolveReport:
         self._set_terrain_correction_data(terrain_corrections=terrain_corrections)
 
     def copy(self) -> Self:
-        """Return a deep copy."""
+        """Return a deep copy."""  # noqa: DOC201
         return self.__copy__()
 
     def __copy__(self) -> Self:
-        """Return a deep copy."""
+        """Return a deep copy."""  # noqa: DOC201
         return deepcopy(self)
 
     def _set_params(
@@ -156,8 +156,19 @@ class GSolveReport:
         results: GSolveResults,
         anomalies: GravityAnomalies | None,
     ) -> None:
-        """Set self.site_data DataFrame by merging GravitySites, GSolveResults and
-        GravityAnomalies objects.
+        """
+        Set site_data attribte from site, observation, network adjustment data.
+
+        Parameters
+        ----------
+        site_input : GravitySites
+            Gravity site data.
+        obs_input : GravityObservations
+            Gravity observation data.
+        results : GSolveResults
+            Results of gSolve network adjustment.
+        anomalies : GravityAnomalies, optional
+            Standard gravity anomalies and corrections for each site.
         """
         merge_kwargs = dict(
             left_index=True,
@@ -305,21 +316,21 @@ class GSolveReport:
         Parameters
         ----------
         filename : str or PathLike
-            Write the report to `filename`.
+            Write the report to ``filename``.
         if_workbook_exists : {'error', 'append', 'replace'}, default 'error'
-            Behaviour if `filename` already exists:
+            Behaviour if ``filename`` already exists:
 
-                - ``'error'`` : raise an error if the workbook already exists.
-                - ``'append'`` : attempt append worksheets to an existing workbook.
-                - ``'replace'`` : overwrite the existing workbook.
+                - 'error' : raise an error if the workbook already exists.
+                - 'append' : attempt append worksheets to an existing workbook.
+                - 'replace' : overwrite the existing workbook.
 
         if sheet_exists : {'error', 'replace', 'new'}, default 'error'
             Behaviour if the worksheet already exists (Only applicable when
             ``if_workbook_exists='append'``)
 
-                - ``'error'``: raise a ValueError
-                - ``'replace'`` : overwrite workseet.
-                - ``'new'`` : create a new worksheet with a different name.
+                - 'error': raise a ValueError
+                - 'replace' : overwrite workseet.
+                - 'new' : create a new worksheet with a different name.
         **kwargs :
             Arguments to be passed to ``DataFrame.to_excel()`` method.
         """

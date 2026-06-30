@@ -36,18 +36,20 @@ __all__ = [
 ]
 
 
-def get_excel_worksheets(excel_file: FilePath, **kwargs) -> list[str | int]:
-    """Return list of all worksheets in ``excel_file``
+def get_excel_worksheets(excel_file: FilePath, **kwargs) -> list[str]:
+    """Return list of all worksheets in ``excel_file``.
 
     Parameters
     ----------
     excel_file :
         The excel workbook to read.
+    kwargs :
+        Additional arguments passed to ``pandas.ExcelFile`` class constructor.
 
     Returns
     -------
     list
-        List of worksheet names in the excel file.
+        List of worksheet names in ``excel_file``.
     """
     with _pd.ExcelFile(excel_file, **kwargs) as xls:
         return xls.sheet_names
@@ -55,53 +57,53 @@ def get_excel_worksheets(excel_file: FilePath, **kwargs) -> list[str | int]:
 
 def get_true_sheet_name(
     excel_file: FilePath, sheet_name: str | int, raise_error: bool = False
-) -> str | int | None:
+) -> str | None:
     """
-    For given `sheet_name` find the corresponding worksheet in `excel_file` ignoring
-    capitalisation etc.
+    Find ``sheet_name`` in ``excel_file`` by index or case-insensitive name.
 
     Parameters
     ----------
     excel_file : str or PathLike
         The path to the excel file.
     sheet_name : str or int
-        The name or index of the sheet to read.
+        The name or index (0-based) of the sheet to locate.
     raise_error : bool, default is False
-        Raise an error if the sheet is not found, otherwise return None.
+        Raise a ValueError if the sheet is not found, otherwise return None.
 
     Returns
     -------
     str or None
         The true sheet name if found, otherwise None.
     """
-    true_sheet_name = None
     sheet_names = get_excel_worksheets(excel_file)
     if isinstance(sheet_name, int):
         try:
-            true_sheet_name = sheet_names[sheet_name]
+            return sheet_names[sheet_name]
         except IndexError:
             if raise_error:
                 raise ValueError(
                     f"excel file {excel_file} has no sheet at index: {sheet_name}"
                 )
+            else:
+                return None
     else:
         sheet_names_lc = [
             s.lower() for s in get_excel_worksheets(excel_file) if isinstance(s, str)
         ]
         if sheet_name.lower() in sheet_names_lc:
-            true_sheet_name = sheet_names[sheet_names_lc.index(sheet_name.lower())]
+            return sheet_names[sheet_names_lc.index(sheet_name.lower())]
         elif raise_error:
             raise ValueError(
                 f"excel file {excel_file} has no sheet named '{sheet_name}'"
             )
+        else:
+            return None
 
-    return true_sheet_name
 
-
-def parse_sheet_name_arg(
+def _parse_sheet_name_arg(
     sheet_name: str | int | Sequence[str | int],
 ) -> list[str | int]:
-    """Parse and validate sheet_name argument."""
+    """Parse and validate sheet_name argument."""  # noqa: DOC201
     sheet_name_list: list[str | int]
     if is_list_like(sheet_name):
         sheet_name_list = [s for s in sheet_name]  # pyrefly:ignore[not-iterable]
@@ -128,17 +130,17 @@ def read_excel_worksheet(
     **kwargs,
 ) -> _pd.DataFrame:
     """
-    Read the excel worksheet `sheet_name` from `excel_file` into a DataFrame.
+    Read the excel worksheet ``sheet_name`` from ``excel_file`` into a DataFrame.
 
     Parameters
     ----------
     excel_file : FilePath
-        The path to the excel file.
+        The excel/spreadsheet file to read.
     sheet_name : str or int or list-like
         The name (str) or index (int) of the worksheet to read from ``excel_file``.
         If multiple names/indices are provided, then read the first one found in
         ``excel_file``.
-    **kwargs
+    kwargs
         Additional arguments passed to ``pandas.read_excel`` method.
 
     Returns
@@ -152,8 +154,7 @@ def read_excel_worksheet(
         The underlying function used to read the excel file.
 
     """
-
-    sheet_name_list = parse_sheet_name_arg(sheet_name)
+    sheet_name_list = _parse_sheet_name_arg(sheet_name)
 
     true_sheet_name = None
     for sname in sheet_name_list:
@@ -180,7 +181,7 @@ def write_excel_worksheet(
     **kwargs,
 ) -> None:
     """
-    Write a DataFrame to excel workbook `excel_file` in the worksheet `sheet_name`.
+    Write DataFrame to excel workbook ``excel_file`` in the worksheet ``sheet_name``.
 
     Parameters
     ----------
@@ -191,26 +192,26 @@ def write_excel_worksheet(
     sheet_name : str
         The name of the worksheet to write to.
     if_workbook_exists: {"error", "replace", "append"}, default "error"
-        Behaviour if the excel file already exists.
+        Behaviour if ``excel_file`` already exists.
         - "error": raise a ValueError.
         - "replace": replace the existing file.
         - "append": append to the existing file.
     if_sheet_exists: {"error", "replace", "new"}, default "error"
-        Behaviour if the worksheet already exists. Only applicable when
-        `if_workbook_exists='append'`.
+        Behaviour if the ``sheet_name`` already exists in ``excel_file``
+        (append mode only)
         - "error": raise a ValueError.
         - "replace": replace the existing worksheet.
-        - "new": create a new worksheet
-    **kwargs
+        - "new": create a new worksheet with different name
+    kwargs
         Additional arguments passed to ``pandas.DataFrame.to_excel`` method.
 
     See Also
     --------
     pandas.DataFrame.to_excel
         The underlying function used to write the DataFrame to the excel file.
+    pandas.ExcelWriter
 
     """
-
     if if_workbook_exists not in get_args(IfWorkbookExists):
         raise ValueError(
             f"invalid value for {if_workbook_exists=}, must be one of "
@@ -224,7 +225,7 @@ def write_excel_worksheet(
         )
 
     writer_kwargs: dict[str, Any] = {
-        "engine": "openpyxl",  # "xlsxwriter", "openpyxl", "xlwt"
+        # "engine": "openpyxl",  # "xlsxwriter", "openpyxl", "xlwt"
         "if_sheet_exists": if_sheet_exists,
         "mode": "w",
     }

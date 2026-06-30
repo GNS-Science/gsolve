@@ -310,7 +310,6 @@ def test_timestamp_to_columns(
     ymd_dataframe: pd.DataFrame,
 ) -> None:
     # Test case 1: Convert a pandas Series of timestamps to columns
-    # ts = ps.series(ymd_series
     assert_frame_equal(timestamp_to_columns(ymd_series), ymd_dataframe)
 
     # Test case: Convert datetime index to columns

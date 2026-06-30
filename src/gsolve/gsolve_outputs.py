@@ -59,7 +59,7 @@ class GSolveSolutionParameters(GSolveParameters):
         The solution runtime.  If not defined, will be set automatically at
         object initialisation.
     gsolve_version : str, optional
-        If unset, attempt to set by calling ``importlib.metadata.version("gsolve")``.
+        If unset, attempt to set by calling ``importlib.metadata.version()``.
 
     """
 
@@ -100,8 +100,8 @@ class GSolveResults:
         An object containing the gsolve solution input parameters, runtime metadata, and
         calculated instrument calibration factor (if applicable).
     obs_solution : DataFrame
-        The observation residuals following network adjustment. Observations where ``'active'``
-        is False were excluded from the solution after ``percentile_clipping``.
+        The observation residuals following network adjustment. Observations where the
+        'active' field is False were excluded from the solution after 'percentile_clipping'.
     loop_solution : DataFrame
         The drift rate and baseline solution for each loop. Columns 'drift' and 'baseline'
         are the coefficients of a linear equation to compute gravity adjustments
@@ -109,9 +109,9 @@ class GSolveResults:
 
         .. math:: g_{adj}(t) = g_{drift} t + g_{baseline}
 
-        where :math:`t` is time since the start of the  ('timedelta' column in
-        ``obj.obs_solution`` arribute), :math:`g_{drift}` is the drift rate and :math:`g_{baseline}`
-        is a constant taken from the 'drift' and 'baseline columns of ``loop_solutiom``.
+        where :math:`t` is time since the start of the  (``timedelta`` column in
+        obj.obs_solution arribute), :math:`g_{drift}` is the drift rate and :math:`g_{baseline}`
+        is a constant taken from the ``drift`` and ``baseline`` columns of loop_solutiom.
         Finally, the absolute gravity for some observed gravity :math:`g_{obs}` at
         time :math:`t` is given by:
 
@@ -132,7 +132,7 @@ class GSolveResults:
     percentile_clipping: float
         The percentile clip applied.
 
-    """
+    """  # noqa: D420
 
     def __init__(
         self,
@@ -388,7 +388,7 @@ class GSolveResults:
         x_col: str = "timedelta"
         y_col: str = "residual"
 
-        drift = float(self.loop_solution.at[loop, "drift"])  # type: ignore[bad-argument-type]
+        drift = float(self.loop_solution.at[loop, "drift"])  # type: ignore[bad-argument-type]  # noqa: PD008
         m_loop = self.obs_solution["loop"].eq(loop)
         m_active = self.obs_solution["active"].eq(True)
 

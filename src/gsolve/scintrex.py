@@ -50,7 +50,7 @@ _ScintrexMetadataDataTypes: TypeAlias = Union[str, float, int, bool, pd.Timestam
 
 
 class ScintrexData(abc.ABC):
-    """Base class for Scintrex data files."""
+    """Base class for classes that read and manipulate Scintrex data."""
 
     def __init__(
         self,
@@ -59,9 +59,6 @@ class ScintrexData(abc.ABC):
         metadata_units: dict[str, str] | None = None,
         on_error: Literal["raise", "warn", "ignore"] = "raise",
     ) -> None:
-        """
-        Base class for reading and prcoessing Scintrex data files.
-        """
         self.data: pd.DataFrame
         self.metadata: dict[str, _ScintrexMetadataDataTypes]
         self.metadata_units: dict[str, str]
@@ -70,11 +67,11 @@ class ScintrexData(abc.ABC):
         self._set_data(data, on_error)
 
     @abc.abstractmethod
-    def to_gsolve_observations(self) -> GravityObservations:
+    def to_gsolve_observations(self) -> GravityObservations:  # noqa: D102
         pass
 
     @abc.abstractmethod
-    def set_loop(self) -> None:
+    def set_loop(self) -> None:  # noqa: D102
         pass
 
     @abc.abstractmethod
@@ -120,6 +117,7 @@ class ScintrexData(abc.ABC):
         return deepcopy(self)
 
     def copy(self) -> Self:
+        """Return a deep copy of the object."""  # noqa: DOC201
         return self.__copy__()
 
 
@@ -157,7 +155,7 @@ class CG6Data(ScintrexData):
     metadata : dict
         Metadata from file headers converted to approiate dtypes, with field names
         normalized to lowercase. Measurement units stored as a suffix to the field
-        name (e.g. "fieldname [unit]") are removed and stored in the `'metadata_units'`
+        name (e.g. "fieldname [unit]") are removed and stored in the ``metadata_units``
         attribute.
     metadata_units : dict
         The measurement units for metadata fields.
@@ -248,7 +246,7 @@ class CG6Data(ScintrexData):
         metadata: dict[str, _ScintrexMetadataDataTypes],
         metadata_units: dict[str, str] | None = None,
     ) -> None:
-        """Set metadata and metadata_units attributes"""
+        """Set metadata and metadata_units attributes."""
         self.metadata: dict[str, _ScintrexMetadataDataTypes] = {}
         self.metadata_units: dict[str, str] = {}
 
@@ -326,7 +324,7 @@ class CG6Data(ScintrexData):
         self.data = df
 
     def _strip_corrections(self) -> pd.Series:
-        """Return corrgrav values with all corrections removed."""
+        """Return corrgrav values with all corrections removed."""  # noqa: DOC201
         return (
             self.data["corrgrav"]
             - (self.data["driftcorr"] * self.data["correction_drift"])
@@ -448,7 +446,7 @@ class CG6Data(ScintrexData):
             Increment loop identifier by ``loop_step``.
         loop_format : str, default '{LOOP}'
             Format string for loop identifiers. Use 'LOOP' as a placeholder
-            for the loop number. The default `"{LOOP}"` is effectively no
+            for the loop number. The default ``"{LOOP}"`` is effectively no
             formatting. Using, for example, ``loop_format="x_{'LOOP':02d}_y"`` would
             produce loop id's ``'x_01_y', 'x_02_y', ...``.
         output_column : str, default 'loop'
@@ -487,7 +485,7 @@ class CG6Data(ScintrexData):
         if datetimes is not None:
             if isinstance(datetimes, pd.Series):
                 dates = to_naive_utc_datetime(datetimes.index)
-                loop_ids = datetimes.astype(str).values
+                loop_ids = datetimes.astype(str).to_list()
             elif isinstance(datetimes, Mapping):
                 dates = to_naive_utc_datetime(list(datetimes.keys()))
                 loop_ids = [str(l) for l in datetimes.values()]
@@ -641,11 +639,11 @@ class CG6Data(ScintrexData):
         coords_source : {'user', 'gps'}, default 'user'
             Specify the source of lat, lon and elev data:
 
-             - ``'gps'`` : the mean of 'latgps', 'longps' and 'elevgps'
+            - 'gps' : the mean of 'latgps', 'longps' and 'elevgps'
                for each site. These positions are derived from the internal GPS
                reciever and are of low accuracy, but are almost certainly correct
                to within a few 10's of metres.
-             - ``'user'`` : take values from 'latuser', 'lonuser' and 'elevuser'
+            - 'user' : take values from 'latuser', 'lonuser' and 'elevuser'
                for each site. The 'user' coords are sourced from the instrument file
                ``stations.dat``. This file can be pre-populated with accurate
                station coordinates prior to field data collection, however there is no
@@ -738,7 +736,7 @@ class CG6Data(ScintrexData):
 
 
 def _slurp_scintrex_text_file(filepath: FilePath) -> list[str]:
-    """Read a Scintrex text file, fix encoding and return lines as a list."""
+    """Read a Scintrex text file, fix encoding and return lines as a list."""  # noqa: DOC201
     with open(filepath, "r", encoding="utf-8-sig") as fh:
         return [l.strip() for l in fh.readlines()]
 
@@ -748,7 +746,7 @@ def _split_header_key_val_unit(
     normalize_key: bool = True,
     extract_units: bool = True,
 ) -> tuple[str, str, str]:
-    """Split headers into key, value and units."""
+    """Split headers into key, value and units."""  # noqa: DOC201
     header = header.strip("/ ")
     if not header:
         return ("", "", "")
@@ -799,7 +797,7 @@ def _scintrex_header_type_conversion(
 
 
 def _extract_unit_from_keyword(header: str) -> tuple[str, str]:
-    """Get header and unit form a header string."""
+    """Get header and unit form a header string."""  # noqa: DOC201
     if header.endswith(")"):
         sep = "("
     elif header.endswith("]"):

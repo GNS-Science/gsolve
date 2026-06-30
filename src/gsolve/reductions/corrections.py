@@ -119,8 +119,7 @@ def normal_gravity_at_ellipsoid(
     si_units: bool = False,
 ) -> float | np.ndarray:
     """
-    Calculate normal gravity at the ellipsoid surface using the full Somigliana
-    formula.
+    Calculate normal gravity at the ellipsoid surface using the full Somigliana formula.
 
     Parameters
     ----------
@@ -233,8 +232,7 @@ def atmospheric_correction(
     height_ellipsoidal: ArrayLike,
 ) -> float | np.ndarray:
     r"""
-    Calculate the gravitational effect of the atmospheric mass as a function of
-    station elevation.
+    Calculate the gravitational effect of atmospheric mass as a function of station elevation.
 
     The atmospheric correction (eqn 3 in Hinze et al.), is given by :
 
@@ -347,8 +345,7 @@ def spherical_bouguer_cap_correction(
     height_ellipsoidal: ArrayLike,
 ) -> float | np.ndarray:
     r"""
-    Calculate the adjustments to the Bouguer slab correction to account for curvature
-    of the Earth.
+    Calculate adjustments to Bouguer slab correction due for curvature of the Earth.
 
     The spherical cap correction is given by Hinze (2013):
 
@@ -370,15 +367,15 @@ def spherical_bouguer_cap_correction(
     spherical_cap_correction : ndarray or float
         The gravitational effect of the spherical cap in mGal.
 
-    Notes
-    -----
-    This function assumes a fixed spherical cap extent of 166735.0 meters, equivalent
-    to 1.5 degrees of arc on a spherical earth.
-
     See Also
     --------
     bouguer_slab_curvature_corrected : Calculate the full Bouguer correction,
         including spherical cap correction with customizable cap radius.
+
+    Notes
+    -----
+    This function assumes a fixed spherical cap extent of 166735.0 meters, equivalent
+    to 1.5 degrees of arc on a spherical earth.
 
     References
     ----------
@@ -518,7 +515,7 @@ class GravityCorrectionParameters(GSolveParameters):
         of arc for a spherical earth.
     use_curvature_corrected : bool, default True
         Specify the type of Bouguer correction to compute. If True, bouguer
-        corrections are computed for a curved slab of diameter `spherical_cap_radius`.
+        corrections are computed for a curved slab of diameter ``spherical_cap_radius``.
         If False, bouguer corrections are computed for an infinite horizontal slab.
     use_atmospheric_correction : bool, default True
         Whether to apply an atmospheric correction when computing gravity corrections and
@@ -693,7 +690,13 @@ class GravityCorrectionProvider:
 
     @classmethod
     def available_corrections(cls) -> tuple[str, ...]:
-        """Return tuple of available gravity correction methods"""
+        """Return tuple of available gravity correction methods.
+
+        Returns
+        -------
+        tuple of str
+            Names of available gravity correction methods.
+        """
         return (
             "normal_gravity_at_stn_elevation",
             "normal_gravity_at_ellipsoid",
@@ -716,9 +719,9 @@ class GravityCorrectionProvider:
         ----------
         sites : GravitySites | DataFrame
             An object providing site longitude, latitude and ellipsoidal height, and indexed
-            by ``'site_id'``. If `sites` is a DataFrame, it is expected to have columns named
+            by 'site_id'. If ``sites`` is a DataFrame, it is expected to have columns named
             ``'longitude'``, ``'latitude'`` and ``'height_ellipsoidal'``, unless alternative columns are
-            specified using the `column_names` argument.
+            specified using the ``column_names`` argument.
         corrections : str | Sequence[str], optional
             An array or string of corrections to compute.  By default compute all
             corrections required for generating a Bouguer anomaly as specified in
@@ -837,7 +840,7 @@ class GravityCorrectionProvider:
         return GravityCorrections(params=self.params, site_id=idx, **_df_dict)
 
     def _configured_bouguer_corrections(self) -> Sequence[str]:
-        """Return bouguer corrections based on the current parameters."""
+        """Return bouguer correction method names required for the current parameters."""  # noqa: DOC201
         corrections = ["normal_gravity_at_ellipsoid", "free_air_correction"]
         if self.params.use_atmospheric_correction:
             corrections.append("atmospheric_correction")
@@ -850,8 +853,7 @@ class GravityCorrectionProvider:
     def bouguer_corrections(
         self, sites: pd.DataFrame | GravitySites
     ) -> GravityCorrections:
-        """Calculate corrections required for computing a Bouguer anomaly as defined in
-        ``self.params``.
+        """Calculate corrections required for computing a Bouguer anomaly as defined in ``self.params``.
 
         Parameters
         ----------
@@ -863,7 +865,6 @@ class GravityCorrectionProvider:
         -------
         GravityCorrections
             Object containing Bouguer corrections and the correction parameters.
-
         """
         return self.compute(
             sites=sites, corrections=self.params.bouguer_correction_fields()

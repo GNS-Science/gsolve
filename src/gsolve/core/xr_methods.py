@@ -63,7 +63,7 @@ def load_dem(
     dem_file : str or PathLike
         A raster grid readable with ``xarray.open_dataset``.
     input_var_name : str | None, optional
-        Name of the data variable to read from `dem_file`. Required if dataset
+        Name of the data variable to read from ``dem_file``. Required if dataset
         contains multiple variables.
     output_var_name : str | None, default is "elevation"
         If not None, name of the data variable in the output DataArray.
@@ -119,18 +119,18 @@ def prepare_dem(
     dem : DataArray or DataSet
         The Dataset or DataArray to tidy up.
     input_var_name : str or None, defaut is None
-        Name of the data variable to extracted from `dem`. Required if `dem`
+        Name of the data variable to extracted from ``dem``. Required if ``dem``
         is a DataSet containing multiple variables.
     output_var_name : str or None, default None
-        Rename the DataArray to `output_var_name` if not None.
+        Rename the DataArray to ``output_var_name`` if not None.
     x_dim : str, default is "easting"
         Rename the x-dimension if not ``None``.
     y_dim : str, default "northing"
         Rename the y-dimension if not ``None``.
     fill_nan : float or None, default = 0.0
-        If not ``None``, replace null values with `fill_nan`.
+        If not None, replace null values with ``fill_nan``.
     round_dp : int or None, default = 3
-        If not ``None``, round data to `round_dp` decimal places.
+        If not None, round data to ``round_dp`` decimal places.
 
     Returns
     -------
@@ -203,7 +203,7 @@ def prepare_dem(
 
 
 def check_dem(dem: xr.DataArray, show: bool = True) -> bool:
-    """Check `dem` has increasing and evenly spaced coordinates.
+    """Check ``dem`` has increasing and evenly spaced coordinates.
 
     Parameters
     ----------
@@ -215,7 +215,8 @@ def check_dem(dem: xr.DataArray, show: bool = True) -> bool:
     Returns
     -------
     bool
-        True if no issues found, False otherwise."""
+        True if no issues found, False otherwise.
+    """
     error_collector = GSolveDataWarning(prefix="check_dem()", show=show)
     if dem.shape[0] > 1:
         dff = np.diff(dem.tcorr.yc)
@@ -240,14 +241,10 @@ def create_empty_dataarray(
     x_dim: str = "easting",
     y_dim: str = "northing",
 ) -> xr.DataArray:
-    """Create an empty DataArray with specified coordinates and dimensions.
+    """Create an empty DataArray with specified dimensions.
 
     Parameters
     ----------
-    x_coords : ArrayLike
-        The coordinates for the x dimension.
-    y_coords : ArrayLike
-        The coordinates for the y dimension.
     var_name : str, default is 'elevation'
         The name of the variable in the output DataArray.
     x_dim : str, default is 'easting'
@@ -257,8 +254,7 @@ def create_empty_dataarray(
 
     Returns
     -------
-    xr.DataArray
-        An empty DataArray with the specified coordinates and dimensions.
+    xarray.DataArray
     """
     da = xr.DataArray(
         [],

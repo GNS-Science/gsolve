@@ -16,9 +16,9 @@
 
 # Copyright (c) 2025 Earth Sciences New Zealand.
 
-import os
+"""Methods and classes for reading and applying ocean load corrections to gravity data."""
+
 import warnings
-from collections.abc import Sequence
 from typing import Any, Literal, Protocol, runtime_checkable
 
 import numpy as np
@@ -41,8 +41,19 @@ def _read_csv_with_fallback(file_path: FilePath, **kwargs) -> pd.DataFrame:
     """Read a CSV trying UTF-8 (with BOM) first, then fall back to iso-8859-1.
 
     Some QuickTide Pro outputs may be UTF-8 with a BOM; others may be
-    iso-8859-1. Try the safe 'utf-8-sig' which strips a leading BOM, and
+    iso-8859-1 (latin1). Try the safe 'utf-8-sig' which strips a leading BOM, and
     fall back to latin1 if that fails.
+
+    Parameters
+    ----------
+    file_path : FilePath
+        The path to the CSV file to be read.
+    **kwargs : Any
+        Additional keyword arguments to pass to ``pandas.read_csv``.
+
+    Returns
+    -------
+    DataFrame
     """
     try:
         return pd.read_csv(file_path, encoding="utf-8-sig", **kwargs)
@@ -87,12 +98,12 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
         Site identifiers corresponding to each correction value.
     datetimes : DatetimeArray
         Sequence of datetime values corresponding to each correction value.
-        Must have the same length as `site_id`.
+        Must have the same length as ``site_id``.
     corrections : Sequence[float]
         Ocean load correction values in mGal. Must have the same length as
-        `site_id` and `datetimes`.
+        ``site_id`` and ``datetimes``.
     **metadata : dict[str, Any]
-        Additional metadata to be stored in the `obj.metadata` dictionary.
+        Additional metadata to be stored in the obj.metadata dictionary.
 
     Attributes
     ----------
@@ -141,7 +152,7 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
         self.metadata: dict[str, Any] = metadata
 
     def identifier(self, **kwargs) -> str:
-        """Corrector identifier string."""
+        """Corrector identifier string."""  # noqa: DOC201
         return f"{type(self).__name__}()"
 
     def ocean_load_correction(
@@ -154,24 +165,29 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
         """
         Get ocean load corrections for specified site-datetime pairs.
 
+        The parameters ``site_id`` and ``date_time`` are used as pairs to look up
+        precalculated ocean load correction values.
+
         Parameters
         ----------
         site_id : array-like[str]
-            Site identifiers where corrections are requested.
-        datetime : datetime-like or array-like
-            Datetime values for which to get corrections. Must have the same
-            length as `site_id`.
-        if_not_matched : {"error", "warn"}, optional
+            Site identifiers.
+        date_time : array of datetime-like
+            Datetime values for which to get corrections. Must be the same
+            length as ``site_id``.
+        if_not_matched : {"error", "warn"}, default = "error"
             Action to take when site_id/datetime pairs are not found in the data.
-            If "error" (default), raises ValueError. If "warn", issues a warning
-            and returns NaN for missing values.
-        **kwargs : dict[str, Any]
-            Additional keyword arguments. (Not used).
+            If "error", then raise a ValueError. If "warn", issue a warning
+            and return NaN for unmatched pairs.
+        kwargs :
+            Additional keyword arguments. This parameter is included to maintain
+            compatibility with the OceanLoadCorrectionProvider interface. kwargs
+            are ignored.
 
         Returns
         -------
-        np.ndarray
-            Array of ocean load corrections in mGal. Missing values are set to NaN.
+        numpy.ndarray
+            Array of ocean load corrections in mGal. Unmatched site_id/datetime pairs are set to NaN.
 
         """
         dt = np.atleast_1d(_datetimes_to_np_datetime64(date_time))
@@ -216,25 +232,35 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
 
 class OceanLoadTimeSeries(OceanLoadCorrectionProvider):
     """
-    A class to provide ocean load corrections at discrete times for a single location/station,
-    by interpolation.
+    Determine ocean load corrections at discrete times.
+
+    This class provides a simple mechanism for interpolating ocean load corrections
+    from a pre-calculated timeseries. The class is primarily intended to be used
+    with timeseries produced by QuickTide Pro. Users would not typically
+    instantiate this class directly, but instead use the ``qtp_to_corrector()`` function
+    to read a QuickTide Pro output file.
 
     Parameters
     ----------
-    datetimes : DatetimeArray
+    datetimes : array of datetime-like
         Sequence of datetime values corresponding to each correction value.
-    corrections : Sequence[float]
+    corrections : array-like of float
         Ocean load correction values in mGal. Must have the same length as
-        `datetimes`.
+        ``datetimes``.
     **metadata : dict[str, Any]
-        Additional metadata to be stored in the `obj.metadata` dictionary.
+        Additional metadata to be stored in the obj.metadata dictionary.
 
     Attributes
     ----------
-    data : pd.DataFrame
-        DataFrame containing correction values, indexed by datetime.
+    data : pandas.DataFrame
+        DataFrame containing correction values, indexed and sorted by datetime.
     metadata : dict[str, Any]
         Dictionary containing metadata about the corrections.
+
+    See Also
+    --------
+    qtp_to_corrector : Function to read QuickTide Pro output files and
+        create an appropriate ocean load corrector.
 
     Examples
     --------
@@ -277,7 +303,7 @@ class OceanLoadTimeSeries(OceanLoadCorrectionProvider):
         return f"{cname}({md})"
 
     def identifier(self, **kwargs) -> str:
-        """Corrector identifier string."""
+        """Corrector identifier string."""  # noqa: DOC201
         return f"{self.__class__.__name__}()"
 
     @property
@@ -302,6 +328,31 @@ class OceanLoadTimeSeries(OceanLoadCorrectionProvider):
         if_not_matched: Literal["error", "warn"] = "error",
         **kwargs,
     ) -> NDArray[np.float64]:
+        """
+        Get ocean load corrections at specified datetimes.
+
+        Parameters
+        ----------
+        site_id : array-like[str]
+            Site identifiers. This parameter is included to maintain compatibility
+            with the OceanLoadCorrectionProvider interface, but is ignored for this
+            class since it provides corrections for a single station.
+        date_time : array of datetime-like
+            Datetime values for which to get corrections. Must be within the range of
+            the timeseries data.
+        if_not_matched : {"error", "warn"}, default = "error"
+            Action to take when datetimes are outside the range of the timeseries data.
+            If "error", then raise a ValueError. If "warn", issue a warning
+            and return NaN for unmatched datetimes.
+        kwargs :
+            Additional keyword arguments to pass to ``numpy.interp``.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of ocean load corrections in mGal. Datetimes outside the range of
+            the timeseries data are set to NaN.
+        """
         # reformat datimes to be numpy datetime64[s] ie seconds precision
         t = _datetimes_to_np_datetime64(date_time, dtype="datetime64[s]")
         df_t = self.data.index.to_numpy(dtype="datetime64[s]")
@@ -333,7 +384,7 @@ class OceanLoadTimeSeries(OceanLoadCorrectionProvider):
 def _datetimes_to_np_datetime64(
     dt: DatetimeScalar | DatetimeArray, dtype: str = "datetime64"
 ) -> np.ndarray:
-    """Convert datetimes to numpy datetime64 array."""
+    """Convert datetimes to numpy datetime64 array."""  # noqa: DOC201
     _dt = to_naive_utc_datetime(dt, allow_nat=False)
     if isinstance(_dt, pd.Timestamp):
         return np.array([_dt], dtype=dtype)
@@ -378,6 +429,28 @@ def qtp_to_corrector(
     corr_type: Literal["auto", "timeseries", "site-datetime"] = "auto",
     metadata: dict[str, Any] | None = None,
 ) -> OceanLoadTimeSeries | OceanLoadAtSiteTime:
+    """
+    Read a QuickTide Pro output file and return an appropriate ocean load corrector.
+
+    Parameters
+    ----------
+    file_path : FilePath
+        Path to the QuickTide Pro output file.
+    corr_type : {"auto", "timeseries", "site-datetime"}, default = "auto"
+        Type of correction data in the file. If "auto", the function will attempt to
+        determine the type based on the file contents. If "timeseries", the file is
+        expected to contain a single timeseries of corrections. If "site-datetime", the file is expected to contain corrections for multiple sites at specific datetimes.
+    metadata : dict[str, Any], optional
+        Additional metadata to be stored in the corrector's ``metadata`` attribute.
+
+    Returns
+    -------
+    OceanLoadTimeSeries or OceanLoadAtSiteTime
+        An instance of ``OceanLoadTimeSeries`` if the file contains a single timeseries.
+        An instance of ``OceanLoadAtSiteTime`` if the file contains corrections for
+        multiple sites at specific datetimes.
+
+    """
     if metadata is None:
         metadata = {}
     if "file_path" not in metadata:
@@ -429,11 +502,9 @@ def read_qtp_timeseries(file_path: FilePath) -> pd.DataFrame:
 
     Returns
     -------
-    pd.DataFrame
+    pandas.DataFrame
         DataFrame containing the ocean load timeseries, indexed by datetime.
-
     """
-
     df = _read_csv_with_fallback(file_path, sep=r"\s+")
     # construct datetimes from Year, DOY, Time columns
     expected_columns = ["Year", "DOY", "Time"]
@@ -476,8 +547,20 @@ def read_qtp_timeseries(file_path: FilePath) -> pd.DataFrame:
 
 
 def read_qtp_multistation(file_path: FilePath) -> pd.DataFrame:
-    """Read a ocean load from a CSV file."""
+    """
+    Read a QuickTide Pro multi-station ocean load output file.
 
+    Parameters
+    ----------
+    file_path : str or PathLike
+        Path to the QuickTide Pro multi-station output file.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame containing the ocean load corrections for multiple stations,
+        indexed by (site_id, datetime).
+    """
     column_definitions: dict[str, type] = {
         "site_id": str,
         "datetime": str,
@@ -533,25 +616,20 @@ def generate_qtp_input(
 
     Parameters
     ----------
-    site_id : SiteIDArray
+    site_id : array-like of str
         The unique site identifier for each site/datetime pair.
-    datetimes : DatetimeArray
+    datetimes : array-like of datetime-like
         Datetime values for each site/datetime pair.
-        `site_id`.
-    latitude : FloatArray
-        The latitde for each site/datetime pair.
-    longitude : FloatArray
+    latitude : array-like of float
+        The latitude for each site/datetime pair.
+    longitude : array-like of float
         The longitude for each site/datetime pair.
-    elevation : FloatArray | float
+    elevation : array-like of float | float
         The elevation for each site/datetime pair or a single elevation value.
     output_file : str or PathLike
         Path to the output CSV file to be created.
 
-    Returns
-    -------
-    None
     """
-
     _site_id = np.atleast_1d(site_id).astype(str)
     _datetimes = _datetimes_to_np_datetime64(datetimes)
     _lat = np.atleast_1d(latitude).astype(float)
@@ -617,7 +695,7 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
     f : str or PathLike
         File containing ocean loading coefficients for a set of stations.
     **metadata : dict[str, Any]
-        Additional metadata to be stored in the `obj.metadata` dictionary.
+        Additional metadata to be stored in the obj.metadata dictionary.
 
     Attributes
     ----------

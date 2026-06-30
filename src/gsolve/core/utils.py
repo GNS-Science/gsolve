@@ -101,7 +101,7 @@ def to_naive_utc_datetime(
     **kwargs,
 ) -> pd.Timestamp | pd.Series | pd.DatetimeIndex | NaTType:
     """
-    Convert inputs to UTC time, but with timezone information set to None
+    Convert inputs to UTC time, but with timezone information set to None.
 
     Datetime-like inputs that are timezone-aware are converted to UTC and
     then stripped of their timezone information. All other inputs are
@@ -114,7 +114,7 @@ def to_naive_utc_datetime(
     allow_nat : bool, default True
         If False, raise ValueError if any input resolves to NaT.
     kwargs :
-        Additional keyword arguments to be passed to pandas.to_datetime().
+        Additional keyword arguments to be passed to ``pandas.to_datetime()``.
 
     Returns
     -------
@@ -209,6 +209,7 @@ def to_1d_ndarray_or_float(a: ArrayLike) -> NDArray[np.float64] | np.float64:
 
 # Remove in future release
 def check_duplicate_index(idx: pd.Index | pd.DataFrame | pd.Series) -> None:
+    """Raise a ValueError if the index contains duplicate values."""
     if isinstance(idx, (pd.DataFrame, pd.Series)):
         _idx = idx.index
     elif isinstance(idx, pd.Index):
@@ -234,18 +235,20 @@ def normalize_field_names(df: pd.Series) -> pd.Series: ...
 
 def normalize_field_names(df: pd.DataFrame | pd.Series) -> pd.DataFrame | pd.Series:
     """
-    Normalize DataFrame column names by converting to lower case str and replacing
-    spaces with underscores.
+    Return a copy of ``df`` with column values and axis.names converted to snake_case.
+
+    If ``df`` is a DataFrame, ``df.columns``, ``df.columns.name``, and ``df.index.name``
+    are normalized. If ``df`` is a Series, then only ``df.name`` and ``df.index.name`` are normalized.
 
     Parameters
     ----------
-    df : pandas.DataFrame
-        The DataFrame to normalize.
+    df : DataFrame or Series
+        The object to normalize.
 
     Returns
     -------
-    pandas.DataFrame
-        Copy of `df` with normalized column names.
+    pandas.DataFrame or pandas.Series
+        The same type as ``df``.
     """
     if isinstance(df, pd.DataFrame):
         return df.rename(columns=normalize_str).rename_axis(
@@ -262,7 +265,18 @@ def normalize_field_names(df: pd.DataFrame | pd.Series) -> pd.DataFrame | pd.Ser
 
 
 def normalize_str(s: str | int | float | bool | None) -> str | None:
-    """Convert `s` to lowercase and replace spaces with underscores."""
+    """Convert ``s`` to str and format it to snake_case.
+
+    Parameters
+    ----------
+    s : str, int, float, bool, or None
+        The value to convert and normalize. Do nothing if ``s`` is None
+
+    Returns
+    -------
+    str or None
+        The normalized string or None if the input was None.
+    """
     if s is not None:
         return str(s).strip().lower().replace(" ", "_")
     return None
@@ -297,7 +311,7 @@ def merge_datetime_columns(
     drop: bool = False,
     **kwargs,
 ) -> pd.DataFrame:
-    """Merge discrete datetime columns into `pandas.Timestamp`.
+    """Merge discrete datetime columns into ``pandas.Timestamp``.
 
     Parameters
     ----------
@@ -309,13 +323,13 @@ def merge_datetime_columns(
         An ordered sequence of column names representing the date and time
         components to be parsed.  The default is
         ("year", "month", "day", "hour", "minute", "second", "microsecond").
-        `ts_columns` is parsed in order from largest time unit (year) down
-        to the smallest (microseconds). `ts_columns` must define at least
+        ``ts_columns`` is parsed in order from largest time unit (year) down
+        to the smallest (microseconds). ``ts_columns`` must define at least
         year, month, and day columns, and no 'gaps' are permitted.
     drop : bool, default = False
         Drop the date and time columns after conversion.
-    **kwargs
-        Additional keyword arguments to be passed to pd.to_datetime().
+    kwargs
+        Additional keyword arguments to be passed to ``pandas.to_datetime()``.
 
     Returns
     -------
@@ -345,32 +359,33 @@ def columns_to_timestamp(
     **kwargs,
 ) -> pd.Series:
     """
-    Generate a Series of `pandas.Timestamp` from discrete date & time columns in `df`.
+    Generate a Series of Timestamps from discrete date & time columns in ``df``.
 
     Parameters
     ----------
     df : pandas.DataFrame
         The DataFrame containing the columns to be converted.
-    ts_columns : array-like, optional
+    ts_columns : array-like of str, optional
         An ordered sequence of column names representing the date and time
-        components to be parsed.  The default names are:
-        ("year", "month", "day", "hour", "minute", "second", "microsecond").
-        `ts_columns` is parsed in order from largest time unit (year) down
-        to the smallest (microseconds). `ts_columns` must at define at least
-        year, month, and day columns, and no 'gaps' are permitted.
-    **kwargs
-        Additional keyword arguments passed to `pandas.to_datetime`.
+        components to be parsed.  The elements correspond to the default columns
+        ('year', 'month', 'day', 'hour', 'minute', 'second', 'microsecond').
+        ``ts_columns`` is evaluated in order from largest time unit (year) down to
+        (microseconds). ``ts_columns`` must at  define at least 'year',
+        'month', and 'day' columns. E.g. ts_columns = ['yy', 'mm', 'dd', 'HH', 'MM', "SS"]
+    kwargs
+        Additional keyword arguments passed to ``pandas.to_datetime``.
 
     Returns
     -------
     pandas.Series
+        Series of pandas.Timestamp objects.
 
     See Also
     --------
     merge_datetime_columns
 
     timestamp_to_columns
-        The inverse function to `columns_to_timestamp`.
+        The inverse function to ``columns_to_timestamp``.
     pandas.to_datetime
         The underlying function used to convert the columns to a timestamp.
     """
@@ -411,29 +426,29 @@ def columns_to_timestamp(
 def timestamp_to_columns(
     ds: pd.Series | pd.DatetimeIndex,
     resolution: AllowedTimestampResolution | None = "second",
-    round_method: AllowedTimestampRoundingMethods = "floor",
+    round_method: AllowedTimestampRoundingMethods = "round",
     fill_nat: int | None = None,
     prefix: str = "",
 ) -> pd.DataFrame:
     """
-    Convert a Series of `pandas.Timestamp` to discrete date & time columns.
+    Convert a Series of ``pandas.Timestamp`` to discrete date & time columns.
 
     Parameters
     ----------
     ds : pandas.Series
         The Series or array like  containing the timestamps to be converted.
     resolution : default "second"
-        Truncate output columns to 'resolution'.  The truncation method is
-    round_method : {"floor", "ceil", "round"}, default "round"
+        Truncate output columns to ``resolution``. The truncation method is
+    round_method : {"round", "floor", "ceil"}, default "round"
         Control how datetimes are truncated to the specified resolution.
-        The default 'round' is appropriate where `resolution` is a time increment.
-        'floor' might be a better choice where `resolution` is 'year', 'month' or 'day'.
+        The default 'round' is appropriate where ``resolution`` is a time increment.
+        'floor' might be a better choice where ``resolution`` is a date increment.
     fill_nat : int, default = None
-        If not None, fill `pandas.NaT` values with `fill_nat`. NaT's are
+        If not None, fill ``pandas.NaT`` values with ``fill_nat``. NaT's are
         correctly split to NaN's, hoever a side effect is that the
         dataframe dtype will be `float` dtype rather than `int`
     prefix : str, default = ""
-        Prepend `prefix` to output column names. This is useful when
+        Prepend ``prefix`` to output column names. This is useful when
         splitting multiple datetime columns, to ensure that the output
         columns are uniquely named.
 
@@ -447,7 +462,6 @@ def timestamp_to_columns(
     columns_to_timestamp
     expand_datetime_column
     """
-
     if not is_datetime64_any_dtype(ds):
         raise TypeError("Input data are not datetime-like")
     if isinstance(ds, pd.Index):
@@ -508,7 +522,7 @@ def expand_datetime_column(
     """Expand datetime column(s) to discrete date and time component columns.
 
     The output columns will be named 'year', 'month', 'day', 'hour', 'minute', 'second',
-    'microsecond', 'nanosecond', depending on the specied `resolution` and `prefix`
+    'microsecond', 'nanosecond', depending on the specied ``resolution`` and ``prefix``
     parameters.
 
     This method facillitates the export of data for reading by Microsoft Excel and
@@ -524,23 +538,23 @@ def expand_datetime_column(
         The columns to be split. If column_name not specified, split all datetime
         columns.
     drop : bool, default is False
-        Drop `name` column after conversion.
+        Drop ``column_name`` column after conversion.
     resolution : {'year', 'month', 'day', 'hour', 'minute', 'second',
         'microsecond', 'nanosecond'}, default is "second"
         Output datetime components down to specified resolution.
     round_method : {'floor', 'ceil', 'round'}, default is 'round':
         Control how datetimes are truncated to the specified resolution. The default
-        'round' is appropriate where `resolution` is a time increment.  'floor'
-        might be a better choice where `resolution` is 'year', 'month' or 'day'.
+        'round' is appropriate where ``resolution`` is a time increment. 'floor'
+        might be a better choice where ``resolution`` is 'year', 'month' or 'day'.
     prefix : str, list-like, default is ""
-        Prepend `prefix` to output column names. Behaviour depends on how many columns
+        Prepend ``prefix`` to output column names. Behaviour depends on how many columns
         are to be split::
 
-          - If `prefix` is empty and 1 column to split, then use standard column names
+            - If ``prefix`` is empty and 1 column to split, then use standard column names
             "year", "month",...
-          _ If `prefix` is empty and multiple columns to split, then prepend source
+            - If ``prefix`` is empty and multiple columns to split, then prepend source
             column name to output "ColA_year", "ColA_month"..., "ColB_year", ... etc.
-          - If `prefix` is defined, then a `prefix` must be specified for each column
+            - If ``prefix`` is defined, then a ``prefix`` must be specified for each column
             to split
     insert_after : bool, default is True
         If True, insert new columns after the column being split. If False,
@@ -657,14 +671,14 @@ def prepare_writable_df(
         Name of the column holding datetime to expand.
     datetime_resolution : str | None, default 'second'
         The resolution to which datettime column are to be epaneded. See
-        `expand_datetime_column` for explanation.
+        ``expand_datetime_column`` for explanation.
     datetime_round_method : {'floor', 'ceil', 'round'}, default 'floor'
         Control how datetimes are truncated to the specified resolution.
-        See `expand_datetime_column` for explanation.
+        See ``expand_datetime_column`` for explanation.
     datetime_prefix : str, default ""
         Prefix to prepend to expanded datetime column names.
     drop_datetime : bool, default True
-        If True and `expand_datetime` is not None, drop the expanded
+        If True and ``expand_datetime`` is not None, drop the expanded
         datetime column from output DataFrame.
     bool_to_int : bool, default True
         Whether to convert boolean columns to integers {False: 0, True: 1}.
@@ -735,10 +749,10 @@ class GSolveDataWarning:
         self.messages: list[str] = []
 
     @property
-    def count(self) -> int:
+    def count(self) -> int:  # noqa: D102
         return len(self.messages)
 
-    def __call__(self, msg: str) -> None:
+    def __call__(self, msg: str) -> None:  # noqa: D102
         self.messages.append(msg)
         self._display(msg)
 
@@ -751,7 +765,7 @@ class GSolveDataWarning:
         for msg in self.messages:
             print(f"{self.prefix}: {msg}")
 
-    def final_msg(self) -> None:
+    def final_msg(self) -> None:  # noqa: D102
         if self.count > 0:
             self._display(f"{self.count} problem(s) encountered")
 
@@ -763,15 +777,14 @@ def generate_loop_intervals(
 
     Parameters
     ----------
-    datetime_bounds : array
-        Array of sorted datetime-like values that define interval boundaries.
+    datetime_bounds : array-like of datetime-like
+        Array of sorted datetime-like values defining interval boundaries.
 
     Returns
     -------
-    pd.IntervalIndex
+    panddas.IntervalIndex
         Interval index object.
     """
-
     db = to_naive_utc_datetime(datetime_bounds, allow_nat=False)
     if not isinstance(db, (pd.Series, pd.DatetimeIndex)) or len(db) < 2:
         raise ValueError(
@@ -886,13 +899,13 @@ def generate_loop_names(
     step: int = 1,
     format_str: str = "{LOOP}",
 ) -> list[str]:
-    """Generate loop idetifiers strings
+    """Generate loop identifier strings.
 
     Parameters
     ----------
     n : int or array-like
         Number of loop identifiers to generate if ``n`` is an integer. If ``n`` is an
-        array-like object, then genera number of loop identifiers is set to the length of ``n``.
+        array-like object, then the number of loop identifiers is set to the length of ``n``.
     start : int, default 1
         Loop identifier start value.
     step : int, default 1
@@ -910,20 +923,20 @@ def generate_loop_names(
 
 
 def round_coords(arr: np.typing.ArrayLike) -> np.ndarray:
-    """Round values in `arr`, with halfway cases rounded towards positive inifinty.
+    """Round values in ``arr``, with halfway cases rounded towards positive inifinty.
 
     Used in converting coords to indices, which is essentially a binning
     operation.
 
     Parameters
     ----------
-    arr : array_like
-        Input data:
+    arr : array_like of float
+        Data to be rounded. Can be a scalar or array_like of any shape.
 
     Returns
     -------
     rounded_array: ndarray
-        An array or scalar of the same type as `a`, containing the rounded values.
+        An array or scalar of the same type as ``arr``.
 
     """
     return np.trunc(np.add(arr, 0.5))
@@ -938,9 +951,9 @@ def dms2rad(
 
     Warning
     -------
-    Direction of the angle is determined from `d`, so:
+    Direction of the angle is determined from ``d``, so:
 
-        - if `d` is negative, then `m` & `s` are assumed to be negative.
+        - if ``d`` is negative, then ``m`` and ``s`` are assumed to be negative.
         - Negative zero is **not** handled correctly for integer types.
           This is a limitation of NumPy.
 

@@ -86,12 +86,12 @@ class GravitySites(GSolveTable):
     reference_gravity       *float* ``NaN``   Reference gravity value at that site. Typically
                                               absolute gravity, but could be set to some
                                               arbitrary value if no reference gravity data
-                                              are available. At least one `reference_gravity`
+                                              are available. At least one reference_gravity
                                               value must be set for solve for drift.
     gsolve_tie              *bool*  ``False`` Indicates whether a site is to be used as "tie"
                                               when solving for drift. At least one site with
-                                              a `reference_gravity` value must be set as a
-                                              `gsolve_tie`.
+                                              a reference_gravity value must be set as a
+                                              gsolve_tie.
     ======================= ======= ========= ===============================================
 
 
@@ -101,9 +101,9 @@ class GravitySites(GSolveTable):
     ==================== ======= =======================================================
     Name                 Type    Description
     ==================== ======= =======================================================
-    `easting`            *float* site locations in some cartesian coordinate system
-    `northing`           *float* site locations in some cartesian coordinate system
-    `height_orthometric` *float* height of site above some datum
+    easting              *float* site locations in some cartesian coordinate system
+    northing             *float* site locations in some cartesian coordinate system
+    height_orthometric   *float* height of site above some datum
     ==================== ======= =======================================================
 
     Parameters
@@ -255,7 +255,7 @@ class GravitySites(GSolveTable):
         active_only : bool, optional, default is True
             Only , by default True
         gravity_only : bool, optional, default is True
-            If `True` only return reference_gravity values, otherwise
+            If True only return reference_gravity values, otherwise
             return all fields.
 
         Returns
@@ -454,7 +454,7 @@ class GravitySites(GSolveTable):
         include_unknown_fields: bool = False,
         **kwargs,
     ) -> None:
-        """Write `data` DataFrame to csv file.
+        """Write data DataFrame to csv file.
 
         Parameters
         ----------
@@ -467,11 +467,11 @@ class GravitySites(GSolveTable):
         include_unknown_fields : bool, default False
             Include columns that are not defined as known fields.
         kwargs
-            Additional keyword arguments passed to `pandas.DataFrame.to_csv`.
+            Additional keyword arguments passed to ``pandas.DataFrame.to_csv``.
 
         See Also
         --------
-        pandas.DataFrame.to_csv
+        ``pandas.DataFrame.to_csv``
             The underlying function used to write the DataFrame to a csv.
 
         """
@@ -495,7 +495,7 @@ class GravitySites(GSolveTable):
         if_sheet_exists: IfSheetExists = "error",
         **kwargs,
     ) -> None:
-        """Write `data` DataFrame to an excel file.
+        """Write data DataFrame to an excel file.
 
         Parameters
         ----------
@@ -515,13 +515,13 @@ class GravitySites(GSolveTable):
         if_sheet_exists : {"error", "replace", "new"}, default "error"
             Behaviour if the worksheet already exists.
         kwargs
-            Additional keyword arguments passed to `pandas.DataFrame.to_excel`.
+            Additional keyword arguments passed to ``pandas.DataFrame.to_excel``.
 
         See Also
         --------
         gsolve.core.excel_io._core_excel_io.write_excel_worksheet
-            For complete explanation of parameters `if_workbook_exists`
-            and `if_sheet_exists`.
+            For complete explanation of parameters ``if_workbook_exists``
+            and ``if_sheet_exists``.
         pandas.DataFrame.to_excel
             The underlying function used to write the DataFrame to the
             excel file.
@@ -562,10 +562,10 @@ class GravitySites(GSolveTable):
         Parameters
         ----------
         dem : xarray.DataArray, xarray.Dataset, str or PathLike
-            The array of values to sample. If `dem` is not a
+            The array of values to sample. If ``dem`` is not a
         output_col : str or None, default None
-            If `output_col` is defined, write sampled values to `obj.data[output_col]`.
-            If `output_col` is None, return a Series of sampled values.
+            If ``output_col`` is defined, write sampled values to obj.data[output_col].
+            If ``output_col`` is None, return a Series of sampled values.
         xcol : str, optional
             The column holding x coordinates, by default "easting"
         ycol : str, optional
@@ -577,7 +577,7 @@ class GravitySites(GSolveTable):
         Returns
         -------
         elevations : Series or None
-            None if `output_col` is defined, otherwise a Series of sampled elevations.
+            None if ``output_col`` is defined, otherwise a Series of sampled elevations.
 
         """
         if isinstance(dem, FilePath):
@@ -605,6 +605,22 @@ class GravitySites(GSolveTable):
     ) -> tuple[
         _npt.NDArray[_np.float64], _npt.NDArray[_np.float64], _npt.NDArray[_np.float64]
     ]:
+        """Get site point coordinates as numpy arrays.
+
+        Parameters
+        ----------
+        xcol : str
+            The column name for x coordinates.
+        ycol : str
+            The column name for y coordinates.
+        zcol : str or None, optional
+            The column name for z coordinates. If None, z coordinates will be set to NaN.
+
+        Returns
+        -------
+        tuple of numpy.ndarray
+            The x, y, and z coordinates as numpy arrays.
+        """
         x = self.data.loc[:, xcol].to_numpy().copy().astype(_np.float64)
         y = self.data.loc[:, ycol].to_numpy().copy().astype(_np.float64)
         if zcol is None:
@@ -637,11 +653,11 @@ class ReferenceGravity(GSolveTable):
     Attributes
     ----------
     data : DataFrame
-        The reference gravity data indexed by `site_id`. The defined fields
+        The reference gravity data indexed by ``site_id``. The defined fields
         are:
 
-            - ``'gravity'`` : (float) The reference gravity value for the site.
-            - ``'active'`` : (bool) Indicates whether the site should be used
+            - 'gravity' : (float) The reference gravity value for the site.
+            - 'active' : (bool) Indicates whether the site should be used
                 as an active "gsolve_tie" when merged into a ``GravitySites`` object.
 
         Other fields may be added to ``obj.data`` as required, but will
@@ -740,12 +756,30 @@ class ReferenceGravity(GSolveTable):
         self,
         csv_file: FilePath,
         normalize_column_names: bool = True,
-        expand_datetime: str | None = None,
-        drop_datetime: bool = False,
-        bool_to_int: bool = True,
+            bool_to_int: bool = True,
         include_unknown_fields: bool = False,
         **kwargs,
     ) -> None:
+        """Write data to a csv file.
+
+        Parameters
+        ----------
+        csv_file : str or PathLike
+            The path to the csv file.
+        normalize_column_names : bool, default True
+            Convert columns name to snake case.
+        bool_to_int : bool, default True
+            Convert boolean True/False to 1,0.
+        include_unknown_fields : bool, default False
+            Include fields not in the known fields.
+        kwargs
+            Additional keyword arguments passed to ``pandas.DataFrame.to_csv``.
+
+        See Also
+        --------
+        pandas.DataFrame.to_csv
+            The underlying function used to write the DataFrame to a csv.
+        """
         kwargs["header"] = kwargs.get("header", True)
         kwargs["index"] = kwargs.get("index", True)
         self._get_writable_df(
@@ -784,13 +818,13 @@ class ReferenceGravity(GSolveTable):
         if_sheet_exists : {"error", "replace", "new"}, default "error"
             Behaviour if the worksheet already exists.
         **kwargs
-            Additional keyword arguments passed to `pandas.DataFrame.to_excel`.
+            Additional keyword arguments passed to ``pandas.DataFrame.to_excel``.
 
         See Also
         --------
         gsolve.core.excel_io.write_excel_worksheet
-            For complete explanation of parameters `if_workbook_exists`
-            and `if_sheet_exists`.
+            For complete explanation of parameters ``if_workbook_exists``
+            and ``if_sheet_exists``.
         pandas.DataFrame.to_excel
             The underlying function used to write the DataFrame to the
             excel file.
@@ -836,7 +870,7 @@ class ReferenceGravity(GSolveTable):
             and values are either the reference gravity (float) or a sequence
             of (reference gravity, active) where active is a boolean
         set_active : bool, default True
-            If a `data` values is a float, then set the "active" field to this value.
+            If a ``data`` value is a float, then set the "active" field to this value.
 
         Returns
         -------

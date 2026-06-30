@@ -78,9 +78,9 @@ class GravityObservationsParameters(GSolveParameters):
 
     Attributes
     ----------
-    timedelta_unit : _pd.Timedelta, default "1h"
+    timedelta_unit : pandas.Timedelta, default "1h"
         The time interval unit used in calculating survey time deltas.
-    fixed_time_datum : _pd.Timestamp, default is pd.NaT
+    fixed_time_datum : pandas.Timestamp, default is pandas.NaT
         The fixed time datum used for calculating survey time deltas.
     earthtide_correction_method: str = ""
         The method used for earth tide correction, e.g. "Longman".
@@ -129,13 +129,13 @@ class GravityObservationsParameters(GSolveParameters):
             The label for the parameter names.
         parameter_value_label : str, default "value"
             The label for the parameter values.
-        **kwargs : Any
-            Additional keyword arguments passed to `write_excel_worksheet`.
+        kwargs : Any
+            Additional keyword arguments passed to ``write_excel_worksheet``.
 
         See Also
         --------
         gsolve.core.excel_io.write_excel_worksheet : for full documentation
-            of the `if_workbook_exists` and `if_sheet_exists` parameters.
+            of the ``if_workbook_exists`` and ``if_sheet_exists`` parameters.
 
         """
         params_ds = self.to_series(
@@ -169,11 +169,11 @@ class GravityObservations(GSolveTable):
     The GravityObservations class is effectively a wrapper around a pandas DataFrame,
     that provides a mechanism for ensuring data integrity and additional functionality
     for handling gravity observations. These methods are sufficient to perform most
-    tasks, however, users are free to manipulate the ``data`` attribute directly as
+    tasks, however, users are free to manipulate the data attribute directly as
     needed, with the caveat that doing so bypasses data validation and integrity checks.
 
     In general users will not need to instantiate this class directly, but will instead
-    use the `from_excel()` or `from_dataframe()` class methods to create an instance.
+    use the from_excel() or from_dataframe() class methods to create an instance.
 
     Parameters
     ----------
@@ -199,8 +199,8 @@ class GravityObservations(GSolveTable):
         Array-like object containing survey loop identifiers. If omitted,
         all observations will be assigned to loop '1'.
     active : array_like, optional
-        Array-like object indicating whether an observation is 'active' (``True``) or
-        inactive (``False``). Only 'active' observations will be included as a datapoints
+        Array-like object indicating whether an observation is 'active' (True) or
+        inactive (False). Only 'active' observations will be included as a datapoints
         in network adjustment. All observations are considered active by default.
     timedelta_unit : TimedeltaConvertibleTypes, default "1h"
         Time interval unit for timedelta calculations. The default is '1h' (i.e. 1 hour),
@@ -210,9 +210,9 @@ class GravityObservations(GSolveTable):
         of the earliest observation will be used.
     **kwargs
         Additional keyword arguments can be used to specify additional fields to be
-        included in the ``data`` DataFrame attribute. If any field defined in `kwargs`
-        match a 'known' field, then the associated `DataFieldSpecification` will be used
-        to validate and coerce the data before it is added to the ``data`` DataFrame.
+        included in the data DataFrame attribute. If any field defined in ``kwargs``
+        match a 'known' field, then the associated ``DataFieldSpecification`` will be used
+        to validate and coerce the data before it is added to the data DataFrame.
 
     Attributes
     ----------
@@ -225,10 +225,10 @@ class GravityObservations(GSolveTable):
     _known_fields : dict[str, DataFieldSpecification]
         A dictionary of 'known' field names and their associated DataFieldSpecifications,
         which define the expected data type, default value, and other metadata for
-        each field. If data are added using the ``set_column(name, value,...)``,
-        and 'name' is in ``_known_fields``, the associated DataFieldSpecification
+        each field. If data are added using the set_column(name, value, ...),
+        and 'name' is in _known_fields, the associated ``DataFieldSpecification``
         will be used to validate and coerce the data before it is added to the
-        ``obj.data`` dataframe.
+        obj.data dataframe.
 
     """
 
@@ -377,7 +377,7 @@ class GravityObservations(GSolveTable):
         Returns
         -------
         Index
-            A copy of `idx` with 3 digit sequence numbers appended.
+            A copy of ``idx`` with 3 digit sequence numbers appended.
         """
         suffix = (
             idx.to_series().groupby(level=0).cumcount().add(1).astype(str).str.zfill(3)
@@ -393,43 +393,43 @@ class GravityObservations(GSolveTable):
         duplicated_obs_id: Literal["error", "keep", "rename"] = "rename",
         drop: bool = True,
     ) -> None:
-        """Set ``obs_id`` as the index of the ``data`` DataFrame attribute.
+        """Set obs_id as the index of the data DataFrame attribute.
 
-        Warning:: This method will overwrite the existing index of ``obj.data``.
+        Warning:: This method will overwrite the existing index of obj.data.
 
         Parameters
         ----------
         idx : ArrayLike, str or None, default is None
-            The obs_id values to set as the index of ``obj.data``. Behaviour
-            depends on the dtype of `idx`. If `idx` is:
+                        The obs_id values to set as the index of obj.data. Behaviour
+                        depends on the dtype of ``idx``. If ``idx`` is:
 
-              - ``None`` : a default obs_id will be auto-generated
-                using the ``_default_index_generator()`` method.
-              - ``str`` : `idx` is assumed to be the name of an existing column
-                in ``obj.data`` to be used to set as the index. Equivalent to
-                ``obj.data.set_index(idx)``. Note that the index will be renamed
-                to `obs_id`.
-              - ``array-like`` : `idx` is assumed to be a sequence of obs_id
+                            - None : a default obs_id will be auto-generated
+                                using the _default_index_generator() method.
+                            - str : ``idx`` is assumed to be the name of an existing column
+                                in obj.data to be used to set as the index. Equivalent to
+                                obj.data.set_index(idx). Note that the index will be renamed
+                                to obs_id.
+                            - array-like : ``idx`` is assumed to be a sequence of obs_id
                 values to set as the index.
         duplicated_obs_id : {'error', 'keep', 'rename'}, default 'rename'
             The behaviour when duplicate obs_id values are found:
 
-              - ``'error'`` : raise a ValueError.
-              - ``'keep'`` : issue a warning and keep duplicate obs_id's as-is.
-              - ``'rename'`` : issue a warning and rename duplicate obs_id's by appending
+              - 'error' : raise a ValueError.
+              - 'keep' : issue a warning and keep duplicate obs_id's as-is.
+              - 'rename' : issue a warning and rename duplicate obs_id's by appending
                   a 3-digit sequence number.
 
         drop : bool, default True
-            If ``obs_id`` is to be set from an existing column (i.e. where
-            ``idx`` is a string),
-            this flag indicates whether to drop that column from ``obj.data`` after.
+            If obs_id is to be set from an existing column (i.e. where
+            ``idx`` is a string), this flag indicates whether to drop that column
+            from obj.data after.
 
         Raises
         ------
         ValueError
-            If ``obs_id`` contains duplicate values and `duplicated_obs_id` is set to 'error'.
+            If obs_id contains duplicate values and ``duplicated_obs_id`` is set to 'error'.
         TypeError
-            If `idx` is not None, a string or an array-like of obs_id values.
+            If ``idx`` is not None, a string or an array-like of obs_id values.
         """
         if idx is None:
             # use autogenerated obs_id
@@ -482,7 +482,7 @@ class GravityObservations(GSolveTable):
         Raises
         ------
         ValueError
-            If 'loop' and/or 'datetime' columns are missing from ``obj.data``.
+            If 'loop' and/or 'datetime' columns are missing from obj.data.
         """
         if "loop" not in self.data.columns or "datetime" not in self.data.columns:
             raise ValueError("'loop' and/or 'datetime' columns are missing")
@@ -527,12 +527,12 @@ class GravityObservations(GSolveTable):
     ) -> None:
         """Set time interval unit used for calculating survey timedelta.
 
-         Can be any valid argument for `pandas.Timedelta()`. The default
+        Can be any valid argument for ``pandas.Timedelta()``. The default
         is '1h' (i.e. 1 hour), meaning survey time is in decimal hours.
 
         ..  warning::
-            Setting a ``time_delta`` unit that is very small in conjunction
-            with setting a 'distant' ``fixed_time_datum`` will lead to very
+            Setting a time_delta unit that is very small in conjunction
+            with setting a 'distant' fixed_time_datum will lead to very
             large timedelta values being used in gsolve drift calculations.
             Results may then be incorrect due to floating point rounding
             errors.
@@ -559,33 +559,39 @@ class GravityObservations(GSolveTable):
         """
         return self._fixed_time_datum
 
-    def set_fixed_time_datum(
-        self, t: DatetimeScalar | None, set_tdelta: bool = True
-    ) -> None:
-        """Set time datum used for calculating timedelta.
+    def set_fixed_time_datum(self, t: DatetimeScalar | None) -> None:
+        """
+        Set time datum used for calculating loop and survey timedelta.
 
-        By default, gsolve will use the earliest survey and/or loop
-        observation as the time datum. The `fixed_time_datum` feature is
-        provided for reproducibility purposes. Legacy gsolve versions used
-        the J1900.00 epoch as the datum.
+        Setting a fixed time datum will trigger both "survey_tdelta" and
+        "loop_tdelta" to be calculated to use the new time datum. The tdelta fields
+        will then be identical.
+
+        By default, gSolve will use the earliest survey and/or loop
+        observation as the time datum. The fixed_time_datum feature is
+        provided for reproducibility purposes. Legacy gSolve versions used
+        the J1900.00 epoch as the time datum.
 
         ..  warning::
-            Setting a `fixed_time_datum` that is far from the survey
-            time range in conjuction with setting a small `timedelta_unit`
-            will lead to very large time_delta values being used in
-            gsolve drift calculations. Results may then be incorrect due
-            to floating point rounding errors.
+            Care should be taken when setting fixed_time_datum.
+            A fixed_time_datum that is far from the survey time range in conjunction
+            with setting a small ``timedelta_unit`` will lead to very large time_delta
+            values being used in gSolve network adjustment calculations. Results may
+            then be incorrect due to floating point rounding errors.
+
+            For example, using typical Unix Time standards (datum=1970-01-01, unit=sec)
+            will produce incorrect results.
 
         Parameters
         ----------
-        t : _pd.Timestamp or None
+        t : pandas.Timestamp or None
             The time datum to use.  If None then fixed time datum is
-            removed.
+            removed and behaviour will revert to using earliest loop time datum.
 
         Raises
         ------
         TypeError
-            If `t` is specified, but is not interpretable as a `pandas.Timestamp`.
+            If ``t`` is specified, but is not interpretable as a ``pandas.Timestamp``.
         """
         if t is None or _pd.isna(t):
             self._fixed_time_datum = None
@@ -599,11 +605,11 @@ class GravityObservations(GSolveTable):
                 raise TypeError(
                     f"invalid fixed_time_datum of type '{type(t).__name__}'"
                 )
-        if set_tdelta:
-            self.set_tdelta()
+
+        self.set_tdelta()
 
     def params(self) -> GravityObservationsParameters:
-        """Return parameters as a `GravityObservationsParameters` object.
+        """Return parameters as a ``GravityObservationsParameters`` object.
 
         Returns
         -------
@@ -642,7 +648,7 @@ class GravityObservations(GSolveTable):
             "datetime" and convert all readings.
         set_converter_id_column: bool, default=True
             If True set the "meter_reading_converter_id" column to the
-            `converter_id` from the `MeterReadingConverter` object.
+            ``converter_id`` from the ``MeterReadingConverter`` object.
         input_column_name : str, default='meter_reading'
             The columns holding gravity readings to convert.
         output_column_name : str, default='meter_reading_mgal'
@@ -680,7 +686,7 @@ class GravityObservations(GSolveTable):
         column_name : str, default='earth_tide_corr'
             The column name to store the earth tide correction.
         kwargs : dict
-            Additional keyword arguments passed to the provider's ``tidal_correction()``
+            Additional keyword arguments passed to the provider's tidal_correction()
             method.
 
         See Also
@@ -714,26 +720,26 @@ class GravityObservations(GSolveTable):
         **kwargs,
     ) -> None:
         """
-        Get ocean loading corrections and store in column `column_name`.
+        Get ocean loading corrections and store in column ``column_name``.
 
-        This method calls the ``ocean_load_correction()`` method of the provided
-        `ocean_load_corrector` object to retrieve ocean loading corrections for
+        This method calls the ocean_load_correction() method of the provided
+        ``corrector`` object to retrieve ocean loading corrections for
         each observation. Ocean load corrections will typically have been pre-computed
         in some Third Party software such as Quick Tide Pro.
 
         Parameters
         ----------
-        ocean_load_corrector : OceanLoadCorrectionProvider
+        corrector : OceanLoadCorrectionProvider
             An object providing ocean loading corrections.
         sites : GravitySites, optional
             GravitySites object providing latitude, longitude and height. Only required
-            if the `ocean_load_corrector` requires site location parameters.
+            if the ``corrector`` requires site location parameters.
         column_name : str, default='ocean_load_corr'
             The column name to store the ocean loading correction.
         if_not_matched : {'error', 'warn'}, default 'error'
             Behaviour when an observation cannot be matched with the corrections
-            provided by the `ocean_load_corrector`. E.g. for the timeseries based
-            corrector `QuickTideTimeSeries`, if datetimes are outside the range of
+            provided by the ``corrector``. E.g. for the timeseries based
+            corrector ``QuickTideTimeSeries``, if datetimes are outside the range of
             the time series. Options are:
 
                 - 'error' : raise a ValueError.
@@ -741,12 +747,12 @@ class GravityObservations(GSolveTable):
 
         kwargs : dict
             Additional keyword arguments passed to the provider's
-            ``ocean_load_correction()`` method.
+            ocean_load_correction() method.
 
         Raises
         ------
         TypeError
-            If `corrector` does not implement the `OceanLoadCorrectionProvider` protocol.
+            If ``corrector`` does not implement the ``OceanLoadCorrectionProvider`` protocol.
         """
         if not isinstance(corrector, OceanLoadCorrectionProvider):
             raise TypeError(
@@ -773,23 +779,23 @@ class GravityObservations(GSolveTable):
         Parameters
         ----------
         calibration_factor : float or array_like
-            The gravity meter `calculate_calibration`. Default is 1.0
+            The gravity meter calibration factor. Default is 1.0.
         meter_id : str, default None
-            Set `calibration_factor` for specified `meter_id` only. If data
-            contains multiple gravity meters, `meter_id` must be specified.
+            Set ``calibration_factor`` for specified ``meter_id`` only. If data
+            contains multiple gravity meters, ``meter_id`` must be specified.
 
         Raises
         ------
         ValueError
-            If data contains multiple gravity meter_id's and `meter_id` is None.
-            When specified `meter_id` is not in data.
+            If data contains multiple gravity meter_id's and ``meter_id`` is None.
+            When specified ``meter_id`` is not in data.
 
         """
         c_label: str = "calibration_factor"
 
         if self.data["meter_id"].nunique() > 1 and meter_id is None:
             raise ValueError(
-                "Multiple gravity meters found in data, must specify `meter_id`"
+                "Multiple gravity meters found in data, must specify ``meter_id``"
             )
         if meter_id is None:
             self.set_column(c_label, float(calibration_factor))
@@ -824,7 +830,7 @@ class GravityObservations(GSolveTable):
             - "survey_tdelta" the datum is the earliest observation (i.e self.starttime),
             - "loop_tdelta" the datum is the earliest observation in each loop.
 
-        The default can be overridden by calling `set_fixed_time_datum()`, in which case
+        The default can be overridden by calling set_fixed_time_datum(), in which case
         both "survey_tdelta" and "loop_tdelta" will use the same fixed_time_datum.
 
         See Also
@@ -872,22 +878,22 @@ class GravityObservations(GSolveTable):
         loop: str | Iterable[str] | None = None,
     ) -> None:
         """
-        Set the "active" flag/field to ``True`` for specified observations.
+        Set the "active" flag/field to True for specified observations.
 
         The "active" flag controls which observations are included in a
         gsolve network adjustment.  Observations are set as
-        ``active==True``, unless explicitly. This method allows for the reactivation
+        active==True, unless explicitly. This method allows for the reactivation
         of observations that were set as inactive in the input data or by calling the
-        ``deactivate``method.
+        deactivate method.
 
         Parameters
         ----------
         obs_id : str or array_like, optional
-            The `obs_id` of the observations to activate.
+            The ``obs_id`` of the observations to activate.
         site_id : str or array_like, optional
-            The `site_id` of the observations to activate.
+            The ``site_id`` of the observations to activate.
         loop : str or array_like, optional
-            The `loop` of the observations to activate.
+            The ``loop`` of the observations to activate.
 
         See Also
         --------
@@ -902,18 +908,18 @@ class GravityObservations(GSolveTable):
         loop: str | Iterable[str] | None = None,
     ) -> None:
         """
-        Set the "active" flag/field to ``False`` for specified observations.
+        Set the "active" flag/field to False for specified observations.
 
         Deactivated observations are not included in gsolve solutions.
 
         Parameters
         ----------
         obs_id : str or array_like, optional
-            The `obs_id` of the observations to deactivate.
+            The ``obs_id`` of the observations to deactivate.
         site_id : str or array_like, optional
-            The `site_id` of the observations to deactivate.
+            The ``site_id`` of the observations to deactivate.
         loop : str or array_like, optional
-            The `loop` of the observations to deactivate.
+            The ``loop`` of the observations to deactivate.
 
         See Also
         --------
@@ -936,17 +942,20 @@ class GravityObservations(GSolveTable):
 
         Parameters
         ----------
+        flag : bool
+            The value to set the "active" field to.  True for activate,
+            False for deactivate.
         obs_id : str or array_like, optional
-            The `obs_id` of the observations to deactivate.
+            The ``obs_id`` of the observations to deactivate.
         site_id : str or array_like, optional
-            The `site_id` of the observations to deactivate.
+            The ``site_id`` of the observations to deactivate.
         loop : str or array_like, optional
-            The `loop` of the observations to deactivate.
+            The ``loop`` of the observations to deactivate.
 
         Raises
         ------
         ValueError
-            If any specified `obs_id`, `site_id` or `loop` values are not found in the data.
+            If any specified ``obs_id``, ``site_id`` or ``loop`` values are not found in the data.
         TypeError
             If any input is not a string or iterable of strings.
         """
@@ -999,7 +1008,7 @@ class GravityObservations(GSolveTable):
         include_unknown_fields: bool | Sequence[str] = False,
         active_only: bool = False,
     ) -> _pd.DataFrame:
-        """Return a DataFrame suitable for writing to a file."""
+        """Return a DataFrame suitable for writing to an excel or csv file."""  # noqa: DOC201
         cols = [c for c in self.known_fields() if c in self.data.columns]
         if include_unknown_fields is not False:
             if include_unknown_fields is True:
@@ -1105,6 +1114,7 @@ class GravityObservations(GSolveTable):
         savefilename: FilePath | None = None,
         figsize: tuple[float, float] = (12, 8),
         ax=None,  # noqa: ANN001
+        show: bool = True,
         **kwargs,
     ) -> tuple[_plt.Figure, _plt.Axes]:
         """
@@ -1113,23 +1123,32 @@ class GravityObservations(GSolveTable):
         Parameters
         ----------
         loop : str or int
-            The loop to plot. Use `loop='all'` to plot all data, ignoring loops.
+            The loop to plot. Use ``loop='all'`` to plot all data, ignoring loops.
         x_column : str, default='datetime'
             The 'x' data column to plot.
         y_column : str, default='meter_reading_mgal'
             The 'y' data column to plot.
         savefilename : FilePath, default=None
-            If not None, save the plot to `savefilename`.
+            If not None, save the plot to ``savefilename``.
         figsize : tuple, default=(12, 8)
             The pyplot figure size.
-        ax = None
-        **kwargs : dict
-            Optional keyword arguments passed directly to  `matplotlib.pyplot.plot()`.
-
+        ax : matplotlib.axes.Axes, optional
+            If provided, the plot will be drawn on this axes. Otherwise, a new figure
+            and axes will be created.
+        show : bool, default=True
+            Whether to call fig.show() to display the plot. If False, the figure
+            will be created but not displayed.  This can be useful when calling this method
+            from a non-interactive environment, or when further modifying the figure before
+            displaying or saving it.
+        kwargs : dict
+            Optional keyword arguments passed directly to matplotlib.pyplot.plot().
 
         Returns
         -------
-            Plot of the observed data.
+        fig : matplotlib.figure.Figure
+            The figure object containing the plot.
+        ax : matplotlib.axes.Axes
+            The axes object in which the plot is drawn.
         """
         if loop == "all":
             y_data = self.data.loc[:, y_column]
@@ -1166,10 +1185,12 @@ class GravityObservations(GSolveTable):
             fout = fout.parent / f"{fout.stem}_loop_{loop}{fout.suffix}"
             _plt.savefig(fout, dpi=300)
 
-        fig.show()
+        if show:
+            fig.show()
         return fig, ax
 
     def _make_network(self, sites: GravitySites) -> _pd.DataFrame:
+        # TODO: Fix me? use a copy of self.data to avoid modifying the original DataFrame
         self.data["group"] = (
             self.data["site_id"] != self.data["site_id"].shift()
         ).cumsum()
@@ -1190,33 +1211,41 @@ class GravityObservations(GSolveTable):
         marker_scale_factor: float = 25,
         plot_stn_labels: bool = False,
         ax: _plt.Axes | None = None,
+        show: bool = True,
         **kwargs,
     ) -> tuple[_plt.Figure, _plt.Axes]:
         """
         Plot network map showing connections between stations.
 
-        Station markers are scaled according to the number of occupations
+        Station markers are scaled according to the number of occupations.
 
         Parameters
         ----------
         sites : GravitySites
-            DESCRIPTION.
+            Object providing site location data..
         savefilename : str or PathLike, optional
-            DESCRIPTION. The default is None.
+            If specified, save the figure to file.
         figsize : tuple, default=(10, 10)
             The pyplot figure size.
         marker_scale_factor: float, default=25
             Scale marker size by this value.
         plot_stn_labels: bool, default=False
             Plot station name next to station points.
-        ax=None
-        **kwargs : dict
-            Optional keyword arguments passed directly to  `matplotlib.pyplot.plot()`.
+        ax : matplotlib.axes.Axes, optional
+            If provided, the plot will be drawn on this axes. Otherwise, a new figure
+            and axes will be created.
+        show : bool, default=True
+            Whether to call fig.show() to display the plot. If False, the figure
+            will be created but not displayed.
+        kwargs : dict
+            Optional keyword arguments passed directly to matplotlib.pyplot.plot().
 
         Returns
         -------
-        (matplotlib.figure.Figure, matplotlib.axes.Axes)
-            The figure and axes objects created by this method.
+        fig : matplotlib.figure.Figure
+            The figure object containing the plot.
+        ax : matplotlib.axes.Axes
+            The axes object in which the plot is drawn.
 
         """
         if "marker" not in kwargs:
@@ -1258,7 +1287,8 @@ class GravityObservations(GSolveTable):
             fout = fout.parent / f"{fout.stem}{fout.suffix}"
             _plt.savefig(fout, dpi=300)
 
-        _ = fig.show()
+        if show:
+            _ = fig.show()
 
         return fig, ax
 
@@ -1270,10 +1300,6 @@ class GravityObservations(GSolveTable):
         ----------
         loop : str
             Loop number to plot.
-
-        Returns
-        -------
-        A figure showing the station occupation order for each loop.
 
         """
         df = self.data.loc[self.data["loop"].eq(loop)]
@@ -1287,7 +1313,7 @@ class GravityObservations(GSolveTable):
         )
 
     def loop_summary(self) -> _pd.DataFrame:
-        """Return a summary of the observations by loop."""
+        """Return a summary of the observations by loop."""  # noqa: DOC201
         from gsolve.core._summary_functions import (
             duration_hr,
             endtime_utc,
@@ -1302,7 +1328,19 @@ class GravityObservations(GSolveTable):
         return self.data.groupby("loop").agg(agg_dict).droplevel(0, axis=1)
 
     def site_summary(self, data_col: str | None = None) -> _pd.DataFrame:
-        """Return a summary of the observations by site."""
+        """Return a summary statitstics of observations by site.
+
+        Parameters
+        ----------
+        data_col : str | None, optional
+            The data column to summarize. If None, then use gravity_corr if
+            this column has been set else fallback to meter_reading_mgal.
+
+        Returns
+        -------
+        DataFrame
+            Summary statisticsof observations by site.
+        """
         from gsolve.core._summary_functions import (
             in_loops,
             n,
@@ -1314,12 +1352,21 @@ class GravityObservations(GSolveTable):
         agg_dict: dict[str, Any] = {"active": [n, n_inactive]}
 
         if data_col is None:
-            if self.data["gravity_corr"].notna().all():
+            if (
+                "gravity_corr" in self.data.columns
+                and self.data["gravity_corr"].notna().all()
+            ):
                 data_col = "gravity_corr"
-            elif self.data["meter_reading_mgal"].notna().all():
+            elif (
+                "meter_reading_mgal" in self.data.columns
+                and self.data["meter_reading_mgal"].notna().all()
+            ):
                 data_col = "meter_reading_mgal"
             else:
-                data_col = "meter_reading"
+                raise ValueError(
+                    "Cannot compute summary statistics: Columns 'gravity_corr' "
+                    "and/or 'meter_reading_mgal' are missing or contain null values."
+                )
 
         if data_col not in self.data.columns:
             raise ValueError(f"Data column '{data_col}' not found in data")
@@ -1397,7 +1444,7 @@ class GravityObservations(GSolveTable):
 
 
 class GravitySurvey:
-    """Class to store gravity observations and sites and facilitate running gsolve
+    """Class to store gravity observations and sites and facilitate running gSolve.
 
     Parameters
     ----------
@@ -1405,7 +1452,7 @@ class GravitySurvey:
         The gravity observations object.
     sites : GravitySites
         The gravity sites object.
-    .
+
     """
 
     def __init__(self, obs: GravityObservations, sites: GravitySites) -> None:
@@ -1432,6 +1479,11 @@ class GravitySurvey:
             Ignore unknown fields in the excel file.
         parse_split_datetime : bool, default is True
             Parse split datetime fields into a single datetime column.
+
+        Returns
+        -------
+        GravitySurvey
+            The gravity survey object.
         """
         obs = GravityObservations.from_excel(
             fname,
@@ -1460,7 +1512,7 @@ class GravitySurvey:
         Parameters
         ----------
         converter : MeterReadingConverter, optional
-            The dial to mgal converter object. If None, `meter_reading`
+            The dial to mgal converter object. If None, meter_reading
             data are assumed to be in mgal and no conversion is applied.
         input_column_name : str, default='meter_reading'
             The input column name to convert.
@@ -1476,6 +1528,7 @@ class GravitySurvey:
     def apply_earth_tide_correction(
         self, tide_corrector: EarthTideCorrectionProvider, **kwargs
     ) -> None:
+        """Apply earth tide correction to observations."""
         self.observations.apply_earth_tide_correction(
             self.sites, tide_corrector, **kwargs
         )
@@ -1483,9 +1536,11 @@ class GravitySurvey:
     def set_calibration_factor(
         self, calibration_factor: float = 1.0, meter_id: str | None = None
     ) -> None:
+        """Set gravity meter calibration factor on observations."""
         self.observations.set_calibration_factor(calibration_factor, meter_id=meter_id)
 
     def calculate_tide_corrected_gravity(self) -> None:
+        """Calculate tide-corrected gravity for observations."""
         self.observations.calculate_tide_corrected_gravity()
 
     def set_reference_gravity(
@@ -1493,6 +1548,7 @@ class GravitySurvey:
         ref_grav: ReferenceGravity | _pd.DataFrame,
         reset: bool = False,
     ) -> None:
+        """Set reference gravity values for sites."""
         self.sites.set_reference_gravity(ref_grav, reset)
 
     # def summary(self, fmt: str = "dict") -> dict | _pd.DataFrame:
@@ -1500,12 +1556,17 @@ class GravitySurvey:
     #     return self.observations.summary()
 
     def pre_flight_check(self, warn: bool = True) -> bool:
-        """Check data are valid before running gsolve.
+        """Check data are valid before performing network adjustment.
 
         Parameters
         ----------
         warn : bool, default=True
-            If True, print warnings.
+            If True, print a warning for each issue. If False, only return True/False.
+
+        Returns
+        -------
+        bool
+            True if data are valid, False otherwise.
         """
         rval = True
         if not self.observations.check_data(warn=warn):
@@ -1532,6 +1593,26 @@ class GravitySurvey:
         use_loops: bool = True,
         calculate_calibration_factor: bool = False,
     ) -> GSolveResults:
+        """Perform network adjustment on gravity observations.
+
+        Parameters
+        ----------
+        method : GSolveSolverMethod
+            The solver method to use for the least squares adjustment.
+        percentile_clipping : float, default=100
+            The percentile of residuals to use for clipping.  Values outside this
+            percentile will be excluded from the adjustment.  Must be between 0 and 100.
+        use_loops : bool, default=True
+            If True, compute drift on a loop-by-loop basis. If False, compute a single
+            drift adjustmen for all data.
+        calculate_calibration_factor : bool, default=False
+            If True, calculate the calibration factor during the adjustment.
+
+        Returns
+        -------
+        GSolveResults
+            The results of the network adjustment.
+        """
         self.observations.set_tdelta()
 
         td_column = "loop_tdelta" if use_loops else "survey_tdelta"
@@ -1562,36 +1643,36 @@ def combine_gravity_observations(
 ) -> GravityObservations:
     """Merge 2 or more GravityObservations objects.
 
-    The returned object is formed by concatenating the `data` DataFrames attributes
-    of each `obs` object, and then instantiating a new GravityObservations object.
-    Non `data` attributes of the new object (e.g. `timedelta_unit`) are set
-    from the the first `obs` specified.
+    The returned object is formed by concatenating the data DataFrame attributes
+    of each ``obs`` object, and then instantiating a new ``GravityObservations`` object.
+    Non-data attributes of the new object (e.g. timedelta_unit) are set
+    from the the first ``obs`` specified.
 
     Parameters
     ----------
     obs : GravityObservations
-        Sequence of two or more `GravityObservations` objects to be combined.
+                Sequence of two or more ``GravityObservations`` objects to be combined.
     duplicated_loops : {'error', 'keep', 'drop', 'rename'}, defaut is 'error'
         How to handle situations where ``loop`` identifiers are duplicated between
         GravityObservations objects:
 
-            - ``'error'`` : raise a ValueError
-            - ``'keep'`` : duplicates are unchanged
-            - ``'drop'`` : drop all data with duplicated loop_id
-            - ``'rename'`` : rename the duplicate loops by adding suffix
-              ``_merged_{int}`` where ``{int}`` refers to the position in
-              the input ``obs`` array.
+                        - 'error' : raise a ValueError
+                        - 'keep' : duplicates are unchanged
+                        - 'drop' : drop all data with duplicated loop_id
+                        - 'rename' : rename the duplicate loops by adding suffix
+                            _merged_{int} where {int} refers to the position in
+                            the input ``obs`` array.
 
-    duplicated_obs_id : {'error', 'drop', 'rename'}, default is 'error'
+    duplicated_obs_ids : {'error', 'drop', 'rename', 'regenerate'}, default is 'error'
         How to handle situations where ``obs_id`` identifiers  are duplicated between
         GravityObservations objects:
 
-            - ``'error'`` : raise a ValueError
-            - ``'drop'`` : drop data with duplicated ``obs_id``.
-            - ``'rename'`` : rename the duplicate obs_id's by adding suffix
-              ``_merged_{int}``` where ``{int}`` refers to the position in
-              the input ``obs`` array.
-            - ``'regenerate'`` : generate new obs_id's for all data in the
+                        - 'error' : raise a ValueError
+                        - 'drop' : drop data with duplicated ``obs_id``.
+                        - 'rename' : rename the duplicate obs_id's by adding suffix
+                            _merged_{int} where {int} refers to the position in
+                            the input ``obs`` array.
+                        - 'regenerate' : generate new obs_id's for all data in the
               merged object.
 
     Returns
@@ -1606,15 +1687,17 @@ def combine_gravity_observations(
     if not all([isinstance(o, GravityObservations) for o in obs]):
         raise TypeError(f"invalid type for elements in obs")
 
-    if duplicated_loops not in ("error", "keep", "drop", "rename"):
+    duplicated_loops_options = ("error", "keep", "drop", "rename")
+    if duplicated_loops not in duplicated_loops_options:
         raise ValueError(
             f"invalid duplicated_loops arg '{duplicated_loops}', "
-            "must be one of 'error', 'keep', 'drop', 'rename'"
+            f"must be one of {duplicated_loops_options}"
         )
-    if duplicated_obs_ids not in ("error", "drop", "rename"):
+    duplicated_obs_ids_options = ("error", "drop", "rename", "regenerate")
+    if duplicated_obs_ids not in duplicated_obs_ids_options:
         raise ValueError(
             f"invalid duplicated_obs_id arg {duplicated_obs_ids},"
-            "must be one of 'error', 'drop', 'rename'"
+            f"must be one of {duplicated_obs_ids_options}"
         )
 
     target = obs.pop(0)
@@ -1707,32 +1790,46 @@ def combine_gravity_surveys(
 ) -> GravitySurvey:
     """Merge 2 or more GravitySurveys objects.
 
-    The returned object is formed by concatenating the `observations` DataFrames
-    attributes of each object in `survey`, and then instantiating a new GravitySurvey
-    object. Non `observations` attributes of the new object (e.g. `timedelta_unit`) are
-    set from the the first `survey` specified.
+    The returned object is formed by concatenating the observations and sites DataFrame
+    attributes of each object in ``surveys``, and then instantiating a new
+    ``GravitySurvey`` object. Non-observation attributes of the new object
+    (e.g. timedelta_unit) are set from the the first ``surveys[0]``.
 
     Parameters
     ----------
     surveys : GravitySurveys
-        A list of two or more `GravitySurveys` objects to be combined.
-    ignore_duplicates : bool, default is False
-        Specify how data with duplicate index and/or loop values are to be handled.
-        If True, duplicates will be merged unchanged. If False, raise a ValueError.
+                A list of two or more ``GravitySurveys`` objects to be combined.
+    duplicated_loops : {'error', 'keep', 'drop', 'rename'}, defaut is 'error'
+        How to handle situations where ``loop`` identifiers are duplicated between
+                observations of different ``GravitySurveys`` objects:
+                        - 'error' : raise a ValueError
+                        - 'keep' : duplicates are unchanged
+                        - 'drop' : drop all data with duplicated loop_id
+                        - 'rename' : rename the duplicate loops by adding suffix
+                            _merged_{int} where {int} refers to the position in
+                            the input ``surveys`` array.
+
+    duplicated_obs_ids : {'error', 'drop', 'rename', 'regenerate'}, default is 'error'
+        How to handle situations where ``obs_id`` identifiers  are duplicated between
+                observations of different ``GravitySurveys`` objects:
+                        - 'error' : raise a ValueError
+                        - 'drop' : drop data with duplicated ``obs_id``.
+                        - 'rename' : rename the duplicate obs_id's by adding suffix
+                            _merged_{int} where {int} refers to the position in
+                            the input ``surveys`` array.
+                        - 'regenerate' : generate new obs_id's for all data in the
+              merged object.
+
+    duplicated_sites : {'error', 'drop'}, default is 'error'
+        How to handle situations where ``site_id`` identifiers  are duplicated between
+                sites of different ``GravitySurveys`` objects:
+                        - 'error' : raise a ValueError
+                        - 'drop' : drop data with duplicated ``site_id``.
 
     Returns
     -------
     GravitySurvey
         The new GravitySurvey object.
-
-    Raises
-    ------
-    ValueError
-        If less than 2 `GravitySurveys` are specified.
-        If duplicate `obs_id` or `loop` values are found and ignore_duplicates=False.
-    TypeError
-        If any of `*surveys` is not a GravitySurvey object.
-
     """
     if len(surveys) < 2:
         raise ValueError("Must specify at least 2 GravitySurveys objects.")
