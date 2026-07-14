@@ -121,7 +121,7 @@ class GravityObservationsParameters(GSolveParameters):
             The path to the Excel file.
         sheet_name : str, default "observation_parameters"
             The name of the worksheet to write the parameters to.
-        if_workbook_exists : {"append, "replace", "error"}, default "append"
+        if_workbook_exists : {"append", "replace", "error"}, default "append"
             What to do if the workbook/file already exists.
         if_sheet_exists : {"replace", "error", "new"}, default "replace"
             What to do if the worksheet already exists.
