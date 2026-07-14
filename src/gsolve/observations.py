@@ -559,7 +559,7 @@ class GravityObservations(GSolveTable):
         """
         return self._fixed_time_datum
 
-    def set_fixed_time_datum(self, t: DatetimeScalar | None) -> None:
+    def set_fixed_time_datum(self, t: DatetimeScalar | None, set_tdelta: bool = True) -> None:
         """
         Set time datum used for calculating loop and survey timedelta.
 
@@ -606,7 +606,8 @@ class GravityObservations(GSolveTable):
                     f"invalid fixed_time_datum of type '{type(t).__name__}'"
                 )
 
-        self.set_tdelta()
+        if set_tdelta:
+            self.set_tdelta()
 
     def params(self) -> GravityObservationsParameters:
         """Return parameters as a ``GravityObservationsParameters`` object.

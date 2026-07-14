@@ -629,14 +629,6 @@ class TerrainCorrector:
 
     It supports multiple calculation "zones", each with its own parameters and data sources.
 
-    A typical workflow using this class would be:
-
-        - Define one or more TerrainCorrectionParameters objects for the desired zones.
-        - Instantiate a TerrainCorrector with these parameters and optional DEM/density models.
-        - Add additional zones as needed using ``add_calculation_zone``.
-        - Call ``compute()`` on a set of points.
-
-
     Attributes
     ----------
     params : dict
@@ -665,10 +657,27 @@ class TerrainCorrector:
         ``dem_source`` attribute is ignored.
     density_model : xarray.DataArray, list-like or None, default is None
         User supplied density model(s) corresponding to each zone defined in ``params``.
-        For example if ``params=[p1, p2, p3]``, and you wish to specify a density model for
-        p2 only, then the argument must be ``density_model=[None, model_for_p2, None]``. If None,
-        the density model will be generated internally based. If a density model is
-        specified here, then the ``density_dataset_source`` attribute is ignored.
+        If `desity_model` is specified then it must unclude a density model or None for
+        each zone in ``params``. For example if ``params=[p1, p2, p3]``, and you wish
+        to specify a density model for p2 only, then the argument must be
+        ``density_model=[None, model_for_p2, None]``.
+
+        If ``density_model`` is None, then:
+          - if ``density_dataset_source`` attribute of the associated
+            TerrainCorrectionParameters object is not None, the density model will be
+            loaded from the specified source.
+          - otherwise generate a default density model from the loaded DEM, using the
+            ``terrain_density``, ``water_density``, and ``sea_level_elevation``
+            attributes of the associated TerrainCorrectionParameters object.
+
+    Notes
+    -----
+    A typical workflow using this class would be:
+
+        - Define one or more TerrainCorrectionParameters objects for the desired zones.
+        - Instantiate a TerrainCorrector with these parameters and optional DEM/density models.
+        - Add additional zones as needed using ``add_calculation_zone``.
+        - Call ``compute()`` on a set of points.
 
     """
 
@@ -908,7 +917,7 @@ class TerrainCorrector:
                 water_density=pars.water_density,
                 distance_mask_type=pars.distance_mask_type,
                 show_progress=show_progress,
-                method=method,
+                # method=method,
                 compute_topography=pars.compute_topography,
                 compute_bathymetry=pars.compute_bathymetry,
             )
