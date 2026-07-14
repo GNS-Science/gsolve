@@ -174,30 +174,30 @@ def read_excel_worksheet(
 
 def write_excel_worksheet(
     df: _pd.DataFrame,
-    excel_file: FilePath,
+    filename: FilePath,
     sheet_name: str,
     if_workbook_exists: IfWorkbookExists = "error",
     if_sheet_exists: IfSheetExists = "error",
     **kwargs,
 ) -> None:
     """
-    Write DataFrame to excel workbook ``excel_file`` in the worksheet ``sheet_name``.
+    Write DataFrame to excel workbook ``filename`` in the worksheet ``sheet_name``.
 
     Parameters
     ----------
     df : DataFrame
         The DataFrame to write to the excel file.
-    excel_file : str or PathLike
+    filename : str or PathLike
         The path to the excel file.
     sheet_name : str
         The name of the worksheet to write to.
     if_workbook_exists: {"error", "replace", "append"}, default "error"
-        Behaviour if ``excel_file`` already exists.
+        Behaviour if ``filename`` already exists.
         - "error": raise a ValueError.
         - "replace": replace the existing file.
         - "append": append to the existing file.
     if_sheet_exists: {"error", "replace", "new"}, default "error"
-        Behaviour if the ``sheet_name`` already exists in ``excel_file``
+        Behaviour if the ``sheet_name`` already exists in ``filename``
         (append mode only)
         - "error": raise a ValueError.
         - "replace": replace the existing worksheet.
@@ -230,11 +230,11 @@ def write_excel_worksheet(
         "mode": "w",
     }
 
-    excel_file = Path(excel_file)
-    if excel_file.exists():
+    filename = Path(filename)
+    if filename.exists():
         if if_workbook_exists == "error":
             raise ValueError(
-                f"file {excel_file} already exists, and arg {if_workbook_exists=}"
+                f"file {filename} already exists, and arg {if_workbook_exists=}"
             )
         elif if_workbook_exists == "append":
             writer_kwargs["mode"] = "a"
@@ -243,9 +243,9 @@ def write_excel_worksheet(
         writer_kwargs["if_sheet_exists"] = None
 
     try:
-        with _pd.ExcelWriter(excel_file, **writer_kwargs) as writer:
+        with _pd.ExcelWriter(filename, **writer_kwargs) as writer:
             df.to_excel(writer, sheet_name=sheet_name, **kwargs)
     except PermissionError:
         raise PermissionError(
-            f"Cannot write to {excel_file}, it is probably open in another application"
+            f"Cannot write to {filename}, it is probably open in another application"
         )

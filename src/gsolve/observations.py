@@ -154,7 +154,7 @@ class GravityObservationsParameters(GSolveParameters):
             df=prepare_writable_df(
                 df=params_ds.to_frame(), normalize_column_names=True
             ),
-            excel_file=fname,
+            filename=fname,
             sheet_name=sheet_name,
             if_workbook_exists=if_workbook_exists,
             if_sheet_exists=if_sheet_exists,
@@ -1094,7 +1094,7 @@ class GravityObservations(GSolveTable):
                 include_unknown_fields=include_unknown_fields,
                 active_only=active_only,
             ),
-            excel_file=fname,
+            filename=fname,
             sheet_name=sheet_name,
             if_workbook_exists=if_workbook_exists,
             if_sheet_exists=if_sheet_exists,
