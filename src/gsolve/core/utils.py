@@ -782,7 +782,7 @@ def generate_loop_intervals(
 
     Returns
     -------
-    panddas.IntervalIndex
+    pandas.IntervalIndex
         Interval index object.
     """
     db = to_naive_utc_datetime(datetime_bounds, allow_nat=False)

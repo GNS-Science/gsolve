@@ -649,7 +649,7 @@ class TerrainCorrector:
     params: TerrainCorrectionParameters or list-like of TerrainCorrectionParameters
         The TerrainCorrectionParameters object(s) defining the "zones" to be computed.
     dem : xarray.DataArray, list-like or None, default is None
-        User supplided DEM(s) corresponding to each zone defined in ``params``.
+        User supplied DEM(s) corresponding to each zone defined in ``params``.
         For example if ``params=[p1, p2, p3]``, and you wish to specify a DEM for
         p2 only, then the argument must be ``dem=[None, dem_for_p2, None]``. If None,
         the dem will be loaded from the ``dem_source`` attribute of the corresponding
@@ -657,7 +657,7 @@ class TerrainCorrector:
         ``dem_source`` attribute is ignored.
     density_model : xarray.DataArray, list-like or None, default is None
         User supplied density model(s) corresponding to each zone defined in ``params``.
-        If `desity_model` is specified then it must unclude a density model or None for
+        If `density_model` is specified then it must include a density model or None for
         each zone in ``params``. For example if ``params=[p1, p2, p3]``, and you wish
         to specify a density model for p2 only, then the argument must be
         ``density_model=[None, model_for_p2, None]``.

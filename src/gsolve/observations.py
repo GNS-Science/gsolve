@@ -1329,7 +1329,7 @@ class GravityObservations(GSolveTable):
         return self.data.groupby("loop").agg(agg_dict).droplevel(0, axis=1)
 
     def site_summary(self, data_col: str | None = None) -> _pd.DataFrame:
-        """Return a summary statitstics of observations by site.
+        """Return summary statistics of observations by site.
 
         Parameters
         ----------
