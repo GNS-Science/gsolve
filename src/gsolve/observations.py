@@ -1340,7 +1340,7 @@ class GravityObservations(GSolveTable):
         Returns
         -------
         DataFrame
-            Summary statisticsof observations by site.
+            Summary statistics of observations by site.
         """
         from gsolve.core._summary_functions import (
             in_loops,
