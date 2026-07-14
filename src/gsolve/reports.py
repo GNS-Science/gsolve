@@ -157,7 +157,7 @@ class GSolveReport:
         anomalies: GravityAnomalies | None,
     ) -> None:
         """
-        Set site_data attribte from site, observation, network adjustment data.
+        Set site_data attribute from site, observation, network adjustment data.
 
         Parameters
         ----------
