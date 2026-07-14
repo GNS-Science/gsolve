@@ -40,7 +40,7 @@ class GSolveReport:
     """Class for summarising and reporting results of a gSolve network adjustment.
 
     This class provides a simple interface for collating the various inputs
-    to and outputs from a gSolve run. The report can be written to an Excel workbook.
+    and outputs from a gSolve run. The report can be written to an Excel workbook.
 
     Parameters
     ----------
