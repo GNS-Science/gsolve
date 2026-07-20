@@ -61,11 +61,16 @@ extensions = [
     "sphinx_copybutton",
     "sphinx_design",
 ]
+
+# numpydoc configuration
 numpydoc_show_class_members = False
+numpydoc_show_inherited_class_members = False
+numpydoc_attributes_as_param_list = False
+# numpydoc_validation_checks = {"all", "EX01" "SA01"}
+numpydoc_validation_checks = set() # Disable all validation checks
 
 myst_enable_extensions = ["amsmath"]
 
-templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 source_suffix = {
@@ -74,17 +79,23 @@ source_suffix = {
 }
 
 autosummary_generate = True
+autosummary_generate_overwrite = True
+
+templates_path = ["_templates"]
+
 # -- Options for autodoc -----------------------------------------------------
 autodoc_default_options = {
-    "members": True,
+    "members": False,
     "undoc-members": True,
     "show-inheritance": True,
 }
+autodoc_typehints = "none"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_book_theme"
+html_title = "gSolve"
 html_title = "gSolve"
 html_logo = "_static/gsolve_logo.png"
 html_static_path = ["_static"]
@@ -102,4 +113,8 @@ html_theme_options = {
 html_context = {
     "display_version": True,  # Ensure version is displayed
     "version": release,  # Pass version variable to templates
+    "version": release,  # Pass version variable to templates
 }
+
+# The name of the Pygments (syntax highlighting) style to use.
+pygments_style = "sphinx"

@@ -18,6 +18,7 @@
 
 from pathlib import Path
 
+import pandas as pd
 import pandas.testing
 import pytest
 
@@ -25,6 +26,7 @@ from gsolve.core.excel_io import (
     get_excel_worksheets,
     get_true_sheet_name,
     read_excel_worksheet,
+    write_excel_worksheet,
 )
 
 
@@ -59,3 +61,17 @@ def test_read_excel_worksheet(shared_datadir: Path) -> None:
 def test_get_excel_worksheets(shared_datadir: Path) -> None:
     f1 = shared_datadir / "legacy_format.xlsx"
     assert get_excel_worksheets(f1) == ["Survey Data", "Locations", "Tie Data"]
+
+
+def test_write_excel_worksheet_accepts_excel_file_keyword(tmp_path: Path) -> None:
+    filename = tmp_path / "output.xlsx"
+
+    write_excel_worksheet(
+        pd.DataFrame({"x": [1, 2]}),
+        excel_file=filename,
+        sheet_name="Sheet1",
+        index=False,
+    )
+
+    assert filename.exists()
+    assert get_excel_worksheets(filename) == ["Sheet1"]

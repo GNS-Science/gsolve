@@ -47,10 +47,10 @@ def call_gsolve_lstsq(
     ----------
     obs : DataFrame
         The gravity observations to be corrected. The DataFrame must
-        include columns labeled `['site_id', 'gravity', 'timedelta', 'loop']`.
+        include columns labeled ``site_id``, ``gravity``, ``timedelta``, and ``loop``.
         Other columns are ignored.
-        If `calculate_calibration` is True, then obs must also include a column
-        labeled `gravity_not_detided`.
+        If ``calculate_calibration_factor`` is True, then obs must also include a column
+        labeled 'gravity_not_detided'.
     ref_sites : DataFrame
         The reference sites that gravity will be 'tied' to after drift
     method : {1, 2, 3}
@@ -67,9 +67,9 @@ def call_gsolve_lstsq(
         so if 99.0 is specified, the upper and lower 0.5% of residuals are excluded.
     use_loops : bool, default True
         Control how survey loops are treated in the solution.
-        If ``True``, drift curves are fit to each loop.
-        If ``False``, a single drift curve is fit to all observations.
-    solve_for_calibration_factor: bool, default False
+        If True, drift curves are fit to each loop.
+        If False, a single drift curve is fit to all observations.
+    calculate_calibration_factor: bool, default False
         Calculate gravity meter calibration factor.
 
     Returns
@@ -147,8 +147,8 @@ def g_solver_lstsq(
         Loop id for each observation.
     use_loops : bool
         Control how survey loops are treated in the solution.
-        If ``True``, drift curves are fit to each loop.
-        If ``False``, a single drift curve is fit to all observations.
+        If True, drift curves are fit to each loop.
+        If False, a single drift curve is fit to all observations.
     method : {1, 2, 3}
         The gsolve solution method to use. Available methods are:
 

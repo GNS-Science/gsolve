@@ -16,6 +16,8 @@
 
 # Copyright (c) 2025 Earth Sciences New Zealand.
 
+"""Module for converting Lacoste-Romberg G and D meter readings to mGal."""
+
 import warnings
 from io import StringIO
 from typing import Any, Protocol, Sequence, TextIO, runtime_checkable
@@ -114,7 +116,7 @@ class MeterReadingConverter(Protocol):
 
 class LaCosteRombergDialConverter:
     """
-    Convert Lacoste-Romberg G and D meter readings to mgal.
+    Convert Lacoste-Romberg G and D meter readings to mGal.
 
     Implements table based linear interpolation using the "Calibration Table"
     provided with each L&R meter. Readings may be filtered by ``meter_id`` and
@@ -131,7 +133,7 @@ class LaCosteRombergDialConverter:
     value_mgal : ArrayLike
         Gravity in milligals at each ``counter_reading``.
     interval_factor : ArrayLike, optional
-        The gradient of mgal/counter_reading for each interval.
+        The gradient of mGal/counter_reading for each interval.
     starttime : datetimelike, optional
         Date from which correction parameters are valid, default is
         :attr:`pandas.Timestamp.min`.
@@ -142,17 +144,17 @@ class LaCosteRombergDialConverter:
     Attributes
     ----------
     table: DataFrame
-        The conversion table, with columns 'counter_reading', 'value_mgal',
-        'interval_factor' and 'value_mgal_from_ifactor'.
+        The conversion table, with columns ``counter_reading``, ``value_mgal``,
+        ``interval_factor`` and ``value_mgal_from_ifactor``.
 
     Notes
     -----
-    If `interval_factor` is provided, then 'value_mgal' will be recalculated
-    and stored in the 'value_mgal_from_ifactor' column. L&R calibration tables
-    typically provide `value_mgal` rounded to 2 dp (10 ugal resolution)
-    whereas `interval_factor` is specified to 5 dp (1 ugal resolution).
-    Corrections are interpolated using 'value_mgal_from_ifactor' where
-    possible to minimise any loss of precision.
+    If ``interval_factor`` is provided, then ``value_mgal`` will be recalculated
+    and stored in the ``value_mgal_from_ifactor`` column. L&R calibration tables
+    typically provide ``value_mgal`` rounded to 2 dp (10 ugal resolution)
+    whereas ``interval_factor`` is specified to 5 dp (1 ugal resolution).
+    Corrections are interpolated using ``value_mgal_from_ifactor`` where
+    possible to minimise loss of precision.
     """
 
     _table_header_keys = ("meter_id", "starttime", "endtime")
@@ -253,6 +255,7 @@ class LaCosteRombergDialConverter:
 
     @property
     def meter_id(self) -> str:
+        """The ID/serial number of the meter."""
         return getattr(self, "_meter_id", "")
 
     @meter_id.setter
@@ -283,6 +286,13 @@ class LaCosteRombergDialConverter:
             Date up to which correction parameters are valid. Defaults to None (i.e.
             no end date).
 
+        Raises
+        ------
+        ValueError
+            If starttime or endtime cannot be converted to a ``pandas.Timestamp``, or if
+            starttime is >= endtime.
+        TypeError
+            If starttime or endtime is not datetimelike, NaT or None.
         """
         if starttime is _pd.NaT or starttime is None:
             st = None
@@ -316,7 +326,7 @@ class LaCosteRombergDialConverter:
 
     @property
     def starttime(self) -> _pd.Timestamp | None:
-        """The date from which correction parameters are valid."""
+        """The date from which correction parameters are valid."""  # noqa: DOC501
         st = getattr(self, "_starttime", None)
         if st is not None and not isinstance(st, _pd.Timestamp):
             raise TypeError(
@@ -326,7 +336,7 @@ class LaCosteRombergDialConverter:
 
     @property
     def endtime(self) -> _pd.Timestamp | None:
-        """The date up to which correction parameters are valid."""
+        """The date up to which correction parameters are valid."""  # noqa: DOC501
         r = getattr(self, "_endtime", None)
         if r is not None and not isinstance(r, _pd.Timestamp):
             raise TypeError(
@@ -348,7 +358,7 @@ class LaCosteRombergDialConverter:
             The readings to be converted.
         meter_id : str, array_like, optional
             The meter id/name associated with the readings. If provided, only readings
-            with `meter_id` matching the converter's `meter_id` will be converted.
+            with ``meter_id`` matching the converter's ``meter_id`` will be converted.
         date_time : datetimelike, array_like, optional
             The date/time of the readings. If provided, only readings
             with ``date_time`` falling within converter's ``valid_date_range``
@@ -358,14 +368,17 @@ class LaCosteRombergDialConverter:
         -------
         float, ndarray
             The converted readings. Readings where ``meter_id`` or ``date_time``
-            do not match the converter's  will be returned as NaN.
+            do not match the converter's ``meter_id`` or ``valid_date_range``
+            will be returned as NaN.
 
         Raises
         ------
         ValueError
             Where reading(s) are outside the limits of the conversion table.
+        TypeError
+            If ``meter_id`` is not a string or array of strings, or if ``date_time``
+            is not datetimelike or array of datetimelike.
         """
-
         interval_bounds: _npt.NDArray[_np.float64] = self.table.index.to_numpy(
             _np.float64
         )
@@ -441,7 +454,14 @@ class LaCosteRombergDialConverter:
         return converted
 
     def converter_id(self) -> str:
-        """Identifier label of form 'meter_id:starttime_to_endtime'."""
+        """
+        Return identifier for this meter conversion table.
+
+        Returns
+        -------
+        str
+            Identifier label of form 'meter_id:{starttime}_to_endtime'.
+        """
         st = (
             "from_" + self.starttime.strftime("%Y-%m-%d")
             if self.starttime is not None
@@ -464,7 +484,8 @@ class LaCosteRombergDialConverter:
         starttime: DatetimeScalar = _pd.Timestamp.min,
         endtime: DatetimeScalar = _pd.Timestamp.max,
     ) -> "LaCosteRombergDialConverter":
-        """Generate a LaCosteRombergDialConverter object from a standard L&R G-meter table.
+        """
+        Generate a LaCosteRombergDialConverter object from a standard L&R G-meter table.
 
         The input table data must have at least 3 columns, which are assumed to be
         "interval_start", "interval_end", "interval_factor".
@@ -477,16 +498,15 @@ class LaCosteRombergDialConverter:
             The correction table data.
         starttime : datetimelike
             Date from which correction parameters are valid, default is
-            pandas.Timestamp.min.
+            ``pandas.Timestamp.min``.
         endtime : datetimelike
             Date up to which correction parameters are valid. Defaults to
-            pandas.Timestamp.max.
+            ``pandas.Timestamp.max``.
 
         Returns
         -------
-        DialToMgalConverter
+        LaCosteRombergDialConverter
         """
-
         return cls(
             meter_id=meter_id,
             counter_reading=table["counter_reading"],
@@ -504,7 +524,30 @@ class LaCosteRombergDialConverter:
 
     @classmethod
     def from_csv(cls, fname: FilePath, **kwargs) -> "LaCosteRombergDialConverter":
-        """Generate a LaCosteRombergDialConverter object from a csv file."""
+        """
+        Generate a LaCosteRombergDialConverter object from a csv file.
+
+        Parameters
+        ----------
+        fname : str or TextIO
+            Path to the csv file, or a file-like object containing the csv data.
+        kwargs : dict
+            Additional keyword arguments to be passed to ``pandas.read_csv``.
+
+        Returns
+        -------
+        LaCosteRombergDialConverter
+
+        Raises
+        ------
+        ValueError
+            Raised if:
+
+            - the file is empty
+            - required header keys are missing
+            - column labels are missing or invalid
+            - readings are outside the limits of the conversion table
+        """
         if isinstance(fname, TextIO):
             data = fname.readlines()
         else:

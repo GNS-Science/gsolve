@@ -34,7 +34,7 @@ from gsolve.core._typing import (
     Renamer,
 )
 from gsolve.core.excel_io import (
-    parse_sheet_name_arg,
+    _parse_sheet_name_arg,
     read_excel_worksheet,
     write_excel_worksheet,
 )
@@ -145,22 +145,22 @@ class GSolveTable:
         return len(self.data) if self else 0
 
     def __copy__(self) -> Self:
-        """Ensure all copies are deep copies."""
+        """Ensure all copies are deep copies."""  # noqa: DOC201
         return deepcopy(self)
 
     def copy(self) -> Self:
-        """Return a deep copy of object."""
+        """Return a deep copy of object."""  # noqa: DOC201
         return self.__copy__()
 
     @classmethod
     def known_fields(cls) -> list[str]:
-        """Return a list of known fields in a GSolveTable or subclass."""
+        """Return a list of known fields in the object."""  # noqa: DOC201
         fields = [str(k) for k in getattr(cls, "_known_fields", {}).keys()]
         return fields
 
     @classmethod
     def required_fields(cls) -> list[str]:
-        """Return a list of required fields in a GSolveTable or subclass."""
+        """Return a list of required fields in the object."""  # noqa: DOC201
         if cls.known_fields():
             return [k for k, v in getattr(cls, "_known_fields").items() if v.required]
         return []
@@ -195,7 +195,6 @@ class GSolveTable:
         dtype : Any, default None
             The data type of the column. Defaults to None, do
         """
-
         for attrname in ("_custom_fields", "_known_fields"):
             fields = getattr(self, attrname, {})
             if label in fields:
@@ -223,7 +222,7 @@ class GSolveTable:
         self.data[label] = _pd.Series(data=_data, index=self.data.index, dtype=dtype)
 
     def _data_ok(self, warn: bool = True) -> bool:
-        """Test whether data are complete according to specifications in ``obj._known_fields``."""
+        """Test whether data are complete according to specifications in ``obj._known_fields``."""  # noqa: DOC201
         rval = True
         for f in self.required_fields():
             if f not in self.data.columns:
@@ -256,7 +255,7 @@ class GSolveTable:
         use_index : bool, default True
             Load dataframe index as a data column. Drop index if False.
         ignore_unknown_fields : bool, default False
-            Ignore fields that are not in the `known_fields` attribute.
+            Ignore fields that are not in the known_fields attribute.
         parse_split_datetime: bool, default False
             If True, parse discrete year, month, day columns into a single
             datetime column and drop the original columns. Expected columns
@@ -264,7 +263,7 @@ class GSolveTable:
             with at least year, month, and day being required.
         mapper : dict-like or function, default None
             Rename input fields/columns prior to loading. See
-            `pandas.Dataframe.rename` for details.
+            ``pandas.DataFrame.rename`` for details.
 
         Returns
         -------
@@ -315,7 +314,7 @@ class GSolveTable:
         csv_file : str or PathLike
             The path to the CSV file.
         ignore_unknown_fields : bool, default True
-            Only include `known fields` in the resulting object.
+            Only include known fields in the resulting object.
         parse_split_datetime: bool, default False
             If True, parse discrete year, month, day columns into a single
             datetime column and drop the original columns. Expected columns
@@ -323,9 +322,9 @@ class GSolveTable:
             with at least year, month, and day being required.
         mapper : dict-like or function, default None
             Rename input fields/columns prior to loading. See
-            `pandas.Dataframe.rename` for details.
-        **kwargs
-            Additional keyword arguments to be passed to `pandas.read_csv`.
+            ``pandas.DataFrame.rename`` for details.
+        kwargs
+            Additional keyword arguments to be passed to ``pandas.read_csv``.
 
         Returns
         -------
@@ -356,11 +355,11 @@ class GSolveTable:
         ----------
         excel_file : str or PathLike
             The path to the Excel file.
-        sheet_name : str | int | list-like, optional
+        sheet_name : str, int, or  list-like, optional
             The name or index of the worksheet to read. If None, then
             try to use the default sheet name(s) defined in the class.
         ignore_unknown_fields : bool, default True
-            Only include `known fields` in the resulting object.
+            Only include known fields in the resulting object.
         parse_split_datetime: bool, default False
             If True, parse discrete year, month, day columns into a single
             datetime column and drop the original columns. Expected columns
@@ -368,9 +367,9 @@ class GSolveTable:
             with at least year, month, and day being required.
         mapper : dict-like or function, default None
             Rename fields/columns after loading. See
-            `pandas.Dataframe.rename` for details.
-        **kwargs
-            Additional keyword arguments to be passed to `pandas.read_excel`.
+            ``pandas.DataFrame.rename`` for details.
+        kwargs
+            Additional keyword arguments to be passed to ``pandas.read_excel``.
 
         Returns
         -------
@@ -421,14 +420,16 @@ class GSolveTable:
         ----------
         fname : str or PathLike
             Output file name.
-        normalize_columns_names : bool, default True
+        normalize_column_names : bool, default True
             Make column names lowercase with no spaces.
         expand_datetime : str or None, default None
-            Expand datetime fields to
+            Expand datetime fields to separate columns for year, month, day, ...
+        drop_datetime : bool, default False
+            Drop datetime fields from output.
         bool_to_int : bool, default False
-            Convert True, False to 1, 0.
-        **kwargs
-            Optional arguments to be passed to `pandas.to_csv`.
+            Convert True/False to 1/0.
+        kwargs
+            Optional arguments to be passed to ``pandas.to_csv``.
 
         See Also
         --------
@@ -479,18 +480,19 @@ class GSolveParameters:
     """Base class to store parameters related to GSolveTable derived classes."""
 
     def __copy__(self) -> Self:
-        """Ensure all copies are deep copies."""
+        # Ensure all copies are deep copies.
         return deepcopy(self)
 
     def __param_str__(self) -> str:
+        # Return a string representation of the parameters
         return repr(self).partition("(")[2].rpartition(")")[0]
 
     def copy(self) -> Self:
-        """Return a deep copy of object."""
+        """Return a deep copy of object."""  # noqa: DOC201
         return self.__copy__()
 
     def to_dict(self) -> dict:
-        """Return parameters as a dict."""
+        """Return parameters as a dict."""  # noqa: DOC201
         return dataclasses.asdict(self)
 
     def to_series(
@@ -577,13 +579,13 @@ class GSolveParameters:
 
     @classmethod
     def default_values(cls) -> dict:
-        """Return dict of default parameter values."""
+        """Return dict of default parameter values."""  # noqa: DOC201
         return {
             k: cls.__dataclass_fields__[k].default for k in cls.__dataclass_fields__
         }
 
     def non_default_values(self) -> dict:
-        """Return dict of non-default parameter values."""
+        """Return dict of non-default parameter values."""  # noqa: DOC201
         defaults = self.default_values()
         return {k: v for k, v in self.to_dict().items() if defaults.get(k, None) != v}
 
@@ -615,12 +617,13 @@ class GSolveParameters:
             Set the header label for parameter names column in output worksheet.
         values_label : str, default is 'value'
             Set the header label for parameter names column in output worksheet.
-        **kwargs : dict
-            Additional keyword arguments passed to `pandas.DataFrame.to_excel`.
+        kwargs : dict
+            Additional keyword arguments passed to ``pandas.DataFrame.to_excel``.
 
         See Also
         --------
-        write_excel_worksheet
+        write_excel_worksheet : Function to write a DataFrame to an Excel worksheet
+            with options for handling existing workbooks and sheets.
         pandas.Dataframe.to_excel
 
         """
@@ -644,10 +647,26 @@ class GSolveParameters:
             **kwargs,
         )
 
+    # Todo: remove this method
     def summary(
         self, include_name: bool = True, as_list: bool = True
     ) -> list[str] | str:
-        """Return a list of params as strings in the form 'param: value'."""
+        """
+        Return parameters as strings in the form 'param: value'.
+
+        Parameters
+        ----------
+        include_name : bool, default True
+            Include the class name in the output.
+        as_list : bool, default True
+            Return the output as a list of strings. If False, return as a single string
+            with each parameter on a new line.
+
+        Returns
+        -------
+        list[str] | str
+            The parameters as a string or list of strings.
+        """
         txt = []
         if include_name:
             txt.append(f"{type(self).__name__}")

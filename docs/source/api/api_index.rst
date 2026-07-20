@@ -1,34 +1,56 @@
+=============
 API Reference
 =============
 
-.. automodule:: gsolve
-   :members:
-   :undoc-members:
-   :show-inheritance:
+This section contains per-module API documentation.
 
-.. automodule:: gsolve.tide.earth_tide
-   :members:
-   :undoc-members:
-   :show-inheritance:
+Observations and Site Data
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: gsolve.tide.ocean_load
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. toctree::
+   :maxdepth: 1
 
-.. automodule:: gsolve.scintrex
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   observations
+   sites
+   survey
+   scintrex
+   meter_conversion
 
-.. automodule:: gsolve.reductions.corrections
-   :members:
-   :undoc-members:
-   :show-inheritance:
+Tidal Corrections
+~~~~~~~~~~~~~~~~~
+.. toctree::
+   :maxdepth: 1
 
-.. automodule:: gsolve.reductions.anomalies
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   tide_earth_tide
+   tide_ocean_load
+
+gSolve Algorithms
+~~~~~~~~~~~~~~~~
+.. toctree::
+   :maxdepth: 1
+
+   gsolve_algorithms
+   reports
+
+Reductions and Anomalies
+~~~~~~~~~~~~~~~~~~~~~~~~
+.. toctree::
+   :maxdepth: 1
+
+   anomalies_corrections
+   reductions_terrain_corrections
+
+
+Utils and Internal Functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. toctree::
+   :maxdepth: 1
+
+   core_data
+   core_excel_io
+   core_utils
+   xarray_methods
+   core_typing
+
 
 

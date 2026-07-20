@@ -18,6 +18,9 @@ from gsolve import (
     DialToMgalConverter,
     GSolveReport
 )
+
+from gsolve.tide.earth_tide import LongmanTidalCorrection
+from gsolve.tide.earth_tide import EternaPredictTidalCorrection
 ```
 
 Set up the directory and files required.  We need a calibration survey dataset (in excel format here), the G meter dial correction table and the reference stations list.
@@ -76,11 +79,24 @@ obs.apply_dial_to_mgal(g106converter)
 
 Note that as we want to calculate the calibration factor we do not need to apply an existing calibration.
 
-### calculate the earth tide correction which requires location information from sites
+### Calculate the earth tide correction
+
+This requires location information from the sites object.  There is the option of using the Longman formula or ETERNA Predict with a choice of tidal potential models.
+Refer to [pygtide documentation](https://github.com/hydrogeoscience/pygtide) for other options.
 
 ```python
-obs.apply_earth_tide_correction(sites)
+longman = LongmanTidalCorrection(amp_factor=1.2)
+obs.apply_earth_tide_correction(sites, tide_corrector = longman)
 ```
+
+Another option is to use pygtide for corrections which uses the more accurate ETERNA tidal model.
+
+```python
+eterna = EternaPredictTidalCorrection(tidalpoten=8)
+obs.apply_earth_tide_correction(sites, tide_corrector = eterna)
+```
+
+Other tidal parameters for Eterna can be set through ```set_tidal_params``` once the tide correction object is initialised. e.g. ```eterna.set_tidal_params([0, 100, 1.15, 0])```
 
 ### calculate earth tide corrected gravity
 

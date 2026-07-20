@@ -31,8 +31,10 @@ from gsolve import (
     ReferenceGravity,
 )
 from gsolve.reports import GSolveReport
-from gsolve.tide.earth_tide import LongmanTidalCorrection
+from gsolve.tide.earth_tide import EternaPredictTidalCorrection
 from gsolve.tide.ocean_load import HardispOceanLoadCorrector
+
+import numpy as np
 
 # %%
 data_path = pathlib.Path(__file__).parent.parent
@@ -46,7 +48,7 @@ survey_file = obs_path / "G106_temaari.xlsx"
 corr_table_file = data_path / "correction_tables" / "G106.csv"
 
 # the calibration factor for your meter (determined in calibration survey)
-calibration_factor = 1 - -0.0019
+calibration_factor = 1.0019
 
 # %%
 # Read in observations
@@ -77,8 +79,8 @@ obs.apply_dial_to_mgal(g106converter)
 obs.set_calibration_factor(calibration_factor)
 
 # calculate the earth tide correction which requires location information from sites
-longman = LongmanTidalCorrection(amp_factor=1.16)
-obs.apply_earth_tide_correction(sites, tide_corrector=longman)
+eterna = EternaPredictTidalCorrection(np.c_[0, 10, 1.154, 0])
+obs.apply_earth_tide_correction(sites, tide_corrector=eterna)
 
 # Ocean Load Corrections using pyhardisp
 # read in the BLQ file from the online provider

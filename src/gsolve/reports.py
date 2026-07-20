@@ -16,8 +16,10 @@
 
 # Copyright (c) 2025 Earth Sciences New Zealand.
 
+from copy import deepcopy
+
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 import pandas as _pd
 
@@ -35,38 +37,47 @@ __all__ = ["GSolveReport"]
 
 
 class GSolveReport:
-    """Class for summarising and reporting results of a simnge GSolve network adjustment.
+    """Class for summarising and reporting results of a gSolve network adjustment.
 
     This class provides a simple interface for collating the various inputs
-    and outputs from a GSolve run. The report can be
-    printed to the console or saved to an Excel workbook.
+    and outputs from a gSolve run. The report can be written to an Excel workbook.
 
     Parameters
     ----------
-    observations : GravityObservations
-        The observations used in the GSolve network adjustment.
-    survey : GravitySurvey
-        The survey associated with the observations.
+    observations : GravityObservations | GravitySurvey
+        The observations used in the gSolve network adjustment.
+    sites: GravitySites | GravitySurvey
+        The sites associated with the observations.
     results : GSolveResults
-        The results of a GSolve network adjustment.
+        The results of a gSolve network adjustment.
     anomalies : GravityAnomalies, optional
-        The gravity anomalies calculated from the observations.
+        The gravity standard corrections for each site and gravity anomalies
+        calculated from adjusted gravity results.
     terrain_corrections: TerrainCorrectionData, optional
-        Terrain corrections for sites. If terrain corrections are included in the
-        anomalies object, these will be used to populate the terrain correction data
+        Terrain corrections for sites. Not required if terrain correction data
+        are already included in the ``anomalies`` object.
 
     Attributes
     ----------
     obs_data : Dataframe
-        Gravity observation inputs and outputs.
+        Gravity observation input data and network adjusted outputs.
     site_data : Dataframe
-        All site related data, including inputs, solutions, normal gravity
+        All site related data, including input data, site solutions, normal gravity
         corrections and anomalies.
     loop_data : Dataframe
-        Gsolve solutions by loop.
+        gSolve network adjustment solutions for each loop.
+    terrain_correction_data : Dataframe
+        Terrain corrections for each site, if provided.
     params : dict
-        The parameters objects for "observations", "sites", "solution", "anomalies"
-        and terrain corrections.
+        A dictionary of objects storing the various parameters used in
+        reducing input data, performing network adjustment and calculating anomalies.
+        The dictionary provides the following keys:
+
+                        - 'observations' : GravityObservationsParameters.
+                        - 'solution' : GSolveSolutionParameters.
+                        - 'anomalies' : GravityCorrectionParameters, if ``anomalies`` argument provided.
+            - 'terrain_corrections': dict of terrain correction parameters of the form
+                            {"zone_id": TerrainCorrectionParameters}.
 
     """
 
@@ -75,8 +86,8 @@ class GSolveReport:
         observations: GravityObservations | GravitySurvey,
         sites: GravitySites | GravitySurvey,
         results: GSolveResults,
-        terrain_corrections: TerrainCorrectionData | None = None,
         anomalies: GravityAnomalies | None = None,
+        terrain_corrections: TerrainCorrectionData | None = None,
     ) -> None:
         self.site_data: _pd.DataFrame
         self.obs_data: _pd.DataFrame
@@ -111,6 +122,14 @@ class GSolveReport:
         self._set_loop_data(results=results, obs_input=observations)
         self._set_terrain_correction_data(terrain_corrections=terrain_corrections)
 
+    def copy(self) -> Self:
+        """Return a deep copy."""  # noqa: DOC201
+        return self.__copy__()
+
+    def __copy__(self) -> Self:
+        """Return a deep copy."""  # noqa: DOC201
+        return deepcopy(self)
+
     def _set_params(
         self,
         observations: GravityObservations,
@@ -118,6 +137,7 @@ class GSolveReport:
         results: GSolveResults,
         anomalies: GravityAnomalies | None = None,
     ) -> None:
+
         self.params["observations"] = observations.params()
         if hasattr(sites, "params"):
             self.params["sites"] = sites.params.copy()  # ty:ignore[unresolved-attribute]
@@ -136,8 +156,19 @@ class GSolveReport:
         results: GSolveResults,
         anomalies: GravityAnomalies | None,
     ) -> None:
-        """Set self.site_data DataFrame by merging GravitySites, GSolveResults and
-        GravityAnomalies objects.
+        """
+        Set site_data attribute from site, observation, network adjustment data.
+
+        Parameters
+        ----------
+        site_input : GravitySites
+            Gravity site data.
+        obs_input : GravityObservations
+            Gravity observation data.
+        results : GSolveResults
+            Results of gSolve network adjustment.
+        anomalies : GravityAnomalies, optional
+            Standard gravity anomalies and corrections for each site.
         """
         merge_kwargs = dict(
             left_index=True,
@@ -277,36 +308,32 @@ class GSolveReport:
         filename: FilePath,
         if_workbook_exists: IfWorkbookExists = "error",
         if_sheet_exists: IfSheetExists = "error",
+        **kwargs: Any,  # noqa: ANN401
     ) -> None:
         """
-        Save 'report' to an Excel file.
+        Save the report data to an Excel file.
 
         Parameters
         ----------
         filename : str or PathLike
-            Write the Excel workbook to `filename`.
+            Write the report to ``filename``.
         if_workbook_exists : {'error', 'append', 'replace'}, default 'error'
-            Behaviour if `filename` already exists:
+            Behaviour if ``filename`` already exists:
 
-                - ``'error'`` : raise an error if the workbook already exists.
-                - ``'append'`` : attempt append worksheets to an existing workbook.
-                - ``'replace'`` : overwrite the existing workbook.
+                - 'error' : raise an error if the workbook already exists.
+                - 'append' : attempt append worksheets to an existing workbook.
+                - 'replace' : overwrite the existing workbook.
 
         if sheet_exists : {'error', 'replace', 'new'}, default 'error'
             Behaviour if the worksheet already exists (Only applicable when
             ``if_workbook_exists='append'``)
 
-                - ``'error'``: raise a ValueError
-                - ``'replace'`` : overwrite workseet.
-                - ``'new'`` : create a new worksheet with a different name.
+                - 'error': raise a ValueError
+                - 'replace' : overwrite workseet.
+                - 'new' : create a new worksheet with a different name.
+        **kwargs :
+            Arguments to be passed to ``DataFrame.to_excel()`` method.
         """
-
-        # used after writing initial worksheet, because then workbook exists
-        write_excel_kwargs: dict = {
-            "if_workbook_exists": "append",
-            "if_sheet_exists": if_sheet_exists,
-        }
-
         sheets_to_write = ["observations", "sites", "loops", "metadata"]
 
         filename = Path(filename)
@@ -329,52 +356,59 @@ class GSolveReport:
 
         # observations
         write_excel_worksheet(
-            prepare_writable_df(
-                self.obs_data,
+            df=prepare_writable_df(
+                df=self.obs_data,
                 expand_datetime="datetime",
                 drop_datetime=False,
                 bool_to_int=True,
             ),
-            filename,
+            filename=filename,
             sheet_name="observations",
             if_workbook_exists=if_workbook_exists,
             if_sheet_exists=if_sheet_exists,
+            **kwargs,
         )
+
+        # if_workbook_exists, set to "append" for subsequent sheets, as workbook will now exist
 
         # sites
         write_excel_worksheet(
-            prepare_writable_df(
-                self.site_data,
+            df=prepare_writable_df(
+                df=self.site_data,
                 expand_datetime=None,
                 bool_to_int=True,
             ),
-            filename,
+            filename=filename,
             sheet_name="sites",
-            **write_excel_kwargs,
+            if_workbook_exists="append",
+            if_sheet_exists=if_sheet_exists,
+            **kwargs,
         )
 
         # loop
         write_excel_worksheet(
-            prepare_writable_df(self.loop_data),
-            filename,
+            df=prepare_writable_df(self.loop_data),
+            filename=filename,
             sheet_name="loops",
-            **write_excel_kwargs,
+            if_workbook_exists="append",
+            if_sheet_exists=if_sheet_exists,
         )
 
         if self.terrain_correction_data is not None:
             write_excel_worksheet(
-                prepare_writable_df(self.terrain_correction_data),
-                filename,
+                df=prepare_writable_df(self.terrain_correction_data),
+                filename=filename,
                 sheet_name="terrain_corrections",
-                **write_excel_kwargs,
+                if_workbook_exists="append",
+                if_sheet_exists=if_sheet_exists,
+                **kwargs,
             )
 
-        # parameters
-        write_metadata_kwargs = write_excel_kwargs.copy()
-        write_metadata_kwargs.update(index=False)
-
+        # Write all parameters to a single spreadsheet
         all_params = []
 
+        # This is a kludge - should create method on parameter objects to
+        # to normalise parameter outputs for writing to excel.
         def _format_value(x: Any) -> str | float | int | bool:  # noqa: ANN401
             if isinstance(x, _pd.Timedelta):
                 return x.total_seconds()
@@ -382,19 +416,25 @@ class GSolveReport:
                 return str(x)
             return x
 
-        for section, param in self.params.items():
+        for section, param_obj in self.params.items():
             df: _pd.DataFrame = (
-                param.to_series(series_name="value", index_name="parameter")
+                param_obj.to_series(series_name="value", index_name="parameter")
                 .to_frame()
                 .reset_index()
-            )
+            ).copy()
             df.iloc[:, 1] = df.iloc[:, 1].map(_format_value)
             df.insert(0, "section", section)
             all_params.append(df)
 
+        if "index" in kwargs:
+            _ = kwargs.pop("index")
+
         write_excel_worksheet(
-            _pd.concat(all_params),
-            filename,
+            df=_pd.concat(all_params),
+            filename=filename,
             sheet_name="metadata",
-            **write_metadata_kwargs,
+            if_workbook_exists="append",
+            if_sheet_exists=if_sheet_exists,
+            index=False,
+            **kwargs,
         )

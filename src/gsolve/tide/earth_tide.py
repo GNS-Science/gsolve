@@ -23,12 +23,10 @@ from typing import Literal, Protocol, Self, overload, runtime_checkable
 import numpy as _np
 import pandas as _pd
 import pygtide
-from matplotlib.pyplot import axis
 from numpy import arccos, arcsin, arctan, cos, deg2rad, pi, sin, sqrt
 from numpy.typing import ArrayLike, NDArray
-from pandas.api.interchange import from_dataframe
 from pandas.api.typing import NaTType
-from PIL.Image import new
+
 
 from gsolve.core._typing import (
     DatetimeArray,
@@ -59,7 +57,7 @@ __all__ = [
 class EarthTideCorrectionProvider(Protocol):
     """Protocol defining interface for classes that provide earth tide corrections."""
 
-    def tidal_correction(
+    def tidal_correction(  # noqa: D102
         self,
         lat: FloatArray,
         lon: FloatArray,
@@ -69,7 +67,7 @@ class EarthTideCorrectionProvider(Protocol):
         **kwargs,
     ) -> NDArray[_np.float64]: ...
 
-    def identifier(self, **kwargs) -> str: ...
+    def identifier(self, **kwargs) -> str: ...  # noqa: D102
 
 
 def gravimetric_factor(
@@ -88,7 +86,7 @@ def gravimetric_factor(
     Returns
     -------
     delta2: ndarray or float
-        The gravimetric factor, float if both `k2` & `h2` are
+        The gravimetric factor, float if both ``k2`` and ``h2`` are
         floats.
 
     References
@@ -183,6 +181,12 @@ class LongmanTidalCorrection(EarthTideCorrectionProvider):
         return f"{self.__class__.__name__}(amp_factor={self.amp_factor})"
 
     def identifier(self, **kwargs) -> str:
+        """Return an identifier string for this LongmanTidalCorrection instance.
+
+        Returns
+        -------
+        str
+        """
         if not kwargs:
             return self.__repr__()
 
@@ -210,12 +214,7 @@ class LongmanTidalCorrection(EarthTideCorrectionProvider):
             Elevation in meters (datum independent)
         dt : str, datetime, or array_like of shape(M,)
             The date-times to be at which to calculate corrections. Can
-            be any format parsable by Pandas.to_datetime() method.
-        amp_factor : float, or array_like of shape(M,), optional
-            Factor to apply to tidal corrections to account for earth's
-            deformation response to tidal forces. Tyypically in range
-            1.14-1.2 for semi-diurnal tides (default 1.2). To calculate this factor
-            using h2 and k2 parameters the gravimetric_factor function can be used.
+            be any format parsable by ``pandas.to_datetime()`` method.
 
         Returns
         -------
@@ -412,6 +411,9 @@ class LongmanTidalCorrection(EarthTideCorrectionProvider):
             Elevation in meters
         date_time : array_like
             The datetimes at which to calculate corrections.
+        site_id : array_like, optional
+            This argument is required to match the signature of the
+            ``EarthTideCorrectionProvider`` protocol, but is ignored in this implementation.
 
         Returns
         -------
@@ -527,11 +529,13 @@ def _decimal_julian_century(
         The date-times to be converted. Can be any format parsable by
         ``pandas.to_datetime`` method. Datetimes without a timezone are
         assumed to be in UTC.
+    kwargs :
+        Additional keyword arguments are passed to ``to_naive_utc_datetime``.
 
     Returns
     -------
     julian_century : ndarray or scalar
-        This is scalar if `dt` is a single value.
+        This is scalar if ``dt`` is a single value.
 
     See Also
     --------
@@ -579,7 +583,7 @@ def _decimal_hour_of_day(
     Returns
     -------
     hour : ndarray or scalar
-        The decimal hour. This is a scalar if `arg` is a single value.
+        The decimal hour. This is a scalar if ``date_time`` is a single value.
 
     """
     _dt = to_naive_utc_datetime(date_time, allow_nat=False)
@@ -607,21 +611,16 @@ class EternaTidalParameters:
     define the ampltude factors and phase leads to be applied to the tidal potentials
     provided by a given tidal catalogue. A single tidal parameter is comprises 4 values
 
-        - ``freq_start``: the start frequency of the tidal constituent in cycles per day (cpd).
-        - ``freq_stop``: the stop frequency of the tidal constituent in cpd.
-        - ``amplitude_factor``: multiply the amplitude of the tidal constituent.
-        - ``phase_lead``: the phase lead in degrees
+        - 'freq_start': the start frequency of the tidal constituent in cycles per day (cpd).
+        - 'freq_stop': the stop frequency of the tidal constituent in cpd.
+        - 'amplitude_factor': multiply the amplitude of the tidal constituent.
+        - 'phase_lead': the phase lead in degrees
 
     An example tidal parameter (from ETERNA documentation) covering M2, the semi-diurnal
     lunar tide constituent is ``[1.914129, 1.950419, 1.18705, 2.0327]``. Multiple tidal
     parameters can be combined to cover the full spectrum of tidal constituents.
 
-    Attributes
-    ----------
-    data : pd.DataFrame
-        A DataFrame containing the tidal parameters under the columns 'freq_start',
-        'freq_stop', 'amplitude', and 'phase_lead'. Other columns such as 'wave_group'
-        label may be included but are not used.
+
 
     Parameters
     ----------
@@ -639,10 +638,12 @@ class EternaTidalParameters:
         Other columns to include in the ``data`` DataFrame. Must be array-like of the
         same size as the other parameters.
 
-    Returns
-    -------
-    EternaTidalParameters
-         An instance of the class containing the tidal parameters.
+    Attributes
+    ----------
+    data : pd.DataFrame
+        A DataFrame containing the tidal parameters under the columns ``freq_start``,
+        ``freq_stop``, ``amplitude``, and ``phase_lead``. Other columns such as a ``wave_group``
+        label may be included but are not used.
 
     See Also
     --------
@@ -704,7 +705,7 @@ class EternaTidalParameters:
 
         - All data are floats with no NaN.
         - Frequency intervals are positive and increasing
-            i.e. ``freq_start`` < ``freq_stop``.
+            i.e. ``freq_start < freq_stop``.
         - Frequency intervals are discrete and do not overlap.
         - Warn if there are gaps between successivefrequency intervals.
 
@@ -713,7 +714,6 @@ class EternaTidalParameters:
         ValueError
             If any of the above validations fail.
         """
-
         emsg = GSolveDataWarning(prefix=f"{type(self).__name__} error", show=True)
         errors = []
         data_subset = self.data.loc[
@@ -799,7 +799,7 @@ class EternaTidalParameters:
         ----------
         df : pd.DataFrame
             A DataFrame containing columns 'freq_start', 'freq_stop', 'amplitude', and
-            'phase_lead'. Other columns will be included in the object's ``data``
+            'phase_lead'. Other columns will be included in the object's 'data'
             attribute but are not required.
         include_index : bool, default False
             If True, the index will be treated as a column when parsing the DataFrame.
@@ -840,7 +840,7 @@ class EternaTidalParameters:
             or spreadsheet format (e.g. odf) supported by ``pandas.read_excel()``,
         sheet_name : str | int, default is 0
             The name or index of the worksheet to read. Default is 0, the first
-            sheet in `fname`.
+            sheet in ``fname``.
 
         Returns
         -------
@@ -852,7 +852,6 @@ class EternaTidalParameters:
             object from a DataFrame.
         pandas.read_excel : Read an Excel file into a DataFrame.
         """
-
         df = _pd.read_excel(fname, sheet_name=sheet_name)
         if isinstance(df, dict):
             raise ValueError(
@@ -863,13 +862,15 @@ class EternaTidalParameters:
 
     @classmethod
     def quick_tide_pro_defaults(cls) -> Self:
-        """Return an EternaTidalParameters instance with the
-        default parameters used by QuickTide Pro.
+        """Return an EternaTidalParameters instance with parameters used by QuickTide Pro.
 
         Quick tide pro uses the Tamura (1987) tidal potential catalogue.
         Using thee parameters with higer resolution tide catalogues may
         produce unexpected results.
 
+        Returns
+        -------
+        EternaTidalParameters
         """
         df = _pd.DataFrame.from_dict(
             data={
@@ -899,12 +900,38 @@ class EternaTidalParameters:
         amplitude_factor: float = 1.16,
         phase_lead: float = 0.0,
     ) -> Self:
-        """Return a tidal parameters object with default values used by GSolve."""
+        """Return a TidalParameters object with default values used by gSolve.
+
+        Parameters
+        ----------
+        freq_start : float, default 0.0
+            The start frequency of the tidal constituent in cycles per day (cpd).
+        freq_stop : float, default 10.0
+            The stop frequency of the tidal constituent in cycles per day (cpd).
+        amplitude_factor : float, default 1.16
+            The amplitude factor to apply to the tidal constituent.
+        phase_lead : float, default 0.0
+            The phase lead in degrees to apply to the tidal constituent.
+
+        Returns
+        -------
+        EternaTidalParameters
+            An instance of the class containing the tidal parameters.
+        """
         return cls.from_array([freq_start, freq_stop, amplitude_factor, phase_lead])
 
     def pygtide_wavegroup_arg(self) -> NDArray[_np.float64]:
-        """Return a copy of the paramaters as an ndarray (shape= (N, 4))
-        for use as the argument to ``pygtide.set_wavegroup()`` method.
+        """Return a copy of the paramaters as ndarray.
+
+        The returned array is intended to be used as the argument to
+        ``pygtide.set_wavegroup()`` method.
+
+        Returns
+        -------
+        wavegroup : NDArray
+            A 2D array of shape = (n, 4) where the 4 columns correspond to
+            'freq_start', 'freq_stop', 'amplitude', and 'phase_lead'.
+
         """
         return (
             self.data.loc[:, ["freq_start", "freq_stop", "amplitude", "phase_lead"]]
@@ -915,12 +942,6 @@ class EternaTidalParameters:
 
 class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
     """Compute earth tide gravity corrections using PREDICT from ETERNA34.
-
-    The
-
-    Attributes
-    ----------
-    tidal_params : EternaTidalParameters
 
     Parameters
     ----------
@@ -956,6 +977,10 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
         potential catalogues.. LOD corrections are depenedent on observational data
         provided by IERS, so the user should that they periodically run
         ``pgtide.update()`` to ensure these data are up to date.
+
+    Attributes
+    ----------
+    tidal_params : EternaTidalParameters
 
     See Also
     --------
@@ -1006,6 +1031,21 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
         self._pgt.set_wavegroup(self.tidal_params.pygtide_wavegroup_arg())
 
     def identifier(self, **kwargs) -> str:
+        """Return a string identifier for this corrector.
+
+        The default identifier string includes the specified tidalpoten,
+        tidalcompo, amtruncate, poletidecor, and lodtidecor values. E.g.
+        ``EternaPredictTidalCorrection(tidalpoten=8,tidalcompo=0,...)``
+
+        Parameters
+        ----------
+        kwargs : dict
+            Additional key-value pairs to include in the identifier string.
+
+        Returns
+        -------
+        str
+        """
         if not kwargs:
             return self.__repr__()
         self._pgt_kwargs.update(kwargs)
@@ -1023,10 +1063,13 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
         unit: Literal["mgal", "ugal", "nm/s^2"] = "mgal",
         **kwargs,
     ) -> _pd.DataFrame:
-        """Compute a time series of tidal corrections at some location.
+        """
+        Compute a time series of tidal corrections at some location.
 
         A limitation of ETERNA is that tides are always calculated from the start
-        of a UTC day.
+        of a UTC day with durations specified in whole hours. To ensure that the
+        computed time series covers the requested time interval, ``starttime``
+        is rounded down to the start of the day and ``duration`` adjusted accordingly.
 
         Parameters
         ----------
@@ -1036,42 +1079,42 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
             Longitude of the location in degrees.
         elev : float
             Elevation of the location in meters.
-        starttime : DatetimeScalar
-            Start
-        duration : TimedeltaScalar
-            Duration of the time series.
-        sample_interval : int, optional
-            Sampling interval in seconds (default is 60).
+        starttime : Timestamp, datetime-like, or str
+            Start of the time series in UTC
+        duration : Timedelta, timedelta-like, int, float or str
+            Duration of the time series in whole hours. Float and timedelta-like values are
+            rounded up to the nearest hour.
+        sample_interval : int, default 60
+            Sampling interval in seconds.
         unit : {"mgal", "ugal", "nm/s^2"}, optional
             Unit of the output (default is "mgal").
-        **kwargs : dict
+        kwargs : dict
             Additional keyword arguments to pass to the underlying pygtide predictor.
 
         Returns
         -------
         DataFrame
             DataFrame containing the tidal corrections.
-
         """
-
         this_run_kwargs = self._pgt_kwargs.copy()
         this_run_kwargs.update(kwargs)
+        _starttime_uncorr = to_naive_utc_datetime(starttime, allow_nat=False)
+        _starttime = _starttime_uncorr.normalize()
 
-        _starttime = (
-            to_naive_utc_datetime(starttime, allow_nat=False)
-            .normalize()
-            .to_pydatetime()
-        )
-        if isinstance(duration, (int, float)):
-            _duration = int(duration)
+        if isinstance(duration, int):
+            _duration_uncorr = duration
+        elif isinstance(duration, float):
+            _duration_uncorr = int(_np.ceil(duration))  # round up to nearest hour
         else:
-            _duration = int(
+            _duration_uncorr = int(
                 _np.ceil(_pd.to_timedelta(duration).total_seconds() / 3600.0)
             )
-            if _duration <= 0:
-                raise ValueError(
-                    "duration must be a positive timedelta or number of hours."
-                )
+        if _duration_uncorr <= 0:
+            raise ValueError(
+                "duration must be a positive timedelta or number of hours."
+            )
+        _orig_endtime = _starttime_uncorr + _pd.Timedelta(hours=_duration_uncorr)
+        _duration = int(_np.ceil((_orig_endtime - _starttime).total_seconds() / 3600.0))
 
         sample_interval = int(sample_interval)
         if sample_interval <= 0:
@@ -1090,7 +1133,7 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
                 latitude=lat,
                 longitude=lon,
                 height=elev,
-                startdate=_starttime,
+                startdate=_starttime.to_pydatetime(),
                 duration=_duration,
                 samprate=sample_interval,
                 **this_run_kwargs,
@@ -1112,6 +1155,7 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
         elif unit == "mgal":
             return df * 1e-4
 
+    # TODO: site_id is not truly required, so remove and infer sites from lat/lon/elev
     def tidal_correction(
         self,
         lat: FloatArray,
@@ -1123,7 +1167,42 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
         sample_interval: int = 60,
         **kwargs,
     ) -> NDArray[_np.float64]:
+        """Compute tidal corrections at specified locations and times.
 
+        Parameters
+        ----------
+        lat : array_like of float
+            Latitude in decimal degrees.
+        lon : array_like of float
+            Longitude in decimal degrees.
+        elev : array_like of float
+            Ellipsoidal elevation in meters.
+        date_time : array_like of datetime-like
+            Times at which to compute the tidal correction.
+        site_id : array_like of str
+            Site identifier for each correction.
+        unit : {"mgal", "ugal", "nm/s^2"}, default "mgal"
+            Tidal correction units.
+        sample_interval : int, default 60
+            Sample interval in seconds.
+        kwargs : additional keyword arguments
+            Additional key-value pairs to be passed to the interpolation method.
+            Not implemented at this time.
+
+        Returns
+        -------
+        ndarray
+            Tidal corrections at the specified locations and times.
+
+        Notes
+        -----
+        Corrections are computed by:
+            1. for each unique site_id,
+            2. generate a time series of tidal corrections covering the obsevarvation
+               times for that site,
+            3. interpolate tidal corrections at the exact observation times.
+
+        """
         lat = to_1d_ndarray(lat).astype(float)
         lon = to_1d_ndarray(lon, expected_size=lat.size).astype(float)
         elev = to_1d_ndarray(elev, expected_size=lat.size).astype(float)
@@ -1155,6 +1234,10 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
             # ensure at least 1 hour of data before and after the range
             # of date_time for this site
             t0 = (date_time[site_mask].min() - _pd.Timedelta(hours=1)).normalize()
+
+            # TODO:  need to break this up into multiple calls to time_series if the
+            # duration is too long for pygtide to handle
+            # e.g. sites visited days/weeks/years apart -> lots of work for nowt
             _duration_hrs = (
                 int(
                     _np.ceil((date_time[site_mask].max() - t0).total_seconds() / 3600.0)

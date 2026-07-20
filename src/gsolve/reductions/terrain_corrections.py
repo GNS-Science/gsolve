@@ -68,7 +68,6 @@ def calculate_terrain_correction(
     show_progress: bool = True,
     compute_topography: bool = True,
     compute_bathymetry: bool = True,
-    **kwargs,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Calculate terrain corrections for a set of points based on a digital elevation model (DEM).
@@ -79,11 +78,11 @@ def calculate_terrain_correction(
         An list-like object containing the x, y, and z coordinates of the points.
     dem : xarray.DataArray
         The digital elevation model (DEM) in meters. Should be in the same coordinate system
-        and vertical datum as the `points`.
+        and vertical datum as the ``points``.
     min_dist : float
         The minimum distance for the terrain correction mask. Must be >= 0.0.
     max_dist : float
-        The maximum distance for the terrain correction mask. Must be > `min_dist`.
+        The maximum distance for the terrain correction mask. Must be > ``min_dist``.
     density_dataset : xarray.DataArray, optional
         An array containing density values in kg/m^3. If not specified, a density model
         will be generated from the ``dem`` using ``terrain_density``, ``water_density``
@@ -94,7 +93,7 @@ def calculate_terrain_correction(
         The density of water in kg/m^3, by default 1030.0.
     sea_level_elevation : float, optional
         The elevation of sea level in m, by default 0.0. Should be in the same vertical
-        datum as `dem` and `points`. Used to separate land/topographic and sea/bathymetric
+        datum as ``dem`` and ``points``. Used to separate land/topographic and sea/bathymetric
         portions of the DEM.
     distance_mask_type : {"radial", "rectangular"}, default="radial"
         The type of distance mask to use.
@@ -300,8 +299,8 @@ def tcorr_harmonica_topography(
         The topographic surface elevations in meters. The DataArray should have
         no values below 'sea level'
     topography_density : xarray.DataArray
-        The density of the topographic surface in kg/m^3, with the same coordinates as `topography`.  Must be compatible with
-        `topography`.
+        The density of the topographic surface in kg/m^3, with the same coordinates as ``topography``. Must be compatible with
+        ``topography``.
     parallel : bool, optional
         Whether to use parallel processing, by default False.
     disable_checks : bool, optional
@@ -317,7 +316,6 @@ def tcorr_harmonica_topography(
     harmonica.prism_layer.gravity : the underkying harmonica method used to compute
         the terrain correction.
     """
-
     site_z = point[2]
 
     # flip density for cells where elevation above station
@@ -366,18 +364,19 @@ def tcorr_harmonica_bathymetry(
         no values above 'sea_level_elevation'.
     bathymetry_density : xarray.DataArray
         An array of 'densities' the material 'filling' bathymetry in kg/m^3, with the
-        same coordinates as `bathymetry`. For the typical case of oceans, where sea water
+        same coordinates as ``bathymetry``. For the typical case of oceans, where sea water
         (1030.0 kg/m^3) is replacing crustal rocks (2670.0 kg/m^3),
-        ``bathymetry density`` will be the density contrast 1640.0 kg/m^3. Cells where
+        ``bathymetry_density`` will be the density contrast 1640.0 kg/m^3. Cells where
         ``bathymetry`` is above ``sea_level_elevation`` must have density set to 0.0,
     sea_level_elevation : float, optional
         The elevation of sea level in m, by default 0.0. Should be in the same vertical
-        datum as `dem` and `points`. Used to separate land/topographic and sea/bathymetric
+        datum as ``dem`` and ``points``. Used to separate land/topographic and sea/bathymetric
         portions of the DEM.
     parallel : bool, optional
         Whether to use parallel processing, by default False.
     disable_checks : bool, optional
         Whether to disable input checks, by default False
+
     Returns
     -------
     float
@@ -441,13 +440,13 @@ class TerrainCorrectionParameters(GSolveParameters):
     dem_source : str, PathLike, default=""
         Path to a terrain dataset file. This will be loaded during terrain correction
         computation. If an empty string, then DEM data must be supplied directly to a
-        ``TerrainCorrector`` instance. Note that `dem_source` input are converted to and
+        ``TerrainCorrector`` instance. Note that ``dem_source`` inputs are converted to and
         stored as a string.
     density_dataset_source : str, PathLike, default=""
         Path to a density model file, which will be loaded during terrain correction
         computation. If an empty string, then a simple density model will be generated
         from the DEMusing ``terrain_density``, ``water_density`` and
-        ``sea_level_elevation``. Note that `density_dataset_source` inputs are converted
+        ``sea_level_elevation``. Note that ``density_dataset_source`` inputs are converted
         to and stored as a string.
     compute_topography : bool, default is True
         Compute gravity corrections due to topographic masses.
@@ -511,8 +510,9 @@ class TerrainCorrectionParameters(GSolveParameters):
         index_name: str | None = "parameter",
         index_prefix: str | Sequence[str] | None = None,
     ) -> pd.Series:
-        """Convert the parameters object to a pandas Series, where index is the parameter
-        name and values are the parameter values.
+        """Return parameters as a pandas Series.
+
+        Series values will be indexed by parameter_name.
 
         Parameters
         ----------
@@ -521,10 +521,10 @@ class TerrainCorrectionParameters(GSolveParameters):
         index_name : str | None, optional
             Name for the Series index. If None, the index will be unnamed.
         index_prefix : str | None, optional
-            If specified, the returned series will have a MultiIndex where the
-            first level is `index_prefix`.  E.g. if `index_prefix="zone1"`, then
+            If specified, the returned Series will have a MultiIndex where the
+            first level is ``index_prefix``. E.g. if ``index_prefix="zone1"``, then
             the Series index will be of the form: ("zone1", parameter_name,...).
-            This is useful when combining multiple parameter Series.
+            This is useful to avoid index collisions when combining parameter Series.
 
         Returns
         -------
@@ -555,13 +555,14 @@ class TerrainCorrectionParameters(GSolveParameters):
         return ds
 
     def to_dict(self, path2str: bool = False) -> dict[str, Any]:
-        """Convert the parameters to a dictionary of the form
-        ``{parameter_name: parameter_value, ...}``.
+        """Return parameters as a dictionary.
+
+        The dictionary will be of the form ``{parameter_name: parameter_value, ...}``.
 
         Parameters
         ----------
-        path2str : bool, optional
-            If True, convert any Path objects to their string representations.
+        path2str : bool, default False
+            If True, convert any Path-like objects to their string representations.
 
         Returns
         -------
@@ -578,7 +579,7 @@ class TerrainCorrectionParameters(GSolveParameters):
 
     @classmethod
     def from_dataframe(cls, df: pd.DataFrame) -> dict[str, Self]:
-        """Create one or more TerrainCorrectionParameters objects from a DataFrame.
+        """Generate a dict of TerrainCorrectionParameters objects from a DataFrame.
 
         Parameters
         ----------
@@ -624,23 +625,14 @@ class TerrainCorrectionParameters(GSolveParameters):
 
 class TerrainCorrector:
     """
-    A class for computing terrain corrections for gravity measurements using digital
-    elevation models (DEMs).
+    A class for computing gravity terrain corrections from elevation models (DEMs).
 
     It supports multiple calculation "zones", each with its own parameters and data sources.
-
-    A typical workflow using this class would be:
-
-        - Define one or more TerrainCorrectionParameters objects for the desired zones.
-        - Instantiate a TerrainCorrector with these parameters and optional DEM/density models.
-        - Add additional zones as needed using ``add_calculation_zone``.
-        - Call ``compute()`` on a set of points.
-
 
     Attributes
     ----------
     params : dict
-        A dictionary of TerrainCorrectionParmeter objects defining the "zones" to be computed.
+        A dictionary of TerrainCorrectionParameters objects defining the "zones" to be computed.
     dems : dict[str, DataArray | None]
         A dictionary storing user supplied DEMs by zone name. Values will be None if no
         DEM was provided for that zone, in which case the ``dem_source`` attribute of the
@@ -654,21 +646,38 @@ class TerrainCorrector:
 
     Parameters
     ----------
-    params: TerrainCorrectionParameters | list-like of TerrainCorrectionParameters
+    params: TerrainCorrectionParameters or list-like of TerrainCorrectionParameters
         The TerrainCorrectionParameters object(s) defining the "zones" to be computed.
-    dem : xarray.DataArray | list-like | None, default is None
-        User supplided DEM(s) corresponding to each zone defined in ``params``.
+    dem : xarray.DataArray, list-like or None, default is None
+        User supplied DEM(s) corresponding to each zone defined in ``params``.
         For example if ``params=[p1, p2, p3]``, and you wish to specify a DEM for
         p2 only, then the argument must be ``dem=[None, dem_for_p2, None]``. If None,
         the dem will be loaded from the ``dem_source`` attribute of the corresponding
         TerrainCorrectionParameters object. If a dem is specified here, then the
         ``dem_source`` attribute is ignored.
-    density_model : xarray.DataArray | list-like | None, default is None
+    density_model : xarray.DataArray, list-like or None, default is None
         User supplied density model(s) corresponding to each zone defined in ``params``.
-        For example if ``params=[p1, p2, p3]``, and you wish to specify a density model for
-        p2 only, then the argument must be ``density_model=[None, model_for_p2, None]``. If None,
-        the density model will be generated internally based. If a density model is
-        specified here, then the ``density_dataset_source`` attribute is ignored.
+        If `density_model` is specified then it must include a density model or None for
+        each zone in ``params``. For example if ``params=[p1, p2, p3]``, and you wish
+        to specify a density model for p2 only, then the argument must be
+        ``density_model=[None, model_for_p2, None]``.
+
+        If ``density_model`` is None, then:
+          - if ``density_dataset_source`` attribute of the associated
+            TerrainCorrectionParameters object is not None, the density model will be
+            loaded from the specified source.
+          - otherwise generate a default density model from the loaded DEM, using the
+            ``terrain_density``, ``water_density``, and ``sea_level_elevation``
+            attributes of the associated TerrainCorrectionParameters object.
+
+    Notes
+    -----
+    A typical workflow using this class would be:
+
+        - Define one or more TerrainCorrectionParameters objects for the desired zones.
+        - Instantiate a TerrainCorrector with these parameters and optional DEM/density models.
+        - Add additional zones as needed using ``add_calculation_zone``.
+        - Call ``compute()`` on a set of points.
 
     """
 
@@ -745,8 +754,7 @@ class TerrainCorrector:
         dem: xr.DataArray | None = None,
         density_model: xr.DataArray | None = None,
     ) -> None:
-        """Add a terrain correction calculation zone and (optionally)
-        an associated dem and/or density model.
+        """Add a terrain correction calculation zone and associated dem and/or density model.
 
         Parameters
         ----------
@@ -801,7 +809,7 @@ class TerrainCorrector:
         points : GravitySites or sequence of array_likes (x, y, z)
             The observation points where terrain corrections are to be computed. Must
             be in the same coordinate reference system as the dem.
-            If `points` is a `GravitySites` object, then data colums corresponding to
+            If ``points`` is a ``GravitySites`` object, then data colums corresponding to
             ``site_xy_fields`` (default: ("easting", "northing")) and
             ``site_height_field`` (default: "height_ellipsoidal") must have been set.
             If points is a sequence of array_likes, then it must be of the form
@@ -815,9 +823,9 @@ class TerrainCorrector:
             The terrain correction calculation method to use. Currently only "harmonica"
             is supported.
         site_height_field : str, default is "height_ellipsoidal"
-            When `points` is a `GravitySites` object, get site elevation from this field.
+            When ``points`` is a ``GravitySites`` object, get site elevation from this field.
         site_xy_fields : tuple of str, default is ("easting", "northing")
-            When `points` is a `GravitySites` object, get site x and y coordinates from
+            When ``points`` is a ``GravitySites`` object, get site x and y coordinates from
             these fields.
 
         Returns
@@ -909,7 +917,7 @@ class TerrainCorrector:
                 water_density=pars.water_density,
                 distance_mask_type=pars.distance_mask_type,
                 show_progress=show_progress,
-                method=method,
+                # method=method,
                 compute_topography=pars.compute_topography,
                 compute_bathymetry=pars.compute_bathymetry,
             )
@@ -945,7 +953,7 @@ class TerrainCorrectionData(GSolveTable):
     """Class to store terrain correction outputs and parameters.
 
     In general, a user should not need to instantiate a TerrainCorrectionData object
-    directly. Instances will be generated from a `TerrainCorrector` object
+    directly. Instances will be generated from a ``TerrainCorrector`` object
     via the ``compute()`` method. A TerrainCorrectionData object can be written to a
     file and then reloaded and re-instantiated, supporting a workflow where terrain
     corrections need only be computed once.
@@ -953,7 +961,7 @@ class TerrainCorrectionData(GSolveTable):
     Attributes
     ----------
     params : dict
-        Dictionary of containing copies of the `TerrainCorrectionParameters` objects
+        Dictionary of containing copies of the ``TerrainCorrectionParameters`` objects
         used in computing terrain corrections for each zone. For each parameter object,
         the dictionary key will be ``'tcorr:{obj.name}'``. This naming pattern is also
         used to label the corresponding terrain correction columns in the
@@ -964,9 +972,9 @@ class TerrainCorrectionData(GSolveTable):
         for each zone, and the total terrain correction. For a given zone defined by
         TerrainCorrectionParameters object = ``obj``, the output columns will be:
 
-          - ``'tcorr:{obj.name}:topo'`` : the topography only component of the terrain
+                    - 'tcorr:{obj.name}:topo' : the topography only component of the terrain
             correction.  Ommited if ``compute_topography`` is False.
-          - ``'tcorr:{obj.name}:bath'`` : the bathymetry only component of the terrain
+                    - 'tcorr:{obj.name}:bath' : the bathymetry only component of the terrain
             correction.  Ommited if ``compute_bathymetry`` is False.
 
         The total terrain correction column will be labeled ``'tcorr:total'``. This is
@@ -1106,27 +1114,24 @@ class TerrainCorrectionData(GSolveTable):
     def create_empty(
         cls,
         site_id: npt.ArrayLike,
-        **kwargs,
     ) -> Self:
-        """Create an empty TerrainCorrectionData object with only site_id and any additional
-        columns specified in kwargs.
+        """Create an empty TerrainCorrectionData object.
+
+        The objects ``data`` attribute will be initialized as an empty DataFrame with
+        "site_id" as index. The object can then be "loaded" with terrain correction data
+        using the ``set_corrections()`` method.
 
         Parameters
         ----------
         site_id : array_like of str
-            The unique site identifiers as a sequence. All elements are converted to str. Will be
-            used to index the ``obj.data`` DataFrame.
-        **kwargs : dict
-            Additional columns to be included in ``obj.data`` DataFrame. This could include
-            site location information such as easting, northing, latitude, longitude etc.
+            The unique site identifiers. All elements are converted to str.
 
         Returns
         -------
         TerrainCorrectionData
-            An empty TerrainCorrectionData object with only site_id and any additional
-            columns specified in kwargs.
+            An empty TerrainCorrectionData object.
         """
-        return cls(site_id=site_id, params=None, terrain_corrections=None, **kwargs)
+        return cls(site_id=site_id, params=None, terrain_corrections=None)
 
     def set_corrections(
         self,
@@ -1246,7 +1251,6 @@ class TerrainCorrectionData(GSolveTable):
             TerrainCorrectionOutput object.
 
         """
-
         # fist get the parameters
         # this informs whet to expect from the dataframe
         if isinstance(params, pd.DataFrame):
@@ -1320,12 +1324,12 @@ class TerrainCorrectionData(GSolveTable):
         return obj
 
     def _params_to_dataframe(self, paths_to_str: bool = True) -> pd.DataFrame:
-        """Convert the parameters to a DataFrame."""
+        """Convert the parameters to a DataFrame."""  # noqa: DOC201
         params_df = self._params_to_series().to_frame()
         return params_df.reset_index()
 
     def _params_to_series(self) -> pd.Series:
-        """Convert the parameters to a Series."""
+        """Convert the parameters to a Series."""  # noqa: DOC201
         pars = []
         for k, v in self.params.items():
             # TerrainCorrectionParameters.to_series()
@@ -1361,12 +1365,8 @@ class TerrainCorrectionData(GSolveTable):
         if_sheet_exists : IfSheetExists, default='error'
             Action to take if the sheet already exists. Options are:
             'error', 'replace', or 'overlay'.
-        **kwargs : dict
-            Additional keyword arguments passed to `pandas.DataFrame.to_excel`.
-
-        Returns
-        -------
-        None
+        kwargs : dict
+            Additional keyword arguments passed to ``pandas.DataFrame.to_excel``.
 
         """
         kwargs["header"] = kwargs.get("header", True)
@@ -1424,8 +1424,8 @@ class TerrainCorrectionData(GSolveTable):
         params_sheet_name : str, optional
             The name of the excel worksheet from which to read terrain correction parameters.
             If not specified then  ``'{sheet_name} Params'`` will be used.
-        **kwargs : dict
-            Additional keyword arguments passed to `pandas.read_excel`.
+        kwargs : dict
+            Additional keyword arguments passed to ``pandas.read_excel``.
 
         Returns
         -------
@@ -1455,8 +1455,8 @@ class TerrainCorrectionData(GSolveTable):
         ----------
         fname : str or PathLike | None
             The path to the output CSV file. If None, then the CSV string is returned.
-        **kwargs : dict
-            Additional keyword arguments passed to `pandas.DataFrame.to_csv`.
+        kwargs : dict
+            Additional keyword arguments passed to ``pandas.DataFrame.to_csv``.
 
         Returns
         -------
@@ -1491,9 +1491,9 @@ class TerrainCorrectionData(GSolveTable):
         Parameters
         ----------
         fname : str or PathLike
-            The path to the input CSV file.
-        **kwargs : dict
-            Additional keyword arguments passed to `pandas.read_csv`.
+            The input CSV file.
+        kwargs :
+            Additional keyword arguments passed to ``pandas.read_csv``.
 
         Returns
         -------

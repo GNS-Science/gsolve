@@ -287,7 +287,7 @@ class TestGSolveReportToExcel:
 
         sheet_names: list[str] = []
 
-        def _fake_write_excel_worksheet(_df, _filename, sheet_name, **_kwargs):
+        def _fake_write_excel_worksheet(df, filename, sheet_name, **_kwargs):
             sheet_names.append(sheet_name)
 
         monkeypatch.setattr(
