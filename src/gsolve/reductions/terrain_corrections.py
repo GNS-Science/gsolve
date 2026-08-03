@@ -15,13 +15,14 @@
 # SPDX-License-Identifier: GPLv3
 
 # Copyright (c) 2025 Earth Sciences New Zealand.
+"""Functions and classes for computing gravity terrain corrections."""
 
+from gsolve.core.utils import is_filepath_like
+from pandas.core.series import Series
 import dataclasses
-import logging
 import warnings
 from collections.abc import Iterable, Sequence
-from pathlib import Path
-from typing import Any, Literal, Self
+from typing import Any, Literal, Self, get_args
 
 import harmonica as hm
 import numpy as np
@@ -43,7 +44,13 @@ from gsolve.core._typing import (
 )
 from gsolve.core.data import DataFieldSpecification, GSolveParameters, GSolveTable
 from gsolve.core.excel_io import read_excel_worksheet, write_excel_worksheet
-from gsolve.core.utils import is_list_like, prepare_writable_df, to_1d_ndarray
+from gsolve.core.utils import (
+    is_list_like,
+    prepare_writable_df,
+    to_1d_ndarray,
+    is_filepath_like,
+    is_in_literal,
+)
 from gsolve.core.xr_accessor import TCorrMethods as _TCorrMethods
 from gsolve.core.xr_methods import *
 
@@ -53,6 +60,11 @@ __all__ = [
     "TerrainCorrectionParameters",
     "TerrainCorrector",
 ]
+
+
+def _is_dataarray(obj: Any) -> bool:  # noqa: ANN401
+    """Check if an object is an xarray DataArray."""  # noqa: DOC201
+    return isinstance(obj, xr.DataArray)
 
 
 def calculate_terrain_correction(
@@ -116,7 +128,7 @@ def calculate_terrain_correction(
     # ensure supplied density is a DataArray (if a Dataset was provided)
     use_supplied_density = density_dataset is not None
     if use_supplied_density:
-        if not isinstance(density_dataset, xr.DataArray):
+        if not _is_dataarray(density_dataset):
             raise TypeError(
                 "density_dataset must be an xarray.DataArray not "
                 f"'{type(density_dataset).__name__}'"
@@ -700,17 +712,15 @@ class TerrainCorrector:
         - Add additional zones as needed using ``add_calculation_zone``.
         - Call ``compute()`` on a set of points.
 
-    Attributes
-    ----------
-    params : dict
-        A dictionary of TerrainCorrectionParmeter objects defining the "zones" to be computed.
-
     Parameters
     ----------
     params: TerrainCorrectionParameters or list-like of TerrainCorrectionParameters
         The TerrainCorrectionParameters object(s) defining the "zones" to be computed.
 
-
+    Attributes
+    ----------
+    params : dict
+        A dictionary of TerrainCorrectionParmeter objects defining the "zones" to be computed.
     """
 
     def __init__(
@@ -932,6 +942,19 @@ class TerrainCorrectionData(GSolveTable):
     file and then reloaded and re-instantiated, supporting a workflow where terrain
     corrections need only be computed once.
 
+    Parameters
+    ----------
+    site_id : array_like of str
+        The unique site identifiers as a sequence. All elements are converted to str. Will be
+        used to index the ``obj.data`` DataFrame.
+    params : TerrainCorrectionParameters or sequence of TerrainCorrectionParameters, optional
+        The parameters for the various terrain correction zones.
+    terrain_corrections : array_like or list of array_like
+        The terrain correction values for each zone.
+    **kwargs : dict
+        Additional columns to be included in ``obj.data`` DataFrame. This could include
+        site location information such as easting, northing, latitude, longitude etc.
+
     Attributes
     ----------
     params : dict
@@ -957,19 +980,6 @@ class TerrainCorrectionData(GSolveTable):
 
         Columns are ordered by minimum distance of the corresponding zone, with the
         total terrain correction column last.
-
-    Parameters
-    ----------
-    site_id : array_like of str
-        The unique site identifiers as a sequence. All elements are converted to str. Will be
-        used to index the ``obj.data`` DataFrame.
-    params : TerrainCorrectionParameters or sequence of TerrainCorrectionParameters, optional
-        The parameters for the various terrain correction zones.
-    terrain_corrections : array_like or list of array_like
-        The terrain correction values for each zone.
-    **kwargs : dict
-        Additional columns to be included in ``obj.data`` DataFrame. This could include
-        site location information such as easting, northing, latitude, longitude etc.
     """
 
     _known_fields = {
@@ -1003,7 +1013,7 @@ class TerrainCorrectionData(GSolveTable):
         | None = None,
         **kwargs,
     ) -> None:
-        self.params = {}
+        self.params: dict[str, TerrainCorrectionParameters] = {}
 
         if params is not None and terrain_corrections is None:
             raise ValueError(
@@ -1298,19 +1308,38 @@ class TerrainCorrectionData(GSolveTable):
         return obj
 
     def _params_to_dataframe(self, paths_to_str: bool = True) -> pd.DataFrame:
-        """Convert the parameters to a DataFrame."""  # noqa: DOC201
-        params_df = self._params_to_series().to_frame()
-        return params_df.reset_index()
+        """Convert the parameters to a DataFrame.
+
+        Parameters
+        ----------
+        paths_to_str : bool, default True
+
+        Returns
+        -------
+        pd.DataFrame
+            A pandas DataFrame containing the parameters for all zones, indexed by
+            zone and parameter name.
+        """
+        return self._params_to_series().to_frame().reset_index()
 
     def _params_to_series(self) -> pd.Series:
-        """Convert the parameters to a Series."""  # noqa: DOC201
-        pars = []
-        for k, v in self.params.items():
-            # TerrainCorrectionParameters.to_series()
-            s = v.to_series(series_name="parameter_value", index_prefix=[k, "zone"])
-            pars.append(s)
-        params_sr = pd.concat(pars)
-        return params_sr
+        """Convert the parameters to a Series.
+
+        Returns
+        -------
+        pd.Series
+            A pandas Series containing the parameters for all zones, indexed by zone and parameter name.
+        """
+        params_list: list[pd.Series] = []
+        for zone, p in self.params.items():
+            params_list.append(
+                p.to_series(
+                    series_name="parameter_value",
+                    index_prefix=[zone, "zone"],
+                    include_data_array=False,
+                )
+            )
+        return pd.concat(params_list)
 
     def to_excel(
         self,
@@ -1352,12 +1381,8 @@ class TerrainCorrectionData(GSolveTable):
             else:
                 sheet_name = self._default_excel_sheet_name[0]
 
-        if params_sheet_name is None:
-            params_sheet_name = f"{sheet_name}_params"
-
-        df_tcorr = prepare_writable_df(self.data, normalize_column_names=True)
         write_excel_worksheet(
-            df_tcorr,
+            prepare_writable_df(self.data, normalize_column_names=True),
             fname,
             sheet_name=sheet_name,
             if_workbook_exists=if_workbook_exists,
@@ -1365,13 +1390,16 @@ class TerrainCorrectionData(GSolveTable):
             **kwargs,
         )
 
-        df_params = prepare_writable_df(
-            self._params_to_series().to_frame().reset_index(level=1),
-            normalize_column_names=True,
-        )
+        # write params to a seprarate sheet
+        if params_sheet_name is None:
+            params_sheet_name = f"{sheet_name}_params"
+
         write_excel_worksheet(
-            df_params,
-            fname,
+            prepare_writable_df(
+                self._params_to_series().to_frame().reset_index(level=1),
+                normalize_column_names=True,
+            ),
+            excel_file=fname,
             sheet_name=params_sheet_name,
             if_workbook_exists="append",
             if_sheet_exists=if_sheet_exists,
