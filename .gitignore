@@ -160,6 +160,9 @@ cython_debug/
 #.idea/
 gsolve.code-workspace
 docs/generated/*
+docs/_build/*
+docs/source/api/api/*
+docs/zz/*
 .vscode/settings.json
 .vscode/launch.json
 /*.ipynb
