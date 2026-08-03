@@ -40,7 +40,7 @@ To avoid duplicate calculations the following tips are useful.
 
 In ```TerrainCorrectionParameters``` there is an option ```compute_bathymetry``` or ```compute_topography```. For grids that contain both topography and bathymetry this can be used to set which part is computed.  The parameter ```sea_level_elevation``` can be used to control the boundary between topography and bathymetry (default = 0).
 
-The ```Sites``` object has a method ```sample_elevation()``` which can be used to extract the value of the DEM at the station location.  This can be useful if the DEM values are preferred to the surveyed positions or if you want to convert station ellipsoidal heights to orthometric (assuming the DEM is in orthometric heights).  A new column (```output_col=```) is created in the sites object for the interpolated DEM height which can be used in the computations through setting the ```site_height_field``` in the ```corrector.compute()```.
+The ```Sites``` object has a method ```sample_elevation()``` which can be used to extract the value of the DEM at the station location.  This can be useful if the DEM values are preferred to the surveyed positions or if you want to convert station ellipsoidal heights to orthometric (assuming the DEM is in orthometric heights).  A new column (```output_col=```) is created in the sites object for the interpolated DEM height and is used by setting the ``site_height_field`` attribute of the ``TerrainCorrectionParameters`` objects.
 
 gSolve will read most grid formats readable by GDAL.
 

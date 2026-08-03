@@ -99,13 +99,15 @@ def pre_calced_tcorr_data(tc_params) -> TerrainCorrectionData:
 
 
 @pytest.fixture
-def tc_params() -> list[TerrainCorrectionParameters]:
+def tc_params(ripple_dem) -> list[TerrainCorrectionParameters]:
     p1 = TerrainCorrectionParameters(
         name="topo",
         min_dist=tc_min_dist,
         max_dist=tc_max_dist,
         distance_mask_type="radial",
         compute_bathymetry=False,
+        dem_source=ripple_dem,
+        site_height_field="height_dem",
     )
     p2 = TerrainCorrectionParameters(
         name="bath",
@@ -113,12 +115,16 @@ def tc_params() -> list[TerrainCorrectionParameters]:
         max_dist=tc_max_dist,
         distance_mask_type="radial",
         compute_topography=False,
+        dem_source=ripple_dem,
+        site_height_field="height_dem",
     )
     p3 = TerrainCorrectionParameters(
         name="both",
         min_dist=tc_min_dist,
         max_dist=tc_max_dist,
         distance_mask_type="radial",
+        dem_source=ripple_dem,
+        site_height_field="height_dem",
     )
     return [p1, p2, p3]
 
@@ -126,9 +132,8 @@ def tc_params() -> list[TerrainCorrectionParameters]:
 def test_terrain_correction_consistency(
     ripple_dem, sites, tc_params, pre_calced_tcorr_data
 ):
-    dem = ripple_dem
-    tc = TerrainCorrector(params=tc_params, dem=[dem] * len(tc_params))
-    results = tc.compute(sites, site_height_field="height_dem", show_progress=False)
+    tc = TerrainCorrector(params=tc_params)
+    results = tc.compute(sites, show_progress=False)
 
     to_close_dist = dem_max - tc_max_dist
     bad_points = results.data.easting.abs().gt(

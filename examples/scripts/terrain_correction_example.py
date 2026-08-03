@@ -65,6 +65,7 @@ inner_zone_params = TerrainCorrectionParameters(
     distance_mask_type="radial",
     dem_source=grid_dir / dem_file1,
     compute_bathymetry=False,
+    site_height_field="dem_elevation",
     name="8m_dem",
 )
 
@@ -76,15 +77,14 @@ outer_zone_params = TerrainCorrectionParameters(
     distance_mask_type="radial",
     dem_source=grid_dir / dem_file2,
     compute_bathymetry=False,
+    site_height_field="dem_elevation",
     name="200m_dem",
 )
 # Set up the Terrain corrector
 corrector = TerrainCorrector(params=[inner_zone_params, outer_zone_params])
 
 # Calculate the corrections
-results = corrector.compute(
-    points=sites, show_progress=True, site_height_field="dem_elevation"
-)
+results = corrector.compute(points=sites, show_progress=True)
 
 # Save results to file
 results.to_excel(
