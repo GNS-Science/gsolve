@@ -399,7 +399,8 @@ def tcorr_harmonica_bathymetry(
     )
 
 
-@dataclasses.dataclass
+# @dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass()
 class TerrainCorrectionParameters(GSolveParameters):
     """Class to store parameters for computing terrain corrections for a single "zone".
 
@@ -452,6 +453,18 @@ class TerrainCorrectionParameters(GSolveParameters):
         Compute gravity corrections due to topographic masses.
     compute_bathymetry : bool, default is True
         Compute gravity corrections due to water bodies such as the ocean.
+    site_height_field : str, default is "height_ellipsoidal"
+        Column in a ``GravitySites.data`` object containing
+        site elevations/z coordinates.
+    site_easting_field : str, default is "easting"
+        Column in a ``GravitySites.data`` object containing
+        site easting/x coordinates.
+    site_northing_field : str, default is "northing"
+        Column in a ``GravitySites.data`` object containing
+        site northing/y coordinates.
+    method : {"harmonica"}, default is "harmonica"
+        Method to use for computing terrain corrections. Currently only "harmonica" is
+        supported.
     """
 
     name: str
@@ -461,35 +474,54 @@ class TerrainCorrectionParameters(GSolveParameters):
     water_density: float = 1030.0
     sea_level_elevation: float = 0.0
     distance_mask_type: TCorrDistanceMaskType = "radial"
-    dem_source: FilePath = ""
-    density_dataset_source: FilePath = ""
+    dem_source: FilePath | xr.DataArray = ""
+    density_dataset_source: FilePath | xr.DataArray = ""
     compute_topography: bool = True
     compute_bathymetry: bool = True
-
-    def __setattr__(self, field_name: str, value: str | float | bool) -> None:  # noqa: ANN401
-        if field_name not in self.__dataclass_fields__:
-            return  # silently ignore unknown attributes
-
-        if field_name in ("dem_source", "density_dataset_source"):
-            try:
-                value = str(value)
-            except Exception:
-                raise ValueError(
-                    f"could not convert {field_name} value to string: {value}"
-                )
-
-        elif field_name == "name":
-            value = str(value)
-            if not value:
-                raise ValueError("'name' attribute must be a non-zero length string")
-
-        elif self.__dataclass_fields__[field_name].type in (float, str, bool):
-            value = self.__dataclass_fields__[field_name].type(value)
-
-        super().__setattr__(field_name, value)
+    site_height_field: str = "height_ellipsoidal"
+    site_easting_field: str = "easting"
+    site_northing_field: str = "northing"
+    method: Literal["harmonica"] = "harmonica"
 
     def __post_init__(self) -> None:
+        self._normalize_fields()
         self._sanity_check()
+
+    def _normalize_fields(self) -> None:
+        if self.name is None:
+            raise ValueError("'name' attribute must be a non-zero length string")
+
+        name = str(self.name)
+        if not name:
+            raise ValueError("'name' attribute must be a non-zero length string")
+        object.__setattr__(self, "name", name)
+
+        object.__setattr__(self, "min_dist", float(self.min_dist))
+        object.__setattr__(self, "max_dist", float(self.max_dist))
+        object.__setattr__(self, "terrain_density", float(self.terrain_density))
+        object.__setattr__(self, "water_density", float(self.water_density))
+        object.__setattr__(self, "sea_level_elevation", float(self.sea_level_elevation))
+        object.__setattr__(self, "distance_mask_type", str(self.distance_mask_type))
+        object.__setattr__(self, "site_height_field", str(self.site_height_field))
+        object.__setattr__(self, "site_easting_field", str(self.site_easting_field))
+        object.__setattr__(self, "site_northing_field", str(self.site_northing_field))
+        object.__setattr__(self, "compute_topography", bool(self.compute_topography))
+        object.__setattr__(self, "compute_bathymetry", bool(self.compute_bathymetry))
+
+        for field_name in ("dem_source", "density_dataset_source"):
+            value = getattr(self, field_name)
+            if _is_dataarray(value):
+                continue
+            if is_filepath_like(value):
+                object.__setattr__(self, field_name, str(value))
+                continue
+            if not value:
+                object.__setattr__(self, field_name, "")
+                continue
+            raise TypeError(
+                f"{field_name} attribute must be a DataArray, str, or "
+                f"Path-like object, not a {type(value).__name__}"
+            )
 
     def _sanity_check(self) -> None:
         if (
@@ -503,12 +535,35 @@ class TerrainCorrectionParameters(GSolveParameters):
                 "0.0 <= min_dist < max_dist: "
                 f"got min_dist={self.min_dist}, max_dist={self.max_dist}"
             )
+        # check distance msk type is valid
+        if not is_in_literal(self.distance_mask_type, TCorrDistanceMaskType):
+            raise ValueError(
+                f"invalid 'distance_mask_type': {self.distance_mask_type}. "
+                f"Expected one of: {get_args(TCorrDistanceMaskType.__value__)}"
+            )
+
+        if _is_dataarray(self.dem_source):
+            if not self.dem_source.tcorr.is_valid_dem:
+                raise ValueError(
+                    "invalid dem_source DataArray: must be a 2D array of floats"
+                )
+        elif not self.dem_source:
+            raise TypeError(
+                "invalid dem_source: must be an xarray.DataArray or file path"
+            )
+        if _is_dataarray(self.density_dataset_source):
+            if not self.density_dataset_source.tcorr.is_valid_dem():
+                raise ValueError(
+                    "density_dataset_source is an xr.DataArray object but is not a valid DEM. "
+                    "Check that it has the correct dimensions and coordinates."
+                )
 
     def to_series(
         self,
         series_name: str | None = "value",
         index_name: str | None = "parameter",
         index_prefix: str | Sequence[str] | None = None,
+        include_data_array: bool = True,
     ) -> pd.Series:
         """Return parameters as a pandas Series.
 
@@ -525,12 +580,21 @@ class TerrainCorrectionParameters(GSolveParameters):
             first level is ``index_prefix``. E.g. if ``index_prefix="zone1"``, then
             the Series index will be of the form: ("zone1", parameter_name,...).
             This is useful to avoid index collisions when combining parameter Series.
+        include_data_array: bool, default True
+            Control how fields 'dem_source` and `density_dataset_source` are treated if
+            they contain an ``xarray.DataArray`` object.  If True,  include the full
+            array. If False, replace the array with a string defining output.
 
         Returns
         -------
         pd.Series
             A pandas Series containing the parameters.
         """
+        pars_dict = self.to_dict()
+        if not include_data_array:
+            for f in ("density_dataset_source", "dem_source"):
+                if _is_dataarray(pars_dict[f]):
+                    pars_dict[f] = "xarray.DataArray"
         ds = pd.Series(data=self.to_dict(), name=series_name).rename_axis(index_name)
 
         if index_prefix is not None:
