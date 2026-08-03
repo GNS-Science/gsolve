@@ -30,7 +30,6 @@ import xarray as xr
 from numpy.typing import ArrayLike, NDArray
 from pandas import DataFrame, DatetimeIndex, Index, Series, Timestamp
 from pandas.api.typing import NaTType
-from pylab import ndarray
 
 # from pandas.api.typing.aliases import TimedeltaConvertibleTypes
 
@@ -68,12 +67,12 @@ GSolveSolverReturn: TypeAlias = tuple[
     NDArray, NDArray, NDArray, NDArray, NDArray, float | np.float64 | None, NDArray
 ]
 
-FilePath: TypeAlias = str | PathLike
+type FilePath = str | PathLike
 
 # The following type aliases are copied/adapted from pandas to ensure
 # function parameters are compatible with pandas methods they are passed to
 
-Renamer: TypeAlias = Union[Mapping[Any, Hashable], Callable[[Any], Hashable]]
+Renamer: TypeAlias = Mapping[Any, Hashable] | Callable[[Any], Hashable]
 
 
 DateTimeConvertibleTypes: TypeAlias = Union[
@@ -92,7 +91,7 @@ DatetimeScalar: TypeAlias = (
     int | float | str | datetime.date | np.datetime64 | pd.Timestamp
 )
 
-DatetimeArray: TypeAlias = list | tuple | ndarray | Series | Index | DatetimeIndex
+type DatetimeArray = list | tuple | Series | Index | DatetimeIndex | np.ndarray
 DatetimeScalarOrArray: TypeAlias = DatetimeScalar | DatetimeArray
 
 TimedeltaScalar: TypeAlias = str | int | float | pd.Timedelta | datetime.timedelta
@@ -107,7 +106,7 @@ DatasetOrArray: TypeAlias = xr.DataArray | xr.Dataset
 ArrayOrCoords: TypeAlias = DatasetOrArray | Sequence[ArrayLike]
 Points2D: TypeAlias = tuple[FloatArray, FloatArray]
 Points3D: TypeAlias = tuple[FloatArray, FloatArray, FloatArray]
-TCorrDistanceMaskType: TypeAlias = Literal["radial", "rectangular"]
+type TCorrDistanceMaskType = Literal["radial", "rectangular"]
 
 
 # protocols for select Gsolve classes
