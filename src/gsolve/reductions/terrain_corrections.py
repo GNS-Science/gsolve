@@ -693,49 +693,6 @@ class TerrainCorrector:
 
     It supports multiple calculation "zones", each with its own parameters and data sources.
 
-    Attributes
-    ----------
-    params : dict
-        A dictionary of TerrainCorrectionParameters objects defining the "zones" to be computed.
-    dems : dict[str, DataArray | None]
-        A dictionary storing user supplied DEMs by zone name. Values will be None if no
-        DEM was provided for that zone, in which case the ``dem_source`` attribute of the
-        associated TerrainCorrectionParameters object will be used to obtain the DEM. Note that
-        DEMs specified by ``dem_source`` are never stored here, but are loaded on-the-fly
-        during computation.
-    _density_models : dict[str, xr.DataArray | None]
-        A dictionary storing user supplied density models by zone name. Values will be
-        None if no density model was provided for that zone. Note that internally generated
-        density models are never stored here, but are created on-the-fly during computation.
-
-    Parameters
-    ----------
-    params: TerrainCorrectionParameters or list-like of TerrainCorrectionParameters
-        The TerrainCorrectionParameters object(s) defining the "zones" to be computed.
-    dem : xarray.DataArray, list-like or None, default is None
-        User supplied DEM(s) corresponding to each zone defined in ``params``.
-        For example if ``params=[p1, p2, p3]``, and you wish to specify a DEM for
-        p2 only, then the argument must be ``dem=[None, dem_for_p2, None]``. If None,
-        the dem will be loaded from the ``dem_source`` attribute of the corresponding
-        TerrainCorrectionParameters object. If a dem is specified here, then the
-        ``dem_source`` attribute is ignored.
-    density_model : xarray.DataArray, list-like or None, default is None
-        User supplied density model(s) corresponding to each zone defined in ``params``.
-        If `density_model` is specified then it must include a density model or None for
-        each zone in ``params``. For example if ``params=[p1, p2, p3]``, and you wish
-        to specify a density model for p2 only, then the argument must be
-        ``density_model=[None, model_for_p2, None]``.
-
-        If ``density_model`` is None, then:
-          - if ``density_dataset_source`` attribute of the associated
-            TerrainCorrectionParameters object is not None, the density model will be
-            loaded from the specified source.
-          - otherwise generate a default density model from the loaded DEM, using the
-            ``terrain_density``, ``water_density``, and ``sea_level_elevation``
-            attributes of the associated TerrainCorrectionParameters object.
-
-    Notes
-    -----
     A typical workflow using this class would be:
 
         - Define one or more TerrainCorrectionParameters objects for the desired zones.
@@ -743,17 +700,24 @@ class TerrainCorrector:
         - Add additional zones as needed using ``add_calculation_zone``.
         - Call ``compute()`` on a set of points.
 
+    Attributes
+    ----------
+    params : dict
+        A dictionary of TerrainCorrectionParmeter objects defining the "zones" to be computed.
+
+    Parameters
+    ----------
+    params: TerrainCorrectionParameters or list-like of TerrainCorrectionParameters
+        The TerrainCorrectionParameters object(s) defining the "zones" to be computed.
+
+
     """
 
     def __init__(
         self,
         params: TerrainCorrectionParameters | Sequence[TerrainCorrectionParameters],
-        dem: xr.DataArray | Sequence[None | xr.DataArray] | None = None,
-        density_model: xr.DataArray | Sequence[None | xr.DataArray] | None = None,
     ) -> None:
         self.params: dict[str, TerrainCorrectionParameters] = {}
-        self.dems: dict[str, xr.DataArray | None] = {}
-        self._density_models: dict[str, xr.DataArray | None] = {}
 
         if isinstance(params, TerrainCorrectionParameters):
             params = [params]
@@ -769,65 +733,16 @@ class TerrainCorrector:
                 f" of TerrainCorrectionParameters objects, not '{type(params)}'"
             )
 
-        if dem is None:
-            dem = [None] * len(params)
-        elif isinstance(dem, xr.DataArray):
-            if len(params) > 1:
-                raise ValueError(
-                    "if params is a list-like of TerrainCorrectionParameters objects, "
-                    "then dem must be a list-like of the same length"
-                )
-            dem = [dem]
-        elif isinstance(dem, Iterable):
-            if len(dem) != len(params):
-                raise ValueError(
-                    "if dem is a list-like, it must be the same length as params"
-                )
-            if not all((d is None or isinstance(d, xr.DataArray)) for d in dem):
-                raise TypeError(
-                    "if dem is a list-like, all items must be xarray.DataArray or None"
-                )
-            dem = list(dem)
-        else:
-            raise TypeError(
-                f"dem arg must be a DataArray, None or a list-like, not '{type(dem)}'"
-            )
+        for p in params:
+            self.add_zone(params=p)
 
-        if density_model is None:
-            density_model = [None] * len(params)
-        elif isinstance(density_model, (xr.DataArray, xr.Dataset)):
-            density_model = [density_model]
-        elif isinstance(density_model, Iterable):
-            density_model = list(density_model)
-        else:
-            raise TypeError(
-                "density_model arg must be a DataArray, None or a list-like, "
-                f"not '{type(density_model)}'"
-            )
-
-        # check everything is consistent
-        if not (len(params) == len(dem) == len(density_model)):
-            raise ValueError("inconsistent params and dem and density_model args")
-
-        for p, t, d in zip(params, dem, density_model):
-            self.add_zone(params=p, dem=t, density_model=d)
-
-    def add_zone(
-        self,
-        params: TerrainCorrectionParameters,
-        dem: xr.DataArray | None = None,
-        density_model: xr.DataArray | None = None,
-    ) -> None:
-        """Add a terrain correction calculation zone and associated dem and/or density model.
+    def add_zone(self, params: TerrainCorrectionParameters) -> None:
+        """Add a terrain correction calculation zone to the TerrainCorrector.
 
         Parameters
         ----------
         params : TerrainCorrectionParameters
             The parameters defining the terrain correction zone.
-        dem : xarray.DataArray, optional
-            The digital elevation model corresponding to the terrain correction zone.
-        density_model : xarray.DataArray, optional
-            The density model corresponding to the terrain correction zone.
         """
         if not isinstance(params, TerrainCorrectionParameters):
             raise TypeError(
@@ -835,25 +750,11 @@ class TerrainCorrector:
                 f"not {type(params)}"
             )
 
-        key = str(params.name)
-        self.params[key] = params
-
-        if dem is None or isinstance(dem, xr.DataArray):
-            self.dems[key] = dem
-        else:
-            raise TypeError(f"dem must be a xarray.DataArray or None, not {type(dem)}")
-
-        if density_model is None or isinstance(density_model, xr.DataArray):
-            self._density_models[key] = density_model
-        else:
-            raise TypeError(
-                "density_model must be a xarray.DataArray or None, "
-                f"not {type(density_model)}"
-            )
+        self.params[params.name] = params
 
     @property
     def zones(self) -> list[str]:
-        """Return list of defined terrain correction zones sorted by min_dist."""
+        """Return list of defined zone names sorted by min_dist."""
         zones = [(k, v.min_dist) for k, v in self.params.items()]
         return [str(z[0]) for z in sorted(zones, key=lambda x: x[1])]
 
@@ -862,9 +763,6 @@ class TerrainCorrector:
         points: SitesLike | Points3D,
         site_id: npt.ArrayLike | None = None,
         show_progress: bool = True,
-        method: str = "harmonica",
-        site_height_field: str = "height_ellipsoidal",
-        site_xy_fields: tuple[str, str] = ("easting", "northing"),
     ) -> "TerrainCorrectionData":
         """Compute terrain corrections for a set of points.
 
@@ -873,24 +771,17 @@ class TerrainCorrector:
         points : GravitySites or sequence of array_likes (x, y, z)
             The observation points where terrain corrections are to be computed. Must
             be in the same coordinate reference system as the dem.
-            If ``points`` is a ``GravitySites`` object, then data colums corresponding to
-            ``site_xy_fields`` (default: ("easting", "northing")) and
-            ``site_height_field`` (default: "height_ellipsoidal") must have been set.
-            If points is a sequence of array_likes, then it must be of the form
-            (x, y, z), where x, y, and z are arrays of equal length.
+            If ``points`` is a ``GravitySites`` object, then the site coordinate fields
+            must be defined on the ``TerrainCorrectionParameters`` objects used by
+            this ``TerrainCorrector``. If points is a sequence of array_likes, then it
+            must be of the form (x, y, z), where x, y, and z are arrays of equal
+            length.
         site_id : array_like, optional
-            An array of site IDs corresponding to each point. If None, then a simple
-            RangeIndex will be used.
+            An array of site IDs corresponding to each point if ``points`` is a Points3D
+            instance (see above).   If None, then a RangeIndex will be generated.
+            Ignored if points is a `SitesLike` object.
         show_progress : bool, default is True.
             Report progress, including a progress bar if the tqdm package is installed.
-        method : str, default is "harmonica"
-            The terrain correction calculation method to use. Currently only "harmonica"
-            is supported.
-        site_height_field : str, default is "height_ellipsoidal"
-            When ``points`` is a ``GravitySites`` object, get site elevation from this field.
-        site_xy_fields : tuple of str, default is ("easting", "northing")
-            When ``points`` is a ``GravitySites`` object, get site x and y coordinates from
-            these fields.
 
         Returns
         -------
@@ -899,36 +790,46 @@ class TerrainCorrector:
             TerrainCorrectionParameters used.
 
         """
-        if site_id is not None:
-            site_id = np.atleast_1d(site_id)
-
-        if isinstance(points, SitesLike):
-            x, y, z = points.get_points(
-                site_xy_fields[0], site_xy_fields[1], site_height_field
-            )
-            if site_id is None:
-                site_id = points.data.index.to_numpy().astype(str)
-
-        elif is_list_like(points):
-            x, y, z = points
-            if site_id is None:
-                site_id = np.arange(len(x), dtype=int).astype(str)
-
-        else:
+        if not isinstance(points, SitesLike) and not is_list_like(points):
             raise TypeError(
                 "points must be a sequence of arrays of form (x, y, z) "
                 f"or a GravitySites object, not {type(points)}"
             )
+        # Establish if we need to get points for each zone.
+        # - If the points is a tuple, get 1 set of x,y,z now
+        # - If the points is a GravitySites object, check if the site coordinate fields
+        #   are the same for all zones.
+        #     - If True, we will get 1 set of x,y,z now
+        #     - If False, we will get x,y,z for each zone in the loop
 
-        x = to_1d_ndarray(x).astype(np.float64)
-        y = to_1d_ndarray(y, expected_size=x.size).astype(np.float64)
-        z = to_1d_ndarray(z, expected_size=x.size).astype(np.float64)
-        site_id = to_1d_ndarray(site_id, expected_size=x.size).astype(str)
+        get_points_per_zone = False
+        if is_list_like(points):
+            x = to_1d_ndarray(points[0]).astype(np.float64)
+            y = to_1d_ndarray(points[1], expected_size=x.size).astype(np.float64)
+            z = to_1d_ndarray(points[2], expected_size=x.size).astype(np.float64)
+            if site_id is None:
+                site_id = np.arange(len(x), dtype=int).astype(str)
+            else:
+                site_id = to_1d_ndarray(site_id, expected_size=x.size).astype(str)
 
-        if len(site_id) != len(x):
-            raise ValueError(
-                f"site_id must be same length as points, not {len(site_id)} != {len(x)}"
-            )
+        else:
+            site_id = points.data.index.astype(str).to_numpy()
+            # test if site coordinate labels in attached TerrainCorrectionParameters objects
+            if (
+                len({p.site_easting_field for p in self.params.values()}) > 1
+                or len({p.site_northing_field for p in self.params.values()}) > 1
+                or len({p.site_height_field for p in self.params.values()}) > 1
+            ):
+                x, y, z = None, None, None
+                get_points_per_zone = True
+
+            else:
+                p = self.params[self.zones[0]]
+                x, y, z = points.get_points(
+                    xcol=p.site_easting_field,
+                    ycol=p.site_northing_field,
+                    zcol=p.site_height_field,
+                )
 
         # empty object to store results
         results = TerrainCorrectionData(
@@ -936,7 +837,6 @@ class TerrainCorrector:
             easting=x,
             northing=y,
             params=None,
-            site_height_field=z,
         )
 
         full_warning_displayed = False
@@ -946,46 +846,56 @@ class TerrainCorrector:
             if show_progress:
                 print(f"\nCalculating terrain corrections for zone: {zone}")
 
+            # get points if necessary
+            if get_points_per_zone:
+                try:
+                    x, y, z = points.get_points(
+                        xcol=pars.site_easting_field,
+                        ycol=pars.site_northing_field,
+                        zcol=pars.site_height_field,
+                    )
+                except Exception as e:
+                    raise ValueError(
+                        f"Error extracting site coordinates from GravitySites object: {e}"
+                    )
+
             # get the dem for this zone
-            if zone in self.dems and isinstance(self.dems[zone], xr.DataArray):
-                # defined as an argument
-                dem = self.dems[zone].copy()  # ty:ignore[unresolved-attribute]
+            if _is_dataarray(pars.dem_source):
+                dem = pars.dem_source.copy()
             elif pars.dem_source:
                 # defined as a source file to be loaded
                 dem = load_dem(pars.dem_source)
             else:
                 raise ValueError(
-                    f"No dem array or data source specified for zone='{zone}'"
+                    f"DEM not specified or zone='{zone}': TerrainCorrectionParameter "
+                    "object must provide source file or an xarray.DataArray object."
                 )
 
             # get the density model if defined
-            if zone in self._density_models and isinstance(
-                self._density_models[zone], xr.DataArray
-            ):
+            if _is_dataarray(pars.density_dataset_source):
                 # defined as an argument
-                dens_model = self._density_models[zone]
+                density_model = pars.density_dataset_source.copy()
             elif pars.density_dataset_source:
                 # defined as a source file to be loaded
-                dens_model = load_dem(pars.density_dataset_source)
+                density_model = load_dem(pars.density_dataset_source)
             else:
                 # not specified, will auto generate from DEM
-                dens_model = None
+                density_model = None
 
             tc = calculate_terrain_correction(
                 dem=dem,
                 points=(x, y, z),
                 min_dist=pars.min_dist,
                 max_dist=pars.max_dist,
-                density_dataset=dens_model,
+                density_dataset=density_model,
                 terrain_density=pars.terrain_density,
                 water_density=pars.water_density,
                 distance_mask_type=pars.distance_mask_type,
                 show_progress=show_progress,
-                # method=method,
+                method=pars.method,
                 compute_topography=pars.compute_topography,
                 compute_bathymetry=pars.compute_bathymetry,
             )
-            pars.tcorr_method = method
 
             # print a summary if something went wrong
             n_missing_tc = 0
