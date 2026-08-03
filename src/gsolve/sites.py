@@ -39,6 +39,7 @@ from gsolve.core.data import COMMON_FIELDS, DataFieldSpecification, GSolveTable
 from gsolve.core.excel_io import read_excel_worksheet, write_excel_worksheet
 from gsolve.core.utils import (
     GSolveDataWarning,
+    is_filepath_like,
     is_list_like,
     normalize_field_names,
     prepare_writable_df,
@@ -580,7 +581,7 @@ class GravitySites(GSolveTable):
             None if ``output_col`` is defined, otherwise a Series of sampled elevations.
 
         """
-        if isinstance(dem, FilePath):
+        if is_filepath_like(dem):
             _dem = load_dem(dem)
         elif isinstance(dem, DatasetOrArray):
             _dem = prepare_dem(dem)
