@@ -22,7 +22,8 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Sequence
-from typing import Any, Literal, overload
+from typing import Any, Literal, overload, get_args, get_origin, Type, TypeAliasType
+from os import PathLike
 
 import numpy as np
 import pandas as pd
@@ -37,11 +38,15 @@ from gsolve.core._typing import (
     DatetimeScalar,
     StringArray,
     TimedeltaScalar,
+    FilePath,
 )
 
 __all__ = [
     "is_list_like",
     "is_dict_like",
+    "is_filepath_like",
+    "is_in_literal",
+    "is_datetime_array",
     "to_naive_utc_datetime",
     "check_duplicate_index",
     "normalize_field_names",
@@ -59,6 +64,48 @@ __all__ = [
     "generate_loop_names",
     "round_coords",
 ]
+
+
+def is_filepath_like(obj: Any) -> bool:  # noqa: ANN401
+    """Test if object type is compatible with gsolve.core._typing.FilePath.
+
+    Returns
+    -------
+    bool
+    """
+    return isinstance(obj, FilePath.__value__)
+
+
+def is_in_literal(value: Any, literal_type: TypeAliasType) -> bool:  # noqa: ANN401
+    """Test if value is in a Literal type.
+
+    Parameters
+    ----------
+    value : Any
+        The value to test.
+    literal_type : TypeAliasType
+        The type alias or literal type to test,
+
+    Returns
+    -------
+    bool
+
+    Raises
+    ------
+    TypeError
+        If ``literal_type`` is not a TypeAliasType that resolves to a Literal type.
+    """
+    if not isinstance(literal_type, TypeAliasType):
+        raise TypeError(f"{literal_type} is not a TypeAliasType")
+
+    if get_origin(literal_type.__value__) is Literal:
+        return value in get_args(literal_type.__value__)
+    else:
+        raise TypeError(f"{literal_type} is not a Literal type")
+
+def is_datetime_array(v: Any) -> bool:  # noqa: ANN401
+    """Check if the input is a datetime-like array."""  # noqa: DOC201
+    return isinstance(v, DatetimeArray.__value__)
 
 
 @overload
@@ -126,23 +173,39 @@ def to_naive_utc_datetime(
     pandas.to_datetime
         The underlying function used to convert the input to a timestamp.
     """
+
+    def _nat_check[T](v: T) -> T:
+        if not allow_nat:
+            if isinstance(v, (pd.DatetimeIndex, pd.Series)):
+                if any(v.isna()):
+                    raise ValueError(
+                        "input contains values that resolve to NaT and allow_nat=False"
+                    )
+            elif v is pd.NaT:
+                raise ValueError("input resolves to NaT and allow_nat=False")
+        return v
+
     # scalars
     if isinstance(t, (NaTType, NAType)):
-        rval = pd.NaT
+        return _nat_check(pd.NaT)
 
     elif isinstance(t, pd.Timestamp):
-        rval = t if t.tz is None else t.tz_convert("UTC").tz_localize(None)
+        return _nat_check(t if t.tz is None else t.tz_convert("UTC").tz_localize(None))
 
     elif isinstance(t, pd.DatetimeIndex):
-        rval = t if t.tz is None else t.tz_convert("UTC").tz_localize(None)
+        return _nat_check(t if t.tz is None else t.tz_convert("UTC").tz_localize(None))
     elif isinstance(t, pd.Series):
         ds = t if t.dtype == "datetime64[ns]" else pd.to_datetime(t, **kwargs)
-        rval = ds if ds.dt.tz is None else ds.dt.tz_convert("UTC").dt.tz_localize(None)
+        return _nat_check(
+            ds if ds.dt.tz is None else ds.dt.tz_convert("UTC").dt.tz_localize(None)
+        )
 
     # arrays
-    elif isinstance(t, DatetimeArray):
+    elif is_datetime_array(t) or is_list_like(t):
         idx = pd.DatetimeIndex(pd.to_datetime(t, **kwargs))
-        rval = idx if idx.tz is None else idx.tz_convert("UTC").tz_localize(None)
+        return _nat_check(
+            idx if idx.tz is None else idx.tz_convert("UTC").tz_localize(None)
+        )
 
     else:
         return_scalar = False
@@ -158,17 +221,8 @@ def to_naive_utc_datetime(
                 "to Timestamp or DateTimeIndex"
             )
 
-        rval = idx if idx.tz is None else idx.tz_convert("UTC").tz_localize(None)
+        rval = _nat_check(idx if idx.tz is None else idx.tz_convert("UTC").tz_localize(None))
         rval = rval[0] if return_scalar else rval
-
-    if not allow_nat:
-        if isinstance(rval, (pd.DatetimeIndex, pd.Series)):
-            if any(rval.isna()):
-                raise ValueError(
-                    "input contains values that resolve to NaT and allow_nat=False"
-                )
-        elif rval is pd.NaT:
-            raise ValueError("input resolves to NaT and allow_nat=False")
 
     return rval
 

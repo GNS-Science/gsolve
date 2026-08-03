@@ -37,7 +37,7 @@ from gsolve.core._typing import (
 from gsolve.core.utils import (
     generate_loop_intervals,
     generate_loop_names,
-    is_list_like,
+    is_datetime_array,
     loops_from_gaps,
     to_naive_utc_datetime,
 )
@@ -489,7 +489,7 @@ class CG6Data(ScintrexData):
             elif isinstance(datetimes, Mapping):
                 dates = to_naive_utc_datetime(list(datetimes.keys()))
                 loop_ids = [str(l) for l in datetimes.values()]
-            elif isinstance(datetimes, DatetimeArray):
+            elif is_datetime_array(datetimes):
                 dates = to_naive_utc_datetime(datetimes)
                 loop_ids = generate_loop_names(
                     len(dates), start=loop_start, step=loop_step

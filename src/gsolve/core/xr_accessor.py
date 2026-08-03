@@ -515,3 +515,19 @@ class TCorrMethods:
         else:
             y_edges = np.linspace(y[0] - dy / 2, y[-1] + dy / 2, len(y) + 1)
         return x_edges, y_edges
+
+    def is_valid_dem(self) -> bool:
+        """Test if DataArray is suitable to be used as a DEM.
+
+        A DEM must be a 2-dimensional array of floating point values.
+
+        Returns
+        -------
+        bool
+        """
+        return (
+            self._obj.ndim == 2
+            and self._obj.shape[0] > 0
+            and self.obj.shape[1] > 0
+            and np.issubdtype(self._obj.dtype, np.floating)
+        )
