@@ -1565,29 +1565,24 @@ class TerrainCorrectionData(GSolveTable):
         site_id_missing = site_id_idx.difference(tcorrs.index)
 
         if site_id_missing.empty:
-            rval = tcorrs.loc[site_id_found, cols]
-        else:
-            if site_id_found.empty:
-                msg = (
-                    "no terrain corrrection data found for any of the "
-                    "specified site_id's"
-                )
-            else:
-                msg = (
-                    "no terrain corrrection data found for site_id's "
-                    f"{site_id_missing.to_list()}"
-                )
-            if if_missing == "raise":
-                raise ValueError(msg)
-            if if_missing == "drop":
-                warnings.warn(f"{msg}, dropping from ouput")
-                rval = tcorrs.loc[site_id_found, cols]
-            else:  # must be 'fill'
-                warnings.warn(f"{msg}, filling with {fill_value}")
-                rval = tcorrs.loc[site_id_found, cols].copy()
-                rval_fill = pd.DataFrame(
-                    index=site_id_missing, columns=cols, data=fill_value
-                )
-                rval = pd.concat([rval, rval_fill]).loc[site_id_idx]
+            return tcorrs.loc[site_id_found, cols]
 
-        return rval
+        err_msg = (
+            f"no terrain corrrection data found for {len(site_id_missing)} of "
+            f"{len(site_id_idx)} site_id's "
+        )
+
+        if if_missing == "raise":
+            raise ValueError(err_msg)
+
+        elif if_missing == "drop":
+            warnings.warn(f"{err_msg}, dropping from ouput")
+            return tcorrs.loc[site_id_found, cols]
+
+        warnings.warn(f"{err_msg}, filling with {fill_value}")
+        rval = tcorrs.loc[site_id_found, cols].copy()
+        rval_fill = pd.DataFrame(
+            index=site_id_missing, columns=cols, data=fill_value
+        )
+        return pd.concat([rval, rval_fill]).loc[site_id_idx]
+
