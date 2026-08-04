@@ -16,7 +16,7 @@
 
 # -*- coding: utf-8 -*-
 """
-Created on Fri Mar  3 17:54:24 2023
+Created on Fri Mar  3 17:54:24 2023.
 
 @author: craigm
 """
@@ -64,8 +64,11 @@ inner_zone_params = TerrainCorrectionParameters(
     water_density=1030.0,  # in kg/m3
     distance_mask_type="radial",
     dem_source=grid_dir / dem_file1,
+    compute_topography=True,
     compute_bathymetry=False,
     site_height_field="dem_elevation",
+    site_easting_field="easting",
+    site_northing_field="northing",
     name="8m_dem",
 )
 
@@ -76,8 +79,11 @@ outer_zone_params = TerrainCorrectionParameters(
     water_density=1030.0,  # in kg/m3
     distance_mask_type="radial",
     dem_source=grid_dir / dem_file2,
+    compute_topography=True,
     compute_bathymetry=False,
     site_height_field="dem_elevation",
+    # site_easting_field="easting",  default is "easting" so can be omitted
+    # site_northing_field="northing", ditto
     name="200m_dem",
 )
 # Set up the Terrain corrector
