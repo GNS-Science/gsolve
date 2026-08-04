@@ -226,6 +226,7 @@ def write_excel_worksheet(
 
     writer_kwargs: dict[str, Any] = {
         # "engine": "openpyxl",  # "xlsxwriter", "openpyxl", "xlwt"
+        "engine": "openpyxl",
         "if_sheet_exists": if_sheet_exists,
         "mode": "w",
     }
