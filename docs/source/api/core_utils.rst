@@ -18,6 +18,15 @@ Functions
 =========
 .. currentmodule:: gsolve.core.utils
 
+Type Checking
+-------------
+.. autosummary::
+   :toctree: api/
+   is_filepath_like
+   is_datetime_array
+   is_in_literal
+
+
 Data Conversion
 ---------------
 .. autosummary::
@@ -52,7 +61,7 @@ Survey Loop Handling
    loops_from_gaps
 
 Other Utilities
--------------------
+---------------
 .. autosummary::
    :toctree: api/
 
