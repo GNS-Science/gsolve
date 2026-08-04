@@ -60,8 +60,8 @@ def sites(ripple_dem) -> GravitySites:
 
     sites = GravitySites(
         site_id=[str(n) for n in range(1, n_points + 1)],
-        latitude=np.random.uniform(-90.0, 90.0, size=n_points),
-        longitude=np.random.uniform(-180.0, 180.0, size=n_points),
+        latitude=rng.uniform(-90.0, 90.0, size=n_points),
+        longitude=rng.uniform(-180.0, 180.0, size=n_points),
         height_ellipsoidal=z,
         easting=x,
         northing=y,
