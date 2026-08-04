@@ -462,18 +462,15 @@ class TerrainCorrectionParameters(GSolveParameters):
         ``sea_level_elevation``. Note that ``density_dataset_source`` inputs are converted
         to and stored as a string.
     compute_topography : bool, default is True
-        Compute gravity corrections due to topographic masses.
+        Compute gravity corrections due to topographic masses above ``sea_level_elevation``.
     compute_bathymetry : bool, default is True
-        Compute gravity corrections due to water bodies such as the ocean.
+        Compute gravity corrections due to water bodies below ``sea_level_elevation``.
     site_height_field : str, default is "height_ellipsoidal"
-        Column in a ``GravitySites.data`` object containing
-        site elevations/z coordinates.
+        Column in a ``GravitySites.data`` object containing site elevations/z coordinates.
     site_easting_field : str, default is "easting"
-        Column in a ``GravitySites.data`` object containing
-        site easting/x coordinates.
+        Column in a ``GravitySites.data`` object containing site easting/x coordinates.
     site_northing_field : str, default is "northing"
-        Column in a ``GravitySites.data`` object containing
-        site northing/y coordinates.
+        Column in a ``GravitySites.data`` object containing site northing/y coordinates.
     method : {"harmonica"}, default is "harmonica"
         Method to use for computing terrain corrections. Currently only "harmonica" is
         supported.
@@ -764,7 +761,7 @@ class TerrainCorrector:
 
     @property
     def zones(self) -> list[str]:
-        """Return list of defined zone names sorted by min_dist."""
+        """List of zone names sorted by min_dist."""
         zones = [(k, v.min_dist) for k, v in self.params.items()]
         return [str(z[0]) for z in sorted(zones, key=lambda x: x[1])]
 
@@ -902,7 +899,6 @@ class TerrainCorrector:
                 water_density=pars.water_density,
                 distance_mask_type=pars.distance_mask_type,
                 show_progress=show_progress,
-                method=pars.method,
                 compute_topography=pars.compute_topography,
                 compute_bathymetry=pars.compute_bathymetry,
             )
