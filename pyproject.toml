@@ -27,7 +27,8 @@ classifiers = [
 dependencies = [
     "boule==0.6.*",
     "harmonica<0.8",
-    "pandas[excel,plot]<3",
+    "openpyxl>=3.1.5",
+    "pandas[plot]<3",
     "pydata-sphinx-theme>=0.16.1",
     "pygtide>=0.8.2",
     "pyhardisp>=0.2.1",
@@ -41,7 +42,6 @@ dev = ["pytest>=9.0.3", "pytest-cov>=7.1.0", "pytest-datadir>=1.8.0", "ruff"]
 
 [project.urls]
 Repository = "https://github.com/GNS-Science/gsolve"
-# Homepage = "https://github.com/GNS-Science/gsolve"
 Documentation = "https://gns-science.github.io/gsolve/"
 Issues = "https://github.com/GNS-Science/gsolve/issues"
 Changelog = "https://github.com/GNS-Science/gsolve/blob/main/CHANGELOG.md"
@@ -116,14 +116,15 @@ ignore = ["ANN101", "ANN102", "ANN003", "D105", "DOC502", "DOC501"]
 preview = true
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["ANN001", "ANN201", "ANN202"]
+"tests/**" = ["ANN001", "ANN201", "ANN202", "D"]
+"examples/scripts/**" = ["D100"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
 [tool.burocrata]
 notice = '''
-# GSolve - gravity processing software.
+# gSolve - gravity processing software.
 # Copyright (c) 2026 Earth Sciences New Zealand.
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
