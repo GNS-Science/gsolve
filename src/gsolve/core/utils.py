@@ -67,7 +67,7 @@ __all__ = [
 
 
 def is_filepath_like(obj: Any) -> bool:  # noqa: ANN401
-    """Test if object type is compatible with gsolve.core._typing.FilePath.
+    """Test if object type is compatible with ``gsolve.core._typing.FilePath``.
 
     Returns
     -------
@@ -104,7 +104,12 @@ def is_in_literal(value: Any, literal_type: TypeAliasType) -> bool:  # noqa: ANN
         raise TypeError(f"{literal_type} is not a Literal type")
 
 def is_datetime_array(v: Any) -> bool:  # noqa: ANN401
-    """Check if the input is a datetime-like array."""  # noqa: DOC201
+    """Test if the input is a datetime-like array.
+
+    Returns
+    -------
+    bool
+    """
     return isinstance(v, DatetimeArray.__value__)
 
 
@@ -317,6 +322,12 @@ def normalize_field_names(df: pd.DataFrame | pd.Series) -> pd.DataFrame | pd.Ser
             f"df must be a pandas DataFrame or Series, not {type(df).__name__}"
         )
 
+
+@overload
+def normalize_str(s: str| int | float | bool) -> str: ...
+
+@overload
+def normalize_str(s: None) -> None: ...
 
 def normalize_str(s: str | int | float | bool | None) -> str | None:
     """Convert ``s`` to str and format it to snake_case.
@@ -803,14 +814,17 @@ class GSolveDataWarning:
         self.messages: list[str] = []
 
     @property
-    def count(self) -> int:  # noqa: D102
+    def count(self) -> int:
+        """Count of messages added - i.e. the number of issues."""
         return len(self.messages)
 
-    def __call__(self, msg: str) -> None:  # noqa: D102
+    def __call__(self, msg: str) -> None:
+        """Append a message and print if obj.show is True."""
         self.messages.append(msg)
         self._display(msg)
 
     def _display(self, msg: str) -> None:
+        """Display a message if obj.show is True."""
         if self.show:
             print(f"{self.prefix}: {msg}", file=sys.stderr)
 
@@ -819,7 +833,8 @@ class GSolveDataWarning:
         for msg in self.messages:
             print(f"{self.prefix}: {msg}")
 
-    def final_msg(self) -> None:  # noqa: D102
+    def final_msg(self) -> None:
+        """Print closing summary message."""
         if self.count > 0:
             self._display(f"{self.count} problem(s) encountered")
 
