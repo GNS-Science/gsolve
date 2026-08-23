@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import typing as _typing
 from collections.abc import Iterable, Mapping, Sequence
-from typing import Self
 
 import numpy as _np
 import numpy.typing as _npt
@@ -31,8 +30,7 @@ from gsolve.core._typing import (
     FilePath,
     IfSheetExists,
     IfWorkbookExists,
-    Points2D,
-    Points3D,
+    Points3DTrue,
     Renamer,
 )
 from gsolve.core.data import COMMON_FIELDS, DataFieldSpecification, GSolveTable
@@ -46,6 +44,7 @@ from gsolve.core.utils import (
     to_1d_ndarray,
 )
 from gsolve.core.xr_methods import load_dem, prepare_dem
+
 
 __all__ = [
     "GravitySites",
@@ -197,7 +196,7 @@ class GravitySites(GSolveTable):
         ignore_unknown_fields: bool = True,
         mapper: Renamer | None = None,
         **kwargs,
-    ) -> Self:
+    ) -> _typing.Self:
         """
         Create a GravitySites object from an excel workbook.
 
@@ -602,10 +601,8 @@ class GravitySites(GSolveTable):
             return _pd.Series(index=self.data.index, data=z)
 
     def get_points(
-        self, xcol: str, ycol: str, zcol: str | None = None
-    ) -> tuple[
-        _npt.NDArray[_np.float64], _npt.NDArray[_np.float64], _npt.NDArray[_np.float64]
-    ]:
+        self, xcol: str, ycol: str, zcol: str = ""
+    ) -> Points3DTrue:
         """Get site point coordinates as numpy arrays.
 
         Parameters
@@ -614,20 +611,33 @@ class GravitySites(GSolveTable):
             The column name for x coordinates.
         ycol : str
             The column name for y coordinates.
-        zcol : str or None, optional
-            The column name for z coordinates. If None, z coordinates will be set to NaN.
+        zcol : str
+            The column name for z coordinates. If an empty str, z coordinates
+            will be set to NaN.
 
         Returns
         -------
-        tuple of numpy.ndarray
+        (ndarray, ndarray, ndarray)
             The x, y, and z coordinates as numpy arrays.
         """
-        x = self.data.loc[:, xcol].to_numpy().copy().astype(_np.float64)
-        y = self.data.loc[:, ycol].to_numpy().copy().astype(_np.float64)
-        if zcol is None:
-            return x, y, _np.full_like(x, _np.nan, dtype=_np.float64)
+        x = to_1d_ndarray(self.data.loc[:, xcol]).copy().astype(_np.float64)
+        y = to_1d_ndarray(self.data.loc[:, ycol]).copy().astype(_np.float64)
+
+        if not zcol:
+            z = _np.full_like(x, fill_value=_np.nan)
         else:
-            return x, y, self.data.loc[:, zcol].to_numpy().copy().astype(_np.float64)
+            z = to_1d_ndarray(self.data.loc[:, zcol]).copy().astype(_np.float64)
+
+        return x, y, z
+
+    def get_site_ids(self) -> _npt.NDArray[_np.str_]:
+        """Return site_id's as as numpy ndarray.
+
+        Returns
+        -------
+        numpy.ndarray[str]
+        """
+        return to_1d_ndarray(self.data.index).copy().astype(str)
 
 
 def _siteid_exists(site_id: str, other: _pd.DataFrame | GSolveTable) -> bool:
@@ -757,7 +767,7 @@ class ReferenceGravity(GSolveTable):
         self,
         csv_file: FilePath,
         normalize_column_names: bool = True,
-            bool_to_int: bool = True,
+        bool_to_int: bool = True,
         include_unknown_fields: bool = False,
         **kwargs,
     ) -> None:
@@ -858,7 +868,7 @@ class ReferenceGravity(GSolveTable):
         cls,
         data: Mapping,
         set_active: bool = True,
-    ) -> Self:
+    ) -> _typing.Self:
         """Create a ReferenceGravity object from a dictionary.
 
         This method provides a simple mechanism for users to add reference
