@@ -766,6 +766,27 @@ class TerrainCorrector:
         zones = [(k, v.min_dist) for k, v in self.params.items()]
         return [str(z[0]) for z in sorted(zones, key=lambda x: x[1])]
 
+    def _has_constant_xy_coord_source(self) -> bool:
+        """Return True if all params specify the same easting and northing source fields.
+
+        Returns
+        -------
+        bool
+        """
+        return (
+            len({p.site_easting_field for p in self.params.values()}) == 1
+            and len({p.site_northing_field for p in self.params.values()}) == 1
+        )
+
+    def _has_constant_z_coord_source(self) -> bool:
+        """Return True if all params specify the same height source fields.
+
+        Returns
+        -------
+        bool
+        """
+        return len({p.site_height_field for p in self.params.values()}) == 1
+
     def compute(
         self,
         points: SitesLike | Points3D,
@@ -798,7 +819,12 @@ class TerrainCorrector:
             TerrainCorrectionParameters used.
 
         """
-        if not isinstance(points, SitesLike) and not is_list_like(points):
+        sites_like_input = False
+        if isinstance(points, SitesLike):
+            sites_like_input = True
+        elif is_points3d_like(points):
+            sites_like_input = False
+        else:
             raise TypeError(
                 "points must be a sequence of arrays of form (x, y, z) "
                 f"or a GravitySites object, not {type(points)}"
@@ -810,34 +836,48 @@ class TerrainCorrector:
         #     - If True, we will get 1 set of x,y,z now
         #     - If False, we will get x,y,z for each zone in the loop
 
-        get_points_per_zone = False
-        if is_list_like(points):
-            x = to_1d_ndarray(points[0]).astype(np.float64)
-            y = to_1d_ndarray(points[1], expected_size=x.size).astype(np.float64)
-            z = to_1d_ndarray(points[2], expected_size=x.size).astype(np.float64)
-            if site_id is None:
-                site_id = np.arange(len(x), dtype=int).astype(str)
-            else:
-                site_id = to_1d_ndarray(site_id, expected_size=x.size).astype(str)
+        if sites_like_input:
+            site_id = points.get_site_ids()
 
-        else:
-            site_id = points.data.index.astype(str).to_numpy()
-            # test if site coordinate labels in attached TerrainCorrectionParameters objects
             if (
-                len({p.site_easting_field for p in self.params.values()}) > 1
-                or len({p.site_northing_field for p in self.params.values()}) > 1
-                or len({p.site_height_field for p in self.params.values()}) > 1
+                self._has_constant_xy_coord_source()
+                and self._has_constant_z_coord_source()
             ):
-                x, y, z = None, None, None
-                get_points_per_zone = True
-
-            else:
+                get_xyz_per_zone = False
                 p = self.params[self.zones[0]]
                 x, y, z = points.get_points(
                     xcol=p.site_easting_field,
                     ycol=p.site_northing_field,
                     zcol=p.site_height_field,
                 )
+
+            else:
+                get_xyz_per_zone = True
+                z = None
+                if self._has_constant_xy_coord_source():
+                    p = self.params[self.zones[0]]
+                    x, y, _ = points.get_points(
+                        xcol=p.site_easting_field,
+                        ycol=p.site_northing_field,
+                        zcol="",
+                    )
+                else:
+                    x, y = None, None
+                    warnings.warn(
+                        "TerrainCorrector parameters specify variable easting "
+                        "and/or northing fields. Easting and Northing will not be "
+                        "written to TerrainCorrectionData output."
+                    )
+
+        else:
+            get_xyz_per_zone = False
+            x, y, z = to_points3D(points)
+            if site_id is None:
+                site_id = np.arange(len(x), dtype=int).astype(str)
+            else:
+                site_id = to_1d_ndarray(site_id, expected_size=x.size).astype(str)
+
+
 
         # empty object to store results
         results = TerrainCorrectionData(
@@ -855,7 +895,7 @@ class TerrainCorrector:
                 print(f"\nCalculating terrain corrections for zone: {zone}")
 
             # get points if necessary
-            if get_points_per_zone:
+            if get_xyz_per_zone:
                 try:
                     x, y, z = points.get_points(
                         xcol=pars.site_easting_field,
@@ -868,6 +908,7 @@ class TerrainCorrector:
                     )
 
             # get the dem for this zone
+            # maybe do not copy here
             if _is_dataarray(pars.dem_source):
                 dem = pars.dem_source.copy()
             elif pars.dem_source:
@@ -925,8 +966,12 @@ class TerrainCorrector:
                     )
 
             results.set_corrections(
-                params=pars, topography_corrections=tc[0], bathymetry_corrections=tc[1]
+                params=pars,
+                topography_corrections=tc[0] if pars.compute_topography else None,
+                bathymetry_corrections=tc[1] if pars.compute_bathymetry else None,
+                elevations=z,
             )
+
         return results
 
 
@@ -966,9 +1011,9 @@ class TerrainCorrectionData(GSolveTable):
         for each zone, and the total terrain correction. For a given zone defined by
         TerrainCorrectionParameters object = ``obj``, the output columns will be:
 
-                    - 'tcorr:{obj.name}:topo' : the topography only component of the terrain
+          - 'tcorr:{obj.name}:topo' : the topography only component of the terrain
             correction.  Ommited if ``compute_topography`` is False.
-                    - 'tcorr:{obj.name}:bath' : the bathymetry only component of the terrain
+          - 'tcorr:{obj.name}:bath' : the bathymetry only component of the terrain
             correction.  Ommited if ``compute_bathymetry`` is False.
 
         The total terrain correction column will be labeled ``'tcorr:total'``. This is
@@ -1119,6 +1164,7 @@ class TerrainCorrectionData(GSolveTable):
         params: TerrainCorrectionParameters,
         topography_corrections: npt.ArrayLike | None = None,
         bathymetry_corrections: npt.ArrayLike | None = None,
+        elevations: npt.ArrayLike | None = None,
     ) -> None:
         """Add a set of terrain correction parameters and values.
 
@@ -1129,10 +1175,12 @@ class TerrainCorrectionData(GSolveTable):
         ----------
         params : TerrainCorrectionParameters
             The parameters for the terrain correction calculations.
-        topography_corrections : array-like
+        topography_corrections : array-like, optional
             The terrain correction values.
-        bathymetry_corrections : array-like
+        bathymetry_corrections : array-like, optional
             Corrections for bathymetry
+        elevations : array-like, optional
+            The elevations used to calculate these terrain corrections.
         """
         if not isinstance(params, TerrainCorrectionParameters):
             raise TypeError(
@@ -1145,54 +1193,99 @@ class TerrainCorrectionData(GSolveTable):
                 "bathymetry_corrections"
             )
 
-        tcor_prefix = "tcorr:"
-        tcor_base_name = f"{tcor_prefix}{params.name}"
-        self.params[tcor_base_name] = params
+        tcor_prefix = "tcorr"
+
+        self.params[f"{tcor_prefix}:{params.name}"] = params.copy()
 
         corrs_dict = {
-            "topography_corrections": (
-                topography_corrections if params.compute_topography else None
-            ),
-            "bathymetry_corrections": (
-                bathymetry_corrections if params.compute_bathymetry else None
-            ),
+            "topography_corrections": [
+                topography_corrections,
+                f"{tcor_prefix}:{params.name}:topo",
+            ],
+            "bathymetry_corrections": [
+                bathymetry_corrections,
+                f"{tcor_prefix}:{params.name}:bath",
+            ],
+            "elevations": [elevations, f"elev:{params.name}"],
         }
 
-        for corr_type, corrs in corrs_dict.items():
+        for corr_type, (corrs, col_name) in corrs_dict.items():
             if corrs is None:
                 continue
-            corrs = np.atleast_1d(corrs).astype(float)
-            if len(corrs.shape) != 1:
-                raise ValueError(
-                    f"{corr_type} must be a 1D array, not {len(corrs.shape)}D"
+            try:
+                c = (
+                    to_1d_ndarray(corrs, expected_size=len(self.data))
+                    .astype(float)
+                    .round(decimals=6)
                 )
-
-            if len(corrs) != len(self.data):
+            except ValueError as e:
                 raise ValueError(
-                    f"{corr_type} must have same length as site_id "
-                    f"({self.data.shape[0]}), not {len(corrs)}"
+                    f"{corr_type} must be a 1d array of floats of the len as site_id: {e} "
                 )
-            topo_col_name = f"{tcor_base_name}:{corr_type[:4]}"
-            self.set_column(topo_col_name, corrs, dtype=float)
+            self.set_column(label=col_name, data=c, dtype=float)
 
         # now set the total column
-        tcorr_total_col_name = f"{tcor_prefix}total"
+        tcorr_total_col_name = f"{tcor_prefix}:total"
 
         if tcorr_total_col_name in self.data.columns:
             self.data = self.data.drop(columns=[tcorr_total_col_name])
+
         existing_tcorr_cols = [
             c
             for c in self.data.columns
             if (c.startswith(tcor_prefix) and c != tcorr_total_col_name)
         ]
+
         if len(existing_tcorr_cols) == 0:
             self.set_column(tcorr_total_col_name, 0.0, dtype=float)
         else:
-            df = self.data[existing_tcorr_cols].round(decimals=6)
+            temp_df = self.data[existing_tcorr_cols]
             self.data = self.data.drop(columns=existing_tcorr_cols)
-            df[tcorr_total_col_name] = df.sum(axis=1, skipna=False)
+            temp_df[tcorr_total_col_name] = temp_df.sum(axis=1, skipna=False)
 
-            self.data = pd.concat([self.data, df], axis=1)
+            self.data = pd.concat([self.data, temp_df], axis=1)
+
+    def set_height_ellipsoidal(
+        self,
+        elevations: SitesLike | FloatArray,
+        input_height_field: str = "height_ellipsoidal",
+        output_height_field: str = "height_ellipsoidal",
+    ) -> None:
+        """Add ellipsoidal heights to terrain correction outputs.
+
+        Terrain correction calculations typically use elevations sampled
+        from the DEM being used. This method allows site elevations to be
+        included in terrain correction outputs. These can then be used to
+        QC results and identify errors introduced when sampling a DEM.
+
+        Parameters
+        ----------
+        elevations : SitesLike or array-like object
+            The elevation/height data to add to ``obj.data``.
+        input_height_field : str, default is 'height_ellipsoidal'
+            Column containing height data if ``elevations`` is a SitesLike object.
+        output_height_field : str, default is 'height_ellipsoidal'
+            Write heights to column ``output_height_field`` in the objects data
+            attribute.
+
+        Raises
+        ------
+        KeyError
+            If ``elevations`` is a SitesLike and ``elevations.data`` has no
+            column named ``input_height_field``.
+        ValueError
+            If size of ``elevations`` is incompatible with ``obj.data``
+        """
+        insertion_point = self.data.columns.get_loc["easting"] + 1
+        self.data.insert(insertion_point, output_height_field, np.nan)
+
+        if isinstance(elevations, SitesLike):
+            if not hasattr(elevations, "data"):
+                raise TypeError(
+                    "elevations arg is a SitesLike object but does not have a "
+                )
+            # z = elevations.data[input_height_field].astype(float).to_numpy()
+            # df = elevations.data[]
 
     def __repr__(self) -> str:
         zones = ", ".join(
@@ -1582,8 +1675,5 @@ class TerrainCorrectionData(GSolveTable):
 
         warnings.warn(f"{err_msg}, filling with {fill_value}")
         rval = tcorrs.loc[site_id_found, cols].copy()
-        rval_fill = pd.DataFrame(
-            index=site_id_missing, columns=cols, data=fill_value
-        )
+        rval_fill = pd.DataFrame(index=site_id_missing, columns=cols, data=fill_value)
         return pd.concat([rval, rval_fill]).loc[site_id_idx]
-
