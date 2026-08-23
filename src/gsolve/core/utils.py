@@ -39,6 +39,7 @@ from gsolve.core._typing import (
     StringArray,
     TimedeltaScalar,
     FilePath,
+    Points3D,
 )
 
 __all__ = [
@@ -103,6 +104,7 @@ def is_in_literal(value: Any, literal_type: TypeAliasType) -> bool:  # noqa: ANN
     else:
         raise TypeError(f"{literal_type} is not a Literal type")
 
+
 def is_datetime_array(v: Any) -> bool:  # noqa: ANN401
     """Test if the input is a datetime-like array.
 
@@ -111,6 +113,56 @@ def is_datetime_array(v: Any) -> bool:  # noqa: ANN401
     bool
     """
     return isinstance(v, DatetimeArray.__value__)
+
+
+def is_points3d_like(v: Any) -> bool:  # noqa: ANN401
+    """Test if value is compatible with Points3D type.
+
+    Note that is not possible to test the data type of contained arrays.
+
+    Parameters
+    ----------
+    v :
+        The object to test.
+
+    Returns
+    -------
+    bool
+    """
+    if not is_list_like(v):
+        return False
+    if len(v) != 3:
+        return False
+    if not all([is_list_like(c) for c in v]):
+        return False
+
+    return True
+
+
+def to_points3D(v: Points3D) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:  # noqa: ANN401
+    """Convert Points3d-like object to a bona-fide Points3D object.
+
+    Parameters
+    ----------
+    v : Points3D
+        Object to be transformed.
+
+    Returns
+    -------
+    (NDArray[np.float64], NDArray[np.float64], NDArray[np.float64])
+        Tuple of 3 ndarray's with dtype=float64
+
+    """
+    if not is_points3d_like(v):
+        raise TypeError(
+            "object is not Points3D-like so cannot be converted to a true Points3D"
+        )
+    x, y, z = v
+    x = to_1d_ndarray(v[0]).astype(np.float64)
+    y = to_1d_ndarray(v[1], expected_size=x.size).astype(np.float64)
+    z = to_1d_ndarray(v[2], expected_size=x.size).astype(np.float64)
+
+    return (x, y, z)
 
 
 @overload
@@ -226,7 +278,9 @@ def to_naive_utc_datetime(
                 "to Timestamp or DateTimeIndex"
             )
 
-        rval = _nat_check(idx if idx.tz is None else idx.tz_convert("UTC").tz_localize(None))
+        rval = _nat_check(
+            idx if idx.tz is None else idx.tz_convert("UTC").tz_localize(None)
+        )
         rval = rval[0] if return_scalar else rval
 
     return rval
@@ -324,10 +378,12 @@ def normalize_field_names(df: pd.DataFrame | pd.Series) -> pd.DataFrame | pd.Ser
 
 
 @overload
-def normalize_str(s: str| int | float | bool) -> str: ...
+def normalize_str(s: str | int | float | bool) -> str: ...
+
 
 @overload
 def normalize_str(s: None) -> None: ...
+
 
 def normalize_str(s: str | int | float | bool | None) -> str | None:
     """Convert ``s`` to str and format it to snake_case.
