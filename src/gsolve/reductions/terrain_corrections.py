@@ -32,12 +32,10 @@ import xarray as xr
 from tqdm import tqdm as _tqdm
 
 from gsolve.core._typing import (
-    DatasetOrArray,
     FilePath,
     FloatArray,
     IfSheetExists,
     IfWorkbookExists,
-    Points2D,
     Points3D,
     SitesLike,
     TCorrDistanceMaskType,
@@ -50,8 +48,11 @@ from gsolve.core.utils import (
     to_1d_ndarray,
     is_filepath_like,
     is_in_literal,
+    is_points3d_like,
+    to_points3D,
 )
-from gsolve.core.xr_accessor import TCorrMethods as _TCorrMethods
+
+# from gsolve.core.xr_accessor import TCorrMethods as _TCorrMethods
 from gsolve.core.xr_methods import *
 
 __all__ = [
