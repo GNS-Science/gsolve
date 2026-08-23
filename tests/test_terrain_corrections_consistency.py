@@ -77,7 +77,7 @@ def pre_calced_tcorr_data(tc_params) -> TerrainCorrectionData:
     # - Catch changes that alter the results
     # -> Investigate causes
     data = [
-        "site_id,easting,northing,site_height_field,tcorr:topo:topo,tcorr:bath:bath,tcorr:both:topo,tcorr:both:bath,tcorr:total",
+        "site_id,easting,northing,elev:topo,tcorr:tt:topo,tcorr:bb:bath,tcorr:both:topo,tcorr:both:bath,tcorr:total",
         "1,547.9120971119266,-258.4039515348376,5.909,0.046479,0.012204,0.046479,0.012204,0.117366",
         "2,-122.24312049589537,853.5299776972035,-1.582,NaN,NaN,NaN,NaN,NaN",
         "3,717.1958398227648,287.730240161329,7.86,0.030694,0.002449,0.030694,0.002449,0.06628600000000001",
@@ -101,7 +101,7 @@ def pre_calced_tcorr_data(tc_params) -> TerrainCorrectionData:
 @pytest.fixture
 def tc_params(ripple_dem) -> list[TerrainCorrectionParameters]:
     p1 = TerrainCorrectionParameters(
-        name="topo",
+        name="tt",
         min_dist=tc_min_dist,
         max_dist=tc_max_dist,
         distance_mask_type="radial",
@@ -110,7 +110,7 @@ def tc_params(ripple_dem) -> list[TerrainCorrectionParameters]:
         site_height_field="height_dem",
     )
     p2 = TerrainCorrectionParameters(
-        name="bath",
+        name="bb",
         min_dist=tc_min_dist,
         max_dist=tc_max_dist,
         distance_mask_type="radial",
@@ -147,6 +147,7 @@ def test_terrain_correction_consistency(
 
     # test that pre-calculated results are close to calculated results
     for col in tcorr_cols:
+        assert col in pre_calced_tcorr_data.data.columns
         assert np.allclose(
             results.data[col].values,
             pre_calced_tcorr_data.data[col].values,
