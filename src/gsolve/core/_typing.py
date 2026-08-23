@@ -106,6 +106,7 @@ DatasetOrArray: TypeAlias = xr.DataArray | xr.Dataset
 ArrayOrCoords: TypeAlias = DatasetOrArray | Sequence[ArrayLike]
 Points2D: TypeAlias = tuple[FloatArray, FloatArray]
 Points3D: TypeAlias = tuple[FloatArray, FloatArray, FloatArray]
+Points3DTrue = tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]
 type TCorrDistanceMaskType = Literal["radial", "rectangular"]
 
 
@@ -114,6 +115,6 @@ type TCorrDistanceMaskType = Literal["radial", "rectangular"]
 class SitesLike(Protocol):
     data: pd.DataFrame
 
-    def get_points(
-        self, xcol: str, ycol: str, zcol: str
-    ) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]: ...
+    def get_points(self, xcol: str, ycol: str, zcol: str = "") -> Points3DTrue: ...
+
+    def get_site_ids(self) -> NDArray[np.str_]: ...
