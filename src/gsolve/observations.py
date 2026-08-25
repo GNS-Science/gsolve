@@ -796,7 +796,7 @@ class GravityObservations(GSolveTable):
         """
         c_label: str = "calibration_factor"
 
-        if self.data["meter_id"].nunique() > 1 and meter_id is None:
+        if self.data["meter_id"].nunique() > 1 and meter_id is None:  # noqa: PD101
             raise ValueError(
                 "Multiple gravity meters found in data, must specify ``meter_id``"
             )
@@ -1450,7 +1450,7 @@ class GravityObservations(GSolveTable):
         if "loop" in self.data.columns and "meter_id" in self.data.columns:
             for l in self.loop_ids:
                 m = self.data["loop"].eq(l)
-                if self.data.loc[m, "meter_id"].nunique() > 1:
+                if self.data.loc[m, "meter_id"].nunique() > 1:  # noqa: PD101
                     warner(f"Multiple gravity meters found in loop '{l}'")
 
         warner.final_msg()
