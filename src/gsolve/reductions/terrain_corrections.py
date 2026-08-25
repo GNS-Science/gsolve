@@ -438,6 +438,11 @@ class TerrainCorrectionParameters(GSolveParameters):
     max_dist : float
         Maximum distance or outer radius for this terrain correction zone. Data beyond
         this radius are excluded.
+    dem_source : path-like or xarray.DataArray
+        The terrain data data source. ``dem_source`` can be either:
+
+        - The path to a DEM file that will be read during terrain correction computation.
+        - A DataArray containing the terrain data to be used.
     terrain_density : float, default=2670.0
         Density of the terrain in kg/m^3.  This is and ``water_density`` are used to
         generate a simple density model from the DEM.
@@ -451,11 +456,7 @@ class TerrainCorrectionParameters(GSolveParameters):
     distance_mask_type : {"radial", "rectangular"}, default="radial"
         Type of distance mask to use. A "radial" mask creates an approximately circular
         zone, while a "rectangular" mask creates a rectangular mask.
-    dem_source : path-like or xarray.DataArray
-        The terrain data data source. ``dem_source`` can be either:
 
-        - The path to a DEM file that will be read during terrain correction computation.
-        - A DataArray containing the terrain data to be used.
     density_dataset_source : path-like or xarray.DataArray, default=None
         Optional density model to be used.  By default a simple density model is automatically
         generated from terrain data using specified sea_level_elevation, terrain_density
@@ -484,11 +485,11 @@ class TerrainCorrectionParameters(GSolveParameters):
     name: str
     min_dist: float
     max_dist: float
+    dem_source: FilePath | xr.DataArray
     terrain_density: float = 2670.0
     water_density: float = 1030.0
     sea_level_elevation: float = 0.0
     distance_mask_type: TCorrDistanceMaskType = "radial"
-    dem_source: FilePath | xr.DataArray
     density_dataset_source: FilePath | xr.DataArray | None = None
     compute_topography: bool = True
     compute_bathymetry: bool = True
