@@ -55,16 +55,24 @@ inner_zone_params = TerrainCorrectionParameters(
     water_density=1030.0,  # in kg/m3
     distance_mask_type="radial",
     dem_source=grid_dir / dem_file1,
-    clamp_elevation=True,
+    compute_topography=True,
+    compute_bathymetry=False,
+    site_height_field="dem_elevation",
     name="8m_dem",
 )
+
 
 outer_zone_params = TerrainCorrectionParameters(
     min_dist=2160.0,  # in meters
     max_dist=21900.0,  # in meters
+    terrain_density=2670.0,  # in kg/m3
+    water_density=1030.0,  # in kg/m3
+    distance_mask_type="radial",
     dem_source=grid_dir / dem_file2,
+    compute_topography=True,
+    compute_bathymetry=False,
+    site_height_field="dem_elevation",
     name="200m_dem",
-    clamp_elevation=False,
 )
 ```
 
