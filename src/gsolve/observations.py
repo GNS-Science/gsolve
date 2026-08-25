@@ -50,7 +50,7 @@ from gsolve.core.utils import (
     prepare_writable_df,
     to_naive_utc_datetime,
 )
-from gsolve.gsolve_algorithms import GSolveSolverMethod, call_gsolve_lstsq
+from gsolve.gsolve_algorithms import GSolveSolverMethod, call_g_solver_calibration, call_gsolve_lstsq
 from gsolve.gsolve_outputs import GSolveResults
 from gsolve.meter_conversion import MeterReadingConverter
 from gsolve.sites import GravitySites, ReferenceGravity, combine_gravity_sites
@@ -1606,7 +1606,6 @@ class GravitySurvey:
         method: GSolveSolverMethod,
         percentile_clipping: float = 100,
         use_loops: bool = True,
-        calculate_calibration_factor: bool = False,
     ) -> GSolveResults:
         """Perform network adjustment on gravity observations.
 
@@ -1620,8 +1619,6 @@ class GravitySurvey:
         use_loops : bool, default=True
             If True, compute drift on a loop-by-loop basis. If False, compute a single
             drift adjustmen for all data.
-        calculate_calibration_factor : bool, default=False
-            If True, calculate the calibration factor during the adjustment.
 
         Returns
         -------
@@ -1646,7 +1643,54 @@ class GravitySurvey:
             method=method,
             percentile_clipping=percentile_clipping,
             use_loops=use_loops,
-            calculate_calibration_factor=calculate_calibration_factor,
+        )
+        return results
+
+    def solve_calibration_factor(
+        self,
+        method: GSolveSolverMethod,
+        percentile_clipping: float = 100,
+        use_loops: bool = True,
+    ) -> GSolveResults:
+        """Solve for gravity meter calibration factor.
+
+        Something something.
+
+        Parameters
+        ----------
+        method : GSolveSolverMethod
+            The solver method to use for the least squares adjustment.
+        percentile_clipping : float, default=100
+            The percentile of residuals to use for clipping.  Values outside this
+            percentile will be excluded from the adjustment.  Must be between 0 and 100.
+        use_loops : bool, default=True
+            If True, compute drift on a loop-by-loop basis. If False, compute a single
+            drift adjustmen for all data.
+
+        Returns
+        -------
+        GSolveResults
+            The results of the network adjustment.
+        """
+        self.observations.set_tdelta()
+
+        td_column = "loop_tdelta" if use_loops else "survey_tdelta"
+
+        isactive = self.observations.data["active"]
+        cols = ["site_id", td_column, "loop", "gravity_corr", "meter_reading_mgal"]
+        obs = (
+            self.observations.data.loc[isactive, cols]
+            .copy()
+            .rename(columns={td_column: "timedelta", "gravity_corr": "gravity"})
+        )
+        ties = self.sites.get_ties()
+        results = call_g_solver_calibration(
+            obs=obs,
+            ref_sites=ties,
+            method=method,
+            percentile_clipping=percentile_clipping,
+            use_loops=use_loops,
+            calculate_calibration_factor=True,
         )
         return results
 

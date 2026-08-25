@@ -116,6 +116,87 @@ def call_gsolve_lstsq(
     return results_obj
 
 
+def call_g_solver_calibration(
+    obs: _pd.DataFrame,
+    ref_sites: _pd.DataFrame,
+    method: GSolveSolverMethod,
+    percentile_clipping: float = 100,
+    use_loops: bool = True,
+    calculate_calibration_factor: bool = False,
+) -> GSolveResults:
+    """Calculate drift and adjust gravity observations.
+
+    Parameters
+    ----------
+    obs : DataFrame
+        The gravity observations to be corrected. The DataFrame must
+        include columns labeled ``site_id``, ``gravity``, ``timedelta``, and ``loop``.
+        Other columns are ignored.
+        If ``calculate_calibration_factor`` is True, then obs must also include a column
+        labeled 'gravity_not_detided'.
+    ref_sites : DataFrame
+        The reference sites that gravity will be 'tied' to after drift
+    method : {1, 2, 3}
+        The gsolve solution method to use. Available methods are:
+
+            - ``1`` : Unconstrained least squares
+            - ``2`` : Partially constrained least squares
+            - ``3`` : Constrained least squares
+
+    percentile_clipping: float, default=100.0
+        Exclude observations with residuals outside percentile range from
+        the final gsolve solution. Must be between a value between 0 and 100.
+        The default is 100.0, which means no clipping. Clipping is symmetric,
+        so if 99.0 is specified, the upper and lower 0.5% of residuals are excluded.
+    use_loops : bool, default True
+        Control how survey loops are treated in the solution.
+        If True, drift curves are fit to each loop.
+        If False, a single drift curve is fit to all observations.
+    calculate_calibration_factor: bool, default False
+        Calculate gravity meter calibration factor.
+
+    Returns
+    -------
+    GSolveResults
+        An object containing the computed drift curves, observation and
+        site residuals, and the model run parameters.
+    """
+    # index in obs where ties are located
+    m_ties = ref_sites.index.intersection(obs["site_id"].to_list())
+    if m_ties.empty:
+        raise ValueError("no tie sites")
+    else:
+        ref_sites = ref_sites.loc[m_ties]
+
+    # set up g_solver_lstsq input arguments
+    kwargs: dict[str, Any] = {
+        "obs_g": obs["gravity"].to_numpy(),
+        "obs_site_id": obs["site_id"].to_numpy(),
+        "obs_timedelta": obs["timedelta"].to_numpy(),
+        "ties_site_id": ref_sites.index.to_numpy(),
+        "ties_g": ref_sites.loc[:, "reference_gravity"].astype(float).to_numpy(),
+        "use_loops": use_loops,
+        "obs_loop": obs["loop"].to_numpy(),
+        "method": method,
+        "calculate_calibration_factor": True,
+        "percentile_clipping": percentile_clipping,
+        "obs_g_not_detided": obs["meter_reading_mgal"].to_numpy(),
+    }
+
+    results = g_solver_lstsq(**kwargs)
+
+    results_obj = GSolveResults(
+        method=method,
+        use_loops=use_loops,
+        calculate_calibration_factor=True,
+        percentile_clipping=percentile_clipping,
+    )
+    results_obj.set_inputs(obs, ref_sites)
+    results_obj.set_solutions(results)
+    return results_obj
+
+
+
 def g_solver_lstsq(
     obs_g: _np.ndarray,
     obs_site_id: _np.ndarray,
