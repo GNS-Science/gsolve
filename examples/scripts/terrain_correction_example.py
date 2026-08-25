@@ -67,8 +67,6 @@ inner_zone_params = TerrainCorrectionParameters(
     compute_topography=True,
     compute_bathymetry=False,
     site_height_field="dem_elevation",
-    site_easting_field="easting",
-    site_northing_field="northing",
     name="8m_dem",
 )
 
@@ -82,8 +80,6 @@ outer_zone_params = TerrainCorrectionParameters(
     compute_topography=True,
     compute_bathymetry=False,
     site_height_field="dem_elevation",
-    # site_easting_field="easting",  default is "easting" so can be omitted
-    # site_northing_field="northing", ditto
     name="200m_dem",
 )
 # Set up the Terrain corrector

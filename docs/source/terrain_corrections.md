@@ -16,6 +16,9 @@ Terrain correction calculations in gSolve works by estimating the gravity effect
 
 The user imports the appropriate topography (or bathymetry) grid and observation location data.  Terrain and water densities, and minimum and maximum calculation distances are also required to be supplied.
 
+```{tip} gSolve can handle most grid formats readable by GDAL.  Tiff is well tested and preferred.
+```
+
 There is a choice of ```radial``` distance or ```rectangular``` distance.
 
 The algorithm trims the DEM to a box around the stations plus the ```max_dist```.  This reduces the number of prisms needed to be created and reduces memory.
@@ -40,14 +43,13 @@ To avoid duplicate calculations the following tips are useful.
 
 In ```TerrainCorrectionParameters``` there is an option ```compute_bathymetry``` or ```compute_topography```. For grids that contain both topography and bathymetry this can be used to set which part is computed.  The parameter ```sea_level_elevation``` can be used to control the boundary between topography and bathymetry (default = 0).
 
-The ```Sites``` object has a method ```sample_elevation()``` which can be used to extract the value of the DEM at the station location.  This can be useful if the DEM values are preferred to the surveyed positions or if you want to convert station ellipsoidal heights to orthometric (assuming the DEM is in orthometric heights).  A new column (```output_col=```) is created in the sites object for the interpolated DEM height and is used by setting the ``site_height_field`` attribute of the ``TerrainCorrectionParameters`` objects.
-
-gSolve will read most grid formats readable by GDAL.
+The ```Sites``` object has a method ```sample_elevation()``` which can be used to extract the value of the DEM at the station location.  This can be useful if the DEM values are preferred to the surveyed positions or if you want to convert station ellipsoidal heights to orthometric (assuming the DEM is in orthometric heights).  A new column (```output_col=```) is created in the sites object for the interpolated DEM height and is used by setting the ``site_height_field`` in the ```TerraincCorrectionParameters```.
 
 ```{tip} If you are manipulating grids outside of gsolve they must be returned to gsolve as xarray.DataArray objects not numpy objects.
 ```
 
-Densities are supplied in kg/m3.
+```{tip} Densities are supplied in kg/m3.
+```
 
 ## Terrain correction calculations over land
 
@@ -92,5 +94,3 @@ For calculation over the oceans the grids used at GNS are:
 
 * 2000m grid for terrain correction calculations between 21900 and 167000 m
   (derived from the resampled NIWA 250m dem)
-
-Note the source of the dems should be acknowledged in reports and papers.
