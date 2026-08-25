@@ -451,21 +451,25 @@ class TerrainCorrectionParameters(GSolveParameters):
     distance_mask_type : {"radial", "rectangular"}, default="radial"
         Type of distance mask to use. A "radial" mask creates an approximately circular
         zone, while a "rectangular" mask creates a rectangular mask.
-    dem_source : str, PathLike, default=""
-        Path to a terrain dataset file. This will be loaded during terrain correction
-        computation. If an empty string, then DEM data must be supplied directly to a
-        ``TerrainCorrector`` instance. Note that ``dem_source`` inputs are converted to and
-        stored as a string.
-    density_dataset_source : str, PathLike, default=""
-        Path to a density model file, which will be loaded during terrain correction
-        computation. If an empty string, then a simple density model will be generated
-        from the DEMusing ``terrain_density``, ``water_density`` and
-        ``sea_level_elevation``. Note that ``density_dataset_source`` inputs are converted
-        to and stored as a string.
+    dem_source : path-like or xarray.DataArray
+        The terrain data data source. ``dem_source`` can be either:
+
+        - The path to a DEM file that will be read during terrain correction computation.
+        - A DataArray containing the terrain data to be used.
+    density_dataset_source : path-like or xarray.DataArray, default=None
+        Optional density model to be used.  By default a simple density model is automatically
+        generated from terrain data using specified sea_level_elevation, terrain_density
+        and water_density. ``density_dataset_source`` allows the user to directly
+        specify a custom density model as either a file or DataArray. Note that
+        the custom density model must be congruent with the DEM.
     compute_topography : bool, default is True
         Compute gravity corrections due to topographic masses above ``sea_level_elevation``.
+        Points where no topography correction is possible (i.e. all terrain below
+        ``sea_level_elevation``) the correction will be set to NaN.
     compute_bathymetry : bool, default is True
         Compute gravity corrections due to water bodies below ``sea_level_elevation``.
+        Points where no bathymetry correction is possible (i.e. all terrain above
+        ``sea_level_elevation``), the corrrection will be set to NaN.
     site_height_field : str, default is "height_ellipsoidal"
         Column in a ``GravitySites.data`` object containing site elevations/z coordinates.
     site_easting_field : str, default is "easting"
@@ -484,8 +488,8 @@ class TerrainCorrectionParameters(GSolveParameters):
     water_density: float = 1030.0
     sea_level_elevation: float = 0.0
     distance_mask_type: TCorrDistanceMaskType = "radial"
-    dem_source: FilePath | xr.DataArray = ""
-    density_dataset_source: FilePath | xr.DataArray = ""
+    dem_source: FilePath | xr.DataArray
+    density_dataset_source: FilePath | xr.DataArray | None = None
     compute_topography: bool = True
     compute_bathymetry: bool = True
     site_height_field: str = "height_ellipsoidal"
@@ -525,6 +529,7 @@ class TerrainCorrectionParameters(GSolveParameters):
             if is_filepath_like(value):
                 object.__setattr__(self, field_name, str(value))
                 continue
+
             if not value:
                 object.__setattr__(self, field_name, "")
                 continue
@@ -534,6 +539,7 @@ class TerrainCorrectionParameters(GSolveParameters):
             )
 
     def _sanity_check(self) -> None:
+        """Check that parameters are valid."""
         if (
             np.isnan(self.min_dist)
             or np.isnan(self.max_dist)
@@ -876,8 +882,6 @@ class TerrainCorrector:
                 site_id = np.arange(len(x), dtype=int).astype(str)
             else:
                 site_id = to_1d_ndarray(site_id, expected_size=x.size).astype(str)
-
-
 
         # empty object to store results
         results = TerrainCorrectionData(
