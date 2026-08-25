@@ -44,6 +44,9 @@ The ```Sites``` object has a method ```sample_elevation()``` which can be used t
 
 gSolve will read most grid formats readable by GDAL.
 
+```{tip} If you are manipulating grids outside of gsolve they must be returned to gsolve as xarray.DataArray objects not numpy objects.
+```
+
 Densities are supplied in kg/m3.
 
 ## Terrain correction calculations over land
