@@ -8,9 +8,14 @@ on:
     paths:
       - 'docs/**'
       - '.github/workflows/sphinx-docs.yml'
+    tags:
+      - '*'
   pull_request:
     branches:
       - main
+  release:
+    types:
+      - published
 
 jobs:
   build:
@@ -47,7 +52,7 @@ jobs:
   # Optional: Deploy to GitHub Pages
   deploy:
     needs: build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     
     permissions:
