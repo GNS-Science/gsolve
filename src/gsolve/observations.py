@@ -559,7 +559,9 @@ class GravityObservations(GSolveTable):
         """
         return self._fixed_time_datum
 
-    def set_fixed_time_datum(self, t: DatetimeScalar | None, set_tdelta: bool = True) -> None:
+    def set_fixed_time_datum(
+        self, t: DatetimeScalar | None, set_tdelta: bool = True
+    ) -> None:
         """
         Set time datum used for calculating loop and survey timedelta.
 
@@ -1191,18 +1193,27 @@ class GravityObservations(GSolveTable):
         return fig, ax
 
     def _make_network(self, sites: GravitySites) -> _pd.DataFrame:
-        # TODO: Fix me? use a copy of self.data to avoid modifying the original DataFrame
-        self.data["group"] = (
-            self.data["site_id"] != self.data["site_id"].shift()
-        ).cumsum()
-        result = self.data.groupby("group").first().reset_index(drop=True)
-        station_order = result[["site_id", "loop"]]
+        df = self.data.assign(
+            group=self.data["site_id"].ne(self.data["site_id"].shift()).cumsum()
+        )
+
+        station_order = (
+            self.data.assign(
+                group=self.data["site_id"].ne(self.data["site_id"].shift()).cumsum()
+            )
+            .groupby(by="group")
+            .first()
+            .reset_index(drop=True)
+            .loc[:, ["site_id", "loop"]]
+        )
+
         # merge with 'site' object to get location information
-        merged_df = _pd.merge(station_order, sites.data, on="site_id", how="inner")
-        network_df = merged_df[["site_id", "loop", "latitude", "longitude"]]
-        sites.data["station_occupations"] = network_df.site_id.value_counts()
-        self.data.drop(["group"], axis=1, inplace=True)
-        return network_df
+        network_df = _pd.merge(
+            left=station_order, right=sites.data, on="site_id", how="inner"
+        ).loc[:, ["site_id", "loop", "latitude", "longitude"]]
+        station_occupations = network_df.site_id.value_counts()
+
+        return network_df, station_occupations
 
     def plot_network_map(
         self,
@@ -1259,20 +1270,20 @@ class GravityObservations(GSolveTable):
         else:
             raise TypeError(f"invalid ax arg of type '{type(ax).__name__}'")
 
-        network_df = self._make_network(sites)
+        network_df, station_occupations = self._make_network(sites)
         ax.plot(network_df.longitude, network_df.latitude, **kwargs)
         ax.scatter(
             x=sites.data.longitude.to_numpy(),
             y=sites.data.latitude.to_numpy(),
-            s=sites.data.station_occupations * marker_scale_factor,
+            s=station_occupations * marker_scale_factor,
             label="n_occupations",
             **kwargs,
         )
         if plot_stn_labels:
             for long, lat, site in zip(
-                sites.data.longitude.values,
-                sites.data.latitude.values,
-                sites.data.index.values,
+                sites.data.longitude.to_numpy(),
+                sites.data.latitude.to_numpy().to_numpy(),
+                sites.data.index.to_numpy(),
             ):
                 ax.text(long, lat, site, ha="left", va="bottom")
         else:
@@ -1289,7 +1300,9 @@ class GravityObservations(GSolveTable):
             _plt.savefig(fout, dpi=300)
 
         if show:
-            _ = fig.show()
+            with _warnings.catch_warnings():
+                _warnings.simplefilter("ignore", category=UserWarning)
+                _ = fig.show()
 
         return fig, ax
 
