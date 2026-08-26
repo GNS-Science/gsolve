@@ -5,7 +5,7 @@ API Reference
 This section contains per-module API documentation.
 
 Observations and Site Data
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+==========================
 
 .. toctree::
    :maxdepth: 1
@@ -17,7 +17,7 @@ Observations and Site Data
    meter_conversion
 
 Tidal Corrections
-~~~~~~~~~~~~~~~~~
+=================
 .. toctree::
    :maxdepth: 1
 
@@ -25,7 +25,7 @@ Tidal Corrections
    tide_ocean_load
 
 gSolve Algorithms
-~~~~~~~~~~~~~~~~
+=================
 .. toctree::
    :maxdepth: 1
 
@@ -33,7 +33,7 @@ gSolve Algorithms
    reports
 
 Reductions and Anomalies
-~~~~~~~~~~~~~~~~~~~~~~~~
+========================
 .. toctree::
    :maxdepth: 1
 
@@ -42,7 +42,7 @@ Reductions and Anomalies
 
 
 Utils and Internal Functions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+============================
 .. toctree::
    :maxdepth: 1
 

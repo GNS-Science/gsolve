@@ -1,10 +1,13 @@
-===================
+==========================================
+Gravity Site and Reference Gravity Classes
+==========================================
+
 GravitySites
-===================
+============
 .. currentmodule:: gsolve
 
 Object Creation
-~~~~~~~~~~~~~~~
+---------------
 .. autosummary::
    :toctree: api/
 
@@ -17,7 +20,7 @@ Object Creation
 
 
 Information
-~~~~~~~~~~~
+-----------
 .. autosummary::
    :toctree: api/
 
@@ -32,14 +35,13 @@ Information
    GravitySites.sample_elevation
 
 Data Export
-~~~~~~~~~~~
+-----------
 .. autosummary::
    :toctree: api/
 
    GravitySites.to_excel
    GravitySites.write_to_csv
 
-================
 ReferenceGravity
 ================
 .. currentmodule:: gsolve
@@ -59,7 +61,7 @@ ReferenceGravity
    ReferenceGravity.to_excel
    ReferenceGravity.write_to_csv
 
-=========
+
 Functions
 =========
 .. currentmodule:: gsolve.sites

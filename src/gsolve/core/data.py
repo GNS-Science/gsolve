@@ -34,12 +34,10 @@ from gsolve.core._typing import (
     Renamer,
 )
 from gsolve.core.excel_io import (
-    _parse_sheet_name_arg,
     read_excel_worksheet,
     write_excel_worksheet,
 )
 from gsolve.core.utils import (
-    is_list_like,
     merge_datetime_columns,
     normalize_field_names,
     prepare_writable_df,

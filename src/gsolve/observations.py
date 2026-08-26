@@ -400,17 +400,18 @@ class GravityObservations(GSolveTable):
         Parameters
         ----------
         idx : ArrayLike, str or None, default is None
-                        The obs_id values to set as the index of obj.data. Behaviour
-                        depends on the dtype of ``idx``. If ``idx`` is:
+            The obs_id values to set as the index of obj.data. Behaviour
+            depends on the dtype of ``idx``. If ``idx`` is:
 
-                            - None : a default obs_id will be auto-generated
-                                using the _default_index_generator() method.
-                            - str : ``idx`` is assumed to be the name of an existing column
-                                in obj.data to be used to set as the index. Equivalent to
-                                obj.data.set_index(idx). Note that the index will be renamed
-                                to obs_id.
-                            - array-like : ``idx`` is assumed to be a sequence of obs_id
-                values to set as the index.
+                - None : a default obs_id will be auto-generated
+                    using the _default_index_generator() method.
+                - str : ``idx`` is assumed to be the name of an existing column
+                    in obj.data to be used to set as the index. Equivalent to
+                    obj.data.set_index(idx). Note that the index will be renamed
+                    to obs_id.
+                - array-like : ``idx`` is assumed to be a sequence of obs_id
+                  values to set as the index.
+
         duplicated_obs_id : {'error', 'keep', 'rename'}, default 'rename'
             The behaviour when duplicate obs_id values are found:
 
@@ -1665,28 +1666,28 @@ def combine_gravity_observations(
     Parameters
     ----------
     obs : GravityObservations
-                Sequence of two or more ``GravityObservations`` objects to be combined.
+        Sequence of two or more ``GravityObservations`` objects to be combined.
     duplicated_loops : {'error', 'keep', 'drop', 'rename'}, defaut is 'error'
         How to handle situations where ``loop`` identifiers are duplicated between
         GravityObservations objects:
 
-                        - 'error' : raise a ValueError
-                        - 'keep' : duplicates are unchanged
-                        - 'drop' : drop all data with duplicated loop_id
-                        - 'rename' : rename the duplicate loops by adding suffix
-                            _merged_{int} where {int} refers to the position in
-                            the input ``obs`` array.
+            - 'error' : raise a ValueError
+            - 'keep' : duplicates are unchanged
+            - 'drop' : drop all data with duplicated loop_id
+            - 'rename' : rename the duplicate loops by adding suffix
+              _merged_{int} where {int} refers to the position in
+              the input ``obs`` array.
 
     duplicated_obs_ids : {'error', 'drop', 'rename', 'regenerate'}, default is 'error'
         How to handle situations where ``obs_id`` identifiers  are duplicated between
         GravityObservations objects:
 
-                        - 'error' : raise a ValueError
-                        - 'drop' : drop data with duplicated ``obs_id``.
-                        - 'rename' : rename the duplicate obs_id's by adding suffix
-                            _merged_{int} where {int} refers to the position in
-                            the input ``obs`` array.
-                        - 'regenerate' : generate new obs_id's for all data in the
+            - 'error' : raise a ValueError
+            - 'drop' : drop data with duplicated ``obs_id``.
+            - 'rename' : rename the duplicate obs_id's by adding suffix
+              _merged_{int} where {int} refers to the position in
+              the input ``obs`` array.
+            - 'regenerate' : generate new obs_id's for all data in the
               merged object.
 
     Returns
@@ -1811,34 +1812,34 @@ def combine_gravity_surveys(
 
     Parameters
     ----------
-    surveys : GravitySurveys
-                A list of two or more ``GravitySurveys`` objects to be combined.
+    surveys : list-like
+        A list of two or more ``GravitySurveys`` objects to be combined.
     duplicated_loops : {'error', 'keep', 'drop', 'rename'}, defaut is 'error'
         How to handle situations where ``loop`` identifiers are duplicated between
-                observations of different ``GravitySurveys`` objects:
-                        - 'error' : raise a ValueError
-                        - 'keep' : duplicates are unchanged
-                        - 'drop' : drop all data with duplicated loop_id
-                        - 'rename' : rename the duplicate loops by adding suffix
-                            _merged_{int} where {int} refers to the position in
-                            the input ``surveys`` array.
+        observations of different ``GravitySurveys`` objects:
 
+            - 'error' : raise a ValueError
+            - 'keep' : duplicates are unchanged
+            - 'drop' : drop all data with duplicated loop_id
+            - 'rename' : rename the duplicate loops by adding suffix
+              _merged_{int} where {int} refers to the position in
+              the input ``surveys`` array.
     duplicated_obs_ids : {'error', 'drop', 'rename', 'regenerate'}, default is 'error'
         How to handle situations where ``obs_id`` identifiers  are duplicated between
-                observations of different ``GravitySurveys`` objects:
-                        - 'error' : raise a ValueError
-                        - 'drop' : drop data with duplicated ``obs_id``.
-                        - 'rename' : rename the duplicate obs_id's by adding suffix
-                            _merged_{int} where {int} refers to the position in
-                            the input ``surveys`` array.
-                        - 'regenerate' : generate new obs_id's for all data in the
-              merged object.
+        observations of different ``GravitySurveys`` objects:
 
+            - 'error' : raise a ValueError
+            - 'drop' : drop data with duplicated ``obs_id``.
+            - 'rename' : rename the duplicate obs_id's by adding suffix
+              _merged_{int} where {int} refers to the position in
+              the input ``surveys`` array.
+            - 'regenerate' : generate new obs_id's for all data in the
+              merged object.
     duplicated_sites : {'error', 'drop'}, default is 'error'
         How to handle situations where ``site_id`` identifiers  are duplicated between
-                sites of different ``GravitySurveys`` objects:
-                        - 'error' : raise a ValueError
-                        - 'drop' : drop data with duplicated ``site_id``.
+        sites of different ``GravitySurveys`` objects:
+            - 'error' : raise a ValueError
+            - 'drop' : drop data with duplicated ``site_id``.
 
     Returns
     -------
