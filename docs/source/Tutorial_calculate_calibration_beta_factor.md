@@ -26,7 +26,7 @@ from gsolve.tide.earth_tide import EternaPredictTidalCorrection
 Set up the directory and files required.  We need a calibration survey dataset (in excel format here), the G meter dial correction table and the reference stations list.
 
 ```python
-data_path = pathlib.Path.cwd() 
+data_path = pathlib.Path.cwd()
 cal_data_path = data_path / "surveys/calibration/"
 
 obs_file = cal_data_path + "G106-Data23Nov2018.xlsx"

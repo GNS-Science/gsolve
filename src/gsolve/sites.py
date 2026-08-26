@@ -471,8 +471,7 @@ class GravitySites(GSolveTable):
 
         See Also
         --------
-        ``pandas.DataFrame.to_csv``
-            The underlying function used to write the DataFrame to a csv.
+        pandas.DataFrame.to_csv : Underlying function called to write csv.
 
         """
         kwargs["header"] = kwargs.get("header", True)
@@ -600,9 +599,7 @@ class GravitySites(GSolveTable):
         else:
             return _pd.Series(index=self.data.index, data=z)
 
-    def get_points(
-        self, xcol: str, ycol: str, zcol: str = ""
-    ) -> Points3DTrue:
+    def get_points(self, xcol: str, ycol: str, zcol: str = "") -> Points3DTrue:
         """Get site point coordinates as numpy arrays.
 
         Parameters
