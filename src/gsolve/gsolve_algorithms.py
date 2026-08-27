@@ -15,6 +15,7 @@
 # SPDX-License-Identifier: GPLv3
 
 # Copyright (c) 2025 Earth Sciences New Zealand.
+"""Functions and Classes for performing network adjustment of gravity data."""
 
 from typing import Any, Literal, TypeAlias
 
@@ -80,20 +81,30 @@ def call_gsolve_lstsq(
     else:
         ref_sites = ref_sites.loc[m_ties]
 
-    # set up g_solver_lstsq input arguments
-    kwargs: dict[str, Any] = {
-        "obs_g": obs["gravity"].to_numpy(),
-        "obs_site_id": obs["site_id"].to_numpy(),
-        "obs_timedelta": obs["timedelta"].to_numpy(),
-        "ties_site_id": ref_sites.index.to_numpy(),
-        "ties_g": ref_sites.loc[:, "reference_gravity"].astype(float).to_numpy(),
-        "use_loops": use_loops,
-        "obs_loop": obs["loop"].to_numpy(),
-        "method": method,
-        "calculate_calibration_factor": False,
-        "percentile_clipping": percentile_clipping,
-        "obs_g_not_detided": None,
-    }
+    # set up g_solver_lstsq input arguments - do this sgemented so that can report
+    # missing fields in a comfortable way.
+    try:
+        kwargs: dict[str, Any] = {
+            "obs_g": obs["gravity"].to_numpy(),
+            "obs_site_id": obs["site_id"].to_numpy(),
+            "obs_timedelta": obs["timedelta"].to_numpy(),
+            "use_loops": use_loops,
+            "obs_loop": obs["loop"].to_numpy(),
+            "method": method,
+            "calculate_calibration_factor": False,
+            "percentile_clipping": percentile_clipping,
+            "obs_g_not_detided": None,
+        }
+    except KeyError as e:
+        raise KeyError(f"obs dataframe missing required column {e}") from e
+
+    try:
+        kwargs["ties_site_id"] = ref_sites.index.to_numpy()
+        kwargs["ties_g"] = (
+            ref_sites.loc[:, "reference_gravity"].astype(float).to_numpy()
+        )
+    except KeyError as e:
+        raise KeyError(f"ref_sites dataframe missing required column {e}") from e
 
     results = g_solver_lstsq(**kwargs)
 
@@ -156,19 +167,28 @@ def call_g_solver_calibration(
         ref_sites = ref_sites.loc[m_ties]
 
     # set up g_solver_lstsq input arguments
-    kwargs: dict[str, Any] = {
-        "obs_g": obs["gravity"].to_numpy(),
-        "obs_site_id": obs["site_id"].to_numpy(),
-        "obs_timedelta": obs["timedelta"].to_numpy(),
-        "ties_site_id": ref_sites.index.to_numpy(),
-        "ties_g": ref_sites.loc[:, "reference_gravity"].astype(float).to_numpy(),
-        "use_loops": use_loops,
-        "obs_loop": obs["loop"].to_numpy(),
-        "method": method,
-        "calculate_calibration_factor": True,
-        "percentile_clipping": percentile_clipping,
-        "obs_g_not_detided": obs["meter_reading_mgal"].to_numpy(),
-    }
+    try:
+        kwargs: dict[str, Any] = {
+            "obs_g": obs["gravity"].to_numpy(),
+            "obs_site_id": obs["site_id"].to_numpy(),
+            "obs_timedelta": obs["timedelta"].to_numpy(),
+            "use_loops": use_loops,
+            "obs_loop": obs["loop"].to_numpy(),
+            "method": method,
+            "calculate_calibration_factor": True,
+            "percentile_clipping": percentile_clipping,
+            "obs_g_not_detided": obs["meter_reading_mgal"].to_numpy(),
+        }
+    except KeyError as e:
+        raise KeyError(f"obs dataframe missing required column {e}") from e
+
+    try:
+        kwargs["ties_site_id"] = ref_sites.index.to_numpy()
+        kwargs["ties_g"] = (
+            ref_sites.loc[:, "reference_gravity"].astype(float).to_numpy()
+        )
+    except KeyError as e:
+        raise KeyError(f"c dataframe missing required column {e}") from e
 
     results = g_solver_lstsq(**kwargs)
 
