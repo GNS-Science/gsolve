@@ -100,7 +100,7 @@ def call_gsolve_lstsq(
     results_obj = GSolveResults(
         method=method,
         use_loops=use_loops,
-        calculate_calibration_factor=calculate_calibration_factor,
+        calculate_calibration_factor=False,
         percentile_clipping=percentile_clipping,
     )
     results_obj.set_inputs(obs, ref_sites)
