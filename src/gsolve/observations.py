@@ -50,7 +50,11 @@ from gsolve.core.utils import (
     prepare_writable_df,
     to_naive_utc_datetime,
 )
-from gsolve.gsolve_algorithms import GSolveSolverMethod, call_g_solver_calibration, call_gsolve_lstsq
+from gsolve.gsolve_algorithms import (
+    GSolveSolverMethod,
+    call_g_solver_calibration,
+    call_gsolve_lstsq,
+)
 from gsolve.gsolve_outputs import GSolveResults
 from gsolve.meter_conversion import MeterReadingConverter
 from gsolve.sites import GravitySites, ReferenceGravity, combine_gravity_sites
@@ -474,7 +478,7 @@ class GravityObservations(GSolveTable):
 
     @property
     def loop_ids(self) -> list[str]:
-        """Return unique survey loop id's sorted by loop start time.
+        """Loop id's sorted by loop start time.
 
         Returns
         -------
@@ -1672,6 +1676,13 @@ class GravitySurvey:
         GSolveResults
             The results of the network adjustment.
         """
+        meter_ids = self.observations.data["meter_id"].unique()
+        if len(meter_ids) > 1:
+            raise ValueError(
+                "Calibration factor can only be calulated for a single instrument. "
+                f"Observations include data from {len(meter_ids)} meter_id's = {meter_ids}"
+            )
+
         self.observations.set_tdelta()
 
         td_column = "loop_tdelta" if use_loops else "survey_tdelta"
@@ -1850,7 +1861,7 @@ def combine_gravity_surveys(
     """Merge 2 or more GravitySurveys objects.
 
     The returned object is formed by concatenating the observations and sites DataFrame
-    attributes of each object in ``surveys``, and then instantiating a new
+    attributes of each GravitySurvey, and then instantiating a new
     ``GravitySurvey`` object. Non-observation attributes of the new object
     (e.g. timedelta_unit) are set from the the first ``surveys[0]``.
 
@@ -1868,6 +1879,7 @@ def combine_gravity_surveys(
             - 'rename' : rename the duplicate loops by adding suffix
               _merged_{int} where {int} refers to the position in
               the input ``surveys`` array.
+
     duplicated_obs_ids : {'error', 'drop', 'rename', 'regenerate'}, default is 'error'
         How to handle situations where ``obs_id`` identifiers  are duplicated between
         observations of different ``GravitySurveys`` objects:
@@ -1875,13 +1887,15 @@ def combine_gravity_surveys(
             - 'error' : raise a ValueError
             - 'drop' : drop data with duplicated ``obs_id``.
             - 'rename' : rename the duplicate obs_id's by adding suffix
-              _merged_{int} where {int} refers to the position in
+              '_merged_{int}' where {int} refers to the position in
               the input ``surveys`` array.
             - 'regenerate' : generate new obs_id's for all data in the
               merged object.
+
     duplicated_sites : {'error', 'drop'}, default is 'error'
         How to handle situations where ``site_id`` identifiers  are duplicated between
         sites of different ``GravitySurveys`` objects:
+
             - 'error' : raise a ValueError
             - 'drop' : drop data with duplicated ``site_id``.
 
