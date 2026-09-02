@@ -49,7 +49,7 @@ from gsolve.core.utils import (
     is_filepath_like,
     is_in_literal,
     is_points3d_like,
-    to_points3D,
+    to_points3d,
 )
 
 # from gsolve.core.xr_accessor import TCorrMethods as _TCorrMethods
@@ -878,7 +878,7 @@ class TerrainCorrector:
 
         else:
             get_xyz_per_zone = False
-            x, y, z = to_points3D(points)
+            x, y, z = to_points3d(points)
             if site_id is None:
                 site_id = np.arange(len(x), dtype=int).astype(str)
             else:

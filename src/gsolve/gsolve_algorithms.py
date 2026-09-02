@@ -25,7 +25,7 @@ import pandas as _pd
 from gsolve.core._typing import GSolveSolverMethod, GSolveSolverReturn
 from gsolve.gsolve_outputs import GSolveResults
 
-__all__ = ["call_gsolve_lstsq", "GSolveSolverMethod"]
+__all__ = ["call_gsolve_lstsq", "call_gsolve_calibration", "GSolveSolverMethod"]
 
 _GSOLVE_SOLVER_METHODS: dict[int, str] = {
     1: "Unconstrained least squares",
@@ -119,7 +119,7 @@ def call_gsolve_lstsq(
     return results_obj
 
 
-def call_g_solver_calibration(
+def call_gsolve_calibration(
     obs: _pd.DataFrame,
     ref_sites: _pd.DataFrame,
     method: GSolveSolverMethod,
@@ -251,7 +251,7 @@ def g_solver_lstsq(
     percentile_clipping : float, default = 100.0
         Exclude observations with residuals outside percentile range from
         the gsolve solution. Must be between a value between 0 and 100.0 inclusive.
-        If 100, no data is excluded. If 99.0, the upper and lower 0.5% of are excluded.
+        If 100, no data are excluded. If 99.0, the upper and lower 0.5% of are excluded.
 
     Returns
     -------
@@ -271,6 +271,12 @@ def g_solver_lstsq(
     mask : ndarray
         Boolean array indicating whether an observation was included in the solution
         (True) or was excluded after ``percentile_clipping`` (False)
+
+    See Also
+    --------
+    call_gsolve_lstsq :
+    call_gsolve_calibration :
+    gsolve.GravitySurvey.solve_calibration_factor :
 
     """
     if method not in _GSOLVE_SOLVER_METHODS:

@@ -10,14 +10,15 @@ GravitySurvey
    :toctree: api/
 
    GravitySurvey
+   GravitySurvey.from_excel
    GravitySurvey.apply_dial_to_mgal
    GravitySurvey.apply_earth_tide_correction
-   GravitySurvey.calculate_tide_corrected_gravity
-   GravitySurvey.from_excel
-   GravitySurvey.pre_flight_check
    GravitySurvey.set_calibration_factor
    GravitySurvey.set_reference_gravity
+   GravitySurvey.calculate_tide_corrected_gravity
+   GravitySurvey.pre_flight_check
    GravitySurvey.solve_lstsq
+   GravitySurvey.solve_calibration_factor
 
 Functions
 ---------

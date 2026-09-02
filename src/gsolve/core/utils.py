@@ -19,6 +19,7 @@
 """Utility functions used across the gsolve codebase."""
 
 from __future__ import annotations
+import warnings
 
 import sys
 from collections.abc import Sequence
@@ -139,7 +140,9 @@ def is_points3d_like(v: Any) -> bool:  # noqa: ANN401
     return True
 
 
-def to_points3D(v: Points3D) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:  # noqa: ANN401
+def to_points3d(
+    v: Points3D,
+) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:  # noqa: ANN401
     """Convert Points3d-like object to a bona-fide Points3D object.
 
     Parameters

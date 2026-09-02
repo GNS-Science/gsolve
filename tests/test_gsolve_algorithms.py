@@ -26,7 +26,7 @@ import pytest
 
 from gsolve.gsolve_algorithms import (
     call_gsolve_lstsq,
-    call_g_solver_calibration,
+    call_gsolve_calibration,
     g_solver_lstsq,
 )
 from gsolve.gsolve_outputs import GSolveResults
@@ -177,7 +177,7 @@ class TestCallGSolveCalibration:
         obs = _obs_df(include_meter_reading=True)
         ref = _ref_df()
 
-        result = call_g_solver_calibration(
+        result = call_gsolve_calibration(
             obs=obs,
             ref_sites=ref,
             method=2,
@@ -194,7 +194,7 @@ class TestCallGSolveCalibration:
         obs = _obs_df(include_meter_reading=True)
         ref = _ref_df()
 
-        result = call_g_solver_calibration(
+        result = call_gsolve_calibration(
             obs=obs,
             ref_sites=ref,
             method=1,

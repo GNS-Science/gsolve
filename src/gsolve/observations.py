@@ -52,7 +52,7 @@ from gsolve.core.utils import (
 )
 from gsolve.gsolve_algorithms import (
     GSolveSolverMethod,
-    call_g_solver_calibration,
+    call_gsolve_calibration,
     call_gsolve_lstsq,
 )
 from gsolve.gsolve_outputs import GSolveResults
@@ -1695,7 +1695,7 @@ class GravitySurvey:
             .rename(columns={td_column: "timedelta", "gravity_corr": "gravity"})
         )
         ties = self.sites.get_ties()
-        results = call_g_solver_calibration(
+        results = call_gsolve_calibration(
             obs=obs,
             ref_sites=ties,
             method=method,
