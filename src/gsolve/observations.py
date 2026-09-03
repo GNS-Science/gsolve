@@ -42,6 +42,7 @@ from gsolve.core.data import (
     DataFieldSpecification,
     GSolveParameters,
     GSolveTable,
+    _concat_gsolvetable_dataframes_with_fill,
 )
 from gsolve.core.excel_io import write_excel_worksheet
 from gsolve.core.utils import (
@@ -68,8 +69,6 @@ __all__ = [
     "GravityObservations",
     "GravitySurvey",
     "GravityObservationsParameters",
-    "combine_gravity_observations",
-    "combine_gravity_sites",
 ]
 
 
@@ -1461,6 +1460,136 @@ class GravityObservations(GSolveTable):
         warner.final_msg()
         return warner.count == 0
 
+    def merge(
+        self,
+        other: Self,
+        *,
+        if_duplicate_loops: Literal["error", "keep", "drop", "rename"] = "error",
+        if_duplicate_obs_ids: Literal[
+            "error", "drop", "rename", "regenerate"
+        ] = "error",
+    ) -> Self:
+        """Merge a GravityObservations object into this .
+
+        The returned object is formed by concatenating the data DataFrame attributes
+        of each ``obs`` object, and then instantiating a new ``GravityObservations`` object.
+        Non-data attributes of the new object (e.g. timedelta_unit) are set
+        from the the first ``obs`` specified.
+
+        Parameters
+        ----------
+        other : GravityObservations
+            The``GravityObservations`` to be merged.
+        if_duplicate_loops : {'error', 'keep', 'drop', 'rename'}, defaut is 'error'
+            How to handle situations where duplicate 'loop' identifiers are exist in
+            ``other``:
+
+                - 'error' : raise a ValueError
+                - 'keep' : duplicates are unchanged
+                - 'drop' : drop dupliate data from ``other`` prior to merging
+                - 'rename' : rename the duplicate loops by adding suffix '_merged'.
+        if_duplicate_obs_ids : {'error', 'drop', 'rename', 'regenerate'}, default is 'error'
+            How to handle situations where duplicate 'obs_id' values exist in ``other``
+
+                - 'error' : raise a ValueError.
+                - 'drop' : drop duplicate data from ``other`` prior to merging.
+                - 'rename' : rename the duplicate obs_id's by adding suffix '_merged'
+                - 'regenerate' : generate new obs_id's for all data in the
+                merged object.
+
+        Returns
+        -------
+        GravityObservations
+            The new GravityObservations object.
+
+        """
+        if not isinstance(other, GravityObservations):
+            raise TypeError(f"invalid type for other {type(other)}")
+
+        duplicated_loops_options = ("error", "keep", "drop", "rename")
+        if if_duplicate_loops not in duplicated_loops_options:
+            raise ValueError(
+                f"invalid if_duplicate_loops arg '{if_duplicate_loops}', "
+                f"must be one of {duplicated_loops_options}"
+            )
+        duplicated_obs_ids_options = ("error", "drop", "rename", "regenerate")
+        if if_duplicate_obs_ids not in duplicated_obs_ids_options:
+            raise ValueError(
+                f"invalid if_duplicate_obs_ids arg {if_duplicate_obs_ids},"
+                f"must be one of {duplicated_obs_ids_options}"
+            )
+
+        # Todo: Got here
+        other = other.copy()
+
+        # check that loops are unique
+        duplicated_loops = [l for l in other.loop_ids if l in self.loop_ids]
+        rename_suffix = "merged"
+
+        if duplicated_loops:
+            msg = (
+                f"{len(duplicated_loops)} duplicate loop ids found in merge target: "
+                f"{duplicated_loops}"
+            )
+
+            if if_duplicate_loops == "error":
+                raise ValueError(msg)
+
+            elif if_duplicate_loops == "keep":
+                _warnings.warn(f"keeping {msg}")
+
+            elif if_duplicate_loops == "drop":
+                _warnings.warn(f"dropping {msg}")
+                m = ~other.data["loop"].isin(duplicated_loops)
+                other.data = other.data.loc[m, :]
+
+            elif if_duplicate_loops == "rename":
+                _warnings.warn(f"{msg}: adding suffix '{rename_suffix}' to loop id's")
+                for l in duplicated_loops:
+                    m = other.data["loop"].eq(l)
+                    other.data.loc[m, "loop"] = (
+                        other.data.loc[m, "loop"] + f"_{rename_suffix}"
+                    )
+
+        # check that obs_id are unique
+        regen_obs_ids = False
+        is_duplicated_obs_id = other.data.index.isin(self.data.index)
+        if is_duplicated_obs_id.any():
+            msg = f"{is_duplicated_obs_id.sum()} duplicate obs_id's found in other"
+
+            if if_duplicate_obs_ids == "error":
+                raise ValueError(msg)
+
+            if if_duplicate_obs_ids == "drop":
+                _warnings.warn(f"dropping {msg}")
+                other.data = other.data.loc[~is_duplicated_obs_id, :]
+
+            elif if_duplicate_obs_ids == "rename":
+                _warnings.warn(f"adding suffix '{rename_suffix}' to {msg}")
+                rename_dict = {
+                    i: f"{i}_{rename_suffix}"
+                    for i in other.data.index[is_duplicated_obs_id]
+                }
+                other.data = other.data.rename(index=rename_dict)
+
+            if if_duplicate_obs_ids == "regenerate":
+                _warnings.warn(f"{msg}: will regenerate 'obs_id for all data")
+                # defer regeneration until after concat
+                regen_obs_ids = True
+
+        combined_df = _concat_gsolvetable_dataframes_with_fill(
+            self.data, other.data, known_fields=self._known_fields, axis=0
+        )
+
+        new_grav_obs = GravityObservations.from_dataframe(combined_df, use_index=True)
+        new_grav_obs.set_fixed_time_datum(self.fixed_time_datum())
+        new_grav_obs.set_timedelta_unit(self.timedelta_unit())
+
+        if regen_obs_ids:
+            new_grav_obs.set_obs_id()
+
+        return new_grav_obs
+
 
 class GravitySurvey:
     """Class to store gravity observations and sites and facilitate running gSolve.
@@ -1706,220 +1835,220 @@ class GravitySurvey:
         return results
 
 
-def combine_gravity_observations(
-    obs: list[GravityObservations],
-    duplicated_loops: Literal["error", "keep", "drop", "rename"] = "error",
-    duplicated_obs_ids: Literal["error", "drop", "rename", "regenerate"] = "error",
-) -> GravityObservations:
-    """Merge 2 or more GravityObservations objects.
+# def combine_gravity_observations(
+#     obs: list[GravityObservations],
+#     duplicated_loops: Literal["error", "keep", "drop", "rename"] = "error",
+#     duplicated_obs_ids: Literal["error", "drop", "rename", "regenerate"] = "error",
+# ) -> GravityObservations:
+#     """Merge 2 or more GravityObservations objects.
 
-    The returned object is formed by concatenating the data DataFrame attributes
-    of each ``obs`` object, and then instantiating a new ``GravityObservations`` object.
-    Non-data attributes of the new object (e.g. timedelta_unit) are set
-    from the the first ``obs`` specified.
+#     The returned object is formed by concatenating the data DataFrame attributes
+#     of each ``obs`` object, and then instantiating a new ``GravityObservations`` object.
+#     Non-data attributes of the new object (e.g. timedelta_unit) are set
+#     from the the first ``obs`` specified.
 
-    Parameters
-    ----------
-    obs : GravityObservations
-        Sequence of two or more ``GravityObservations`` objects to be combined.
-    duplicated_loops : {'error', 'keep', 'drop', 'rename'}, defaut is 'error'
-        How to handle situations where ``loop`` identifiers are duplicated between
-        GravityObservations objects:
+#     Parameters
+#     ----------
+#     obs : GravityObservations
+#         Sequence of two or more ``GravityObservations`` objects to be combined.
+#     duplicated_loops : {'error', 'keep', 'drop', 'rename'}, defaut is 'error'
+#         How to handle situations where ``loop`` identifiers are duplicated between
+#         GravityObservations objects:
 
-            - 'error' : raise a ValueError
-            - 'keep' : duplicates are unchanged
-            - 'drop' : drop all data with duplicated loop_id
-            - 'rename' : rename the duplicate loops by adding suffix
-              _merged_{int} where {int} refers to the position in
-              the input ``obs`` array.
+#             - 'error' : raise a ValueError
+#             - 'keep' : duplicates are unchanged
+#             - 'drop' : drop all data with duplicated loop_id
+#             - 'rename' : rename the duplicate loops by adding suffix
+#               _merged_{int} where {int} refers to the position in
+#               the input ``obs`` array.
 
-    duplicated_obs_ids : {'error', 'drop', 'rename', 'regenerate'}, default is 'error'
-        How to handle situations where ``obs_id`` identifiers  are duplicated between
-        GravityObservations objects:
+#     duplicated_obs_ids : {'error', 'drop', 'rename', 'regenerate'}, default is 'error'
+#         How to handle situations where ``obs_id`` identifiers  are duplicated between
+#         GravityObservations objects:
 
-            - 'error' : raise a ValueError
-            - 'drop' : drop data with duplicated ``obs_id``.
-            - 'rename' : rename the duplicate obs_id's by adding suffix
-              _merged_{int} where {int} refers to the position in
-              the input ``obs`` array.
-            - 'regenerate' : generate new obs_id's for all data in the
-              merged object.
+#             - 'error' : raise a ValueError
+#             - 'drop' : drop data with duplicated ``obs_id``.
+#             - 'rename' : rename the duplicate obs_id's by adding suffix
+#               _merged_{int} where {int} refers to the position in
+#               the input ``obs`` array.
+#             - 'regenerate' : generate new obs_id's for all data in the
+#               merged object.
 
-    Returns
-    -------
-    GravityObservations
-        The new GravityObservations object.
+#     Returns
+#     -------
+#     GravityObservations
+#         The new GravityObservations object.
 
-    """
-    if not is_list_like(obs) or len(obs) < 2:
-        raise ValueError("Must specify at least 2 GravityObservations objects.")
+#     """
+#     if not is_list_like(obs) or len(obs) < 2:
+#         raise ValueError("Must specify at least 2 GravityObservations objects.")
 
-    if not all([isinstance(o, GravityObservations) for o in obs]):
-        raise TypeError(f"invalid type for elements in obs")
+#     if not all([isinstance(o, GravityObservations) for o in obs]):
+#         raise TypeError(f"invalid type for elements in obs")
 
-    duplicated_loops_options = ("error", "keep", "drop", "rename")
-    if duplicated_loops not in duplicated_loops_options:
-        raise ValueError(
-            f"invalid duplicated_loops arg '{duplicated_loops}', "
-            f"must be one of {duplicated_loops_options}"
-        )
-    duplicated_obs_ids_options = ("error", "drop", "rename", "regenerate")
-    if duplicated_obs_ids not in duplicated_obs_ids_options:
-        raise ValueError(
-            f"invalid duplicated_obs_id arg {duplicated_obs_ids},"
-            f"must be one of {duplicated_obs_ids_options}"
-        )
+#     duplicated_loops_options = ("error", "keep", "drop", "rename")
+#     if duplicated_loops not in duplicated_loops_options:
+#         raise ValueError(
+#             f"invalid duplicated_loops arg '{duplicated_loops}', "
+#             f"must be one of {duplicated_loops_options}"
+#         )
+#     duplicated_obs_ids_options = ("error", "drop", "rename", "regenerate")
+#     if duplicated_obs_ids not in duplicated_obs_ids_options:
+#         raise ValueError(
+#             f"invalid duplicated_obs_id arg {duplicated_obs_ids},"
+#             f"must be one of {duplicated_obs_ids_options}"
+#         )
 
-    target = obs.pop(0)
-    target_df = target.data
-    regen_obs_ids = False
+#     target = obs.pop(0)
+#     target_df = target.data
+#     regen_obs_ids = False
 
-    # cumulatively concat observations to obs[0]
-    for i, o in enumerate(obs, 1):
-        other_df = o.data.copy()
+#     # cumulatively concat observations to obs[0]
+#     for i, o in enumerate(obs, 1):
+#         other_df = o.data.copy()
 
-        # check that loops are unique
-        is_duplic_loop = other_df["loop"].isin(target_df["loop"].unique())
-        is_duplic_loop_count = is_duplic_loop.sum()
-        rename_suffix = f"_merged_{i}"
+#         # check that loops are unique
+#         is_duplic_loop = other_df["loop"].isin(target_df["loop"].unique())
+#         is_duplic_loop_count = is_duplic_loop.sum()
+#         rename_suffix = f"_merged_{i}"
 
-        if is_duplic_loop_count > 0:
-            duplic_loops_unique = other_df.loc[is_duplic_loop, "loop"].unique().tolist()
-            msg = (
-                f"{is_duplic_loop_count} duplicate loop ids found in merge target "
-                f"{i}: {duplic_loops_unique}"
-            )
+#         if is_duplic_loop_count > 0:
+#             duplic_loops_unique = other_df.loc[is_duplic_loop, "loop"].unique().tolist()
+#             msg = (
+#                 f"{is_duplic_loop_count} duplicate loop ids found in merge target "
+#                 f"{i}: {duplic_loops_unique}"
+#             )
 
-            if duplicated_loops == "error":
-                raise ValueError(msg)
+#             if duplicated_loops == "error":
+#                 raise ValueError(msg)
 
-            elif duplicated_loops == "keep":
-                _warnings.warn(f"keeping {msg}")
+#             elif duplicated_loops == "keep":
+#                 _warnings.warn(f"keeping {msg}")
 
-            elif duplicated_loops == "drop":
-                _warnings.warn(f"dropping {msg}")
-                other_df = other_df.loc[~is_duplic_loop]
+#             elif duplicated_loops == "drop":
+#                 _warnings.warn(f"dropping {msg}")
+#                 other_df = other_df.loc[~is_duplic_loop]
 
-            elif duplicated_loops == "rename":
-                other_df.loc[is_duplic_loop, "loop"] = (
-                    other_df.loc[is_duplic_loop, "loop"]
-                    .astype(str)
-                    .str.cat([rename_suffix] * is_duplic_loop_count)
-                )
-                _warnings.warn(f"adding suffix '{rename_suffix}' to {msg}")
+#             elif duplicated_loops == "rename":
+#                 other_df.loc[is_duplic_loop, "loop"] = (
+#                     other_df.loc[is_duplic_loop, "loop"]
+#                     .astype(str)
+#                     .str.cat([rename_suffix] * is_duplic_loop_count)
+#                 )
+#                 _warnings.warn(f"adding suffix '{rename_suffix}' to {msg}")
 
-        # check that obs_id are unique
-        is_dupe_obsid = other_df.index.isin(target_df.index)
-        not_dupe_obsid = (~is_dupe_obsid).tolist()
-        is_duplic_loop_count = is_dupe_obsid.sum()
-        is_dupe_obsid = is_dupe_obsid.tolist()
+#         # check that obs_id are unique
+#         is_dupe_obsid = other_df.index.isin(target_df.index)
+#         not_dupe_obsid = (~is_dupe_obsid).tolist()
+#         is_duplic_loop_count = is_dupe_obsid.sum()
+#         is_dupe_obsid = is_dupe_obsid.tolist()
 
-        if is_duplic_loop_count > 0:
-            msg = f"{is_duplic_loop_count} duplicate obs_id's found in merge target {i}"
+#         if is_duplic_loop_count > 0:
+#             msg = f"{is_duplic_loop_count} duplicate obs_id's found in merge target {i}"
 
-            if duplicated_obs_ids == "error":
-                raise ValueError(msg)
+#             if duplicated_obs_ids == "error":
+#                 raise ValueError(msg)
 
-            if duplicated_obs_ids == "drop":
-                _warnings.warn(f"dropping {msg}")
-                other_df = other_df.loc[not_dupe_obsid]
+#             if duplicated_obs_ids == "drop":
+#                 _warnings.warn(f"dropping {msg}")
+#                 other_df = other_df.loc[not_dupe_obsid]
 
-            elif duplicated_obs_ids == "rename":
-                _warnings.warn(f"adding suffix '{rename_suffix}' to {msg}")
-                ds = other_df.index.to_series()
-                ds.loc[is_dupe_obsid] = (
-                    ds.loc[is_dupe_obsid]
-                    .astype(str)
-                    .str.cat([rename_suffix] * is_duplic_loop_count)
-                )
-                other_df = other_df.set_index(_pd.Index(ds.to_list(), name="obs_id"))
+#             elif duplicated_obs_ids == "rename":
+#                 _warnings.warn(f"adding suffix '{rename_suffix}' to {msg}")
+#                 ds = other_df.index.to_series()
+#                 ds.loc[is_dupe_obsid] = (
+#                     ds.loc[is_dupe_obsid]
+#                     .astype(str)
+#                     .str.cat([rename_suffix] * is_duplic_loop_count)
+#                 )
+#                 other_df = other_df.set_index(_pd.Index(ds.to_list(), name="obs_id"))
 
-            if duplicated_obs_ids == "regenerate":
-                _warnings.warn(
-                    f"duplicate 'obs_id' found, will regenerate 'obs_id"
-                    "for regenerating obs_id's for all data: {msg}"
-                )
-                regen_obs_ids = True
+#             if duplicated_obs_ids == "regenerate":
+#                 _warnings.warn(
+#                     f"duplicate 'obs_id' found, will regenerate 'obs_id"
+#                     "for regenerating obs_id's for all data: {msg}"
+#                 )
+#                 regen_obs_ids = True
 
-        target_df = _pd.concat([target_df, other_df], axis=0)
+#         target_df = _pd.concat([target_df, other_df], axis=0)
 
-    obj = GravityObservations.from_dataframe(target_df, use_index=True)
-    obj.set_fixed_time_datum(target.fixed_time_datum())
-    obj.set_timedelta_unit(target.timedelta_unit())
-    if regen_obs_ids:
-        obj.set_obs_id()
+#     obj = GravityObservations.from_dataframe(target_df, use_index=True)
+#     obj.set_fixed_time_datum(target.fixed_time_datum())
+#     obj.set_timedelta_unit(target.timedelta_unit())
+#     if regen_obs_ids:
+#         obj.set_obs_id()
 
-    return obj
+#     return obj
 
 
-def combine_gravity_surveys(
-    surveys: Sequence[GravitySurvey],
-    duplicated_loops: Literal["error", "keep", "drop", "rename"] = "error",
-    duplicated_obs_ids: Literal["error", "drop", "rename", "regenerate"] = "error",
-    duplicated_sites: Literal["error", "drop"] = "error",
-) -> GravitySurvey:
-    """Merge 2 or more GravitySurveys objects.
+# def combine_gravity_surveys(
+#     surveys: Sequence[GravitySurvey],
+#     duplicated_loops: Literal["error", "keep", "drop", "rename"] = "error",
+#     duplicated_obs_ids: Literal["error", "drop", "rename", "regenerate"] = "error",
+#     duplicated_sites: Literal["error", "drop"] = "error",
+# ) -> GravitySurvey:
+#     """Merge 2 or more GravitySurveys objects.
 
-    The returned object is formed by concatenating the observations and sites DataFrame
-    attributes of each GravitySurvey, and then instantiating a new
-    ``GravitySurvey`` object. Non-observation attributes of the new object
-    (e.g. timedelta_unit) are set from the the first ``surveys[0]``.
+#     The returned object is formed by concatenating the observations and sites DataFrame
+#     attributes of each GravitySurvey, and then instantiating a new
+#     ``GravitySurvey`` object. Non-observation attributes of the new object
+#     (e.g. timedelta_unit) are set from the the first ``surveys[0]``.
 
-    Parameters
-    ----------
-    surveys : list-like
-        A list of two or more ``GravitySurveys`` objects to be combined.
-    duplicated_loops : {'error', 'keep', 'drop', 'rename'}, defaut is 'error'
-        How to handle situations where ``loop`` identifiers are duplicated between
-        observations of different ``GravitySurveys`` objects:
+#     Parameters
+#     ----------
+#     surveys : list-like
+#         A list of two or more ``GravitySurveys`` objects to be combined.
+#     duplicated_loops : {'error', 'keep', 'drop', 'rename'}, defaut is 'error'
+#         How to handle situations where ``loop`` identifiers are duplicated between
+#         observations of different ``GravitySurveys`` objects:
 
-            - 'error' : raise a ValueError
-            - 'keep' : duplicates are unchanged
-            - 'drop' : drop all data with duplicated loop_id
-            - 'rename' : rename the duplicate loops by adding suffix
-              _merged_{int} where {int} refers to the position in
-              the input ``surveys`` array.
+#             - 'error' : raise a ValueError
+#             - 'keep' : duplicates are unchanged
+#             - 'drop' : drop all data with duplicated loop_id
+#             - 'rename' : rename the duplicate loops by adding suffix
+#               _merged_{int} where {int} refers to the position in
+#               the input ``surveys`` array.
 
-    duplicated_obs_ids : {'error', 'drop', 'rename', 'regenerate'}, default is 'error'
-        How to handle situations where ``obs_id`` identifiers  are duplicated between
-        observations of different ``GravitySurveys`` objects:
+#     duplicated_obs_ids : {'error', 'drop', 'rename', 'regenerate'}, default is 'error'
+#         How to handle situations where ``obs_id`` identifiers  are duplicated between
+#         observations of different ``GravitySurveys`` objects:
 
-            - 'error' : raise a ValueError
-            - 'drop' : drop data with duplicated ``obs_id``.
-            - 'rename' : rename the duplicate obs_id's by adding suffix
-              '_merged_{int}' where {int} refers to the position in
-              the input ``surveys`` array.
-            - 'regenerate' : generate new obs_id's for all data in the
-              merged object.
+#             - 'error' : raise a ValueError
+#             - 'drop' : drop data with duplicated ``obs_id``.
+#             - 'rename' : rename the duplicate obs_id's by adding suffix
+#               '_merged_{int}' where {int} refers to the position in
+#               the input ``surveys`` array.
+#             - 'regenerate' : generate new obs_id's for all data in the
+#               merged object.
 
-    duplicated_sites : {'error', 'drop'}, default is 'error'
-        How to handle situations where ``site_id`` identifiers  are duplicated between
-        sites of different ``GravitySurveys`` objects:
+#     duplicated_sites : {'error', 'drop'}, default is 'error'
+#         How to handle situations where ``site_id`` identifiers  are duplicated between
+#         sites of different ``GravitySurveys`` objects:
 
-            - 'error' : raise a ValueError
-            - 'drop' : drop data with duplicated ``site_id``.
+#             - 'error' : raise a ValueError
+#             - 'drop' : drop data with duplicated ``site_id``.
 
-    Returns
-    -------
-    GravitySurvey
-        The new GravitySurvey object.
-    """
-    if len(surveys) < 2:
-        raise ValueError("Must specify at least 2 GravitySurveys objects.")
+#     Returns
+#     -------
+#     GravitySurvey
+#         The new GravitySurvey object.
+#     """
+#     if len(surveys) < 2:
+#         raise ValueError("Must specify at least 2 GravitySurveys objects.")
 
-    for i, s in enumerate(surveys):
-        if not isinstance(s, GravitySurvey):
-            raise TypeError(
-                f"All arguments must be GravitySurvey objects, arg {i} type='{type(s)}'"
-            )
+#     for i, s in enumerate(surveys):
+#         if not isinstance(s, GravitySurvey):
+#             raise TypeError(
+#                 f"All arguments must be GravitySurvey objects, arg {i} type='{type(s)}'"
+#             )
 
-    final_obs = combine_gravity_observations(
-        [s.observations for s in surveys],
-        duplicated_loops=duplicated_loops,
-        duplicated_obs_ids=duplicated_obs_ids,
-    )
-    final_sites = combine_gravity_sites(
-        [s.sites for s in surveys], duplicates=duplicated_sites
-    )
+#     final_obs = combine_gravity_observations(
+#         [s.observations for s in surveys],
+#         duplicated_loops=duplicated_loops,
+#         duplicated_obs_ids=duplicated_obs_ids,
+#     )
+#     final_sites = combine_gravity_sites(
+#         [s.sites for s in surveys], duplicates=duplicated_sites
+#     )
 
-    return GravitySurvey(final_obs, final_sites)
+#     return GravitySurvey(final_obs, final_sites)
