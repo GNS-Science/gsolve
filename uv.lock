@@ -664,7 +664,7 @@ requires-dist = [
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pandas", extras = ["plot"], specifier = "<3" },
     { name = "pydata-sphinx-theme", specifier = ">=0.16.1" },
-    { name = "pygtide", specifier = ">=0.8.2" },
+    { name = "pygtide", specifier = ">=0.9.1" },
     { name = "pyhardisp", specifier = ">=0.2.1" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.3" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=7.1.0" },

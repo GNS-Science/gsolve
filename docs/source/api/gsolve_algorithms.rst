@@ -11,6 +11,7 @@ gSolve Algorithm
    :toctree: api/
 
    call_gsolve_lstsq
+   call_gsolve_calibration
    g_solver_lstsq
 
 GSolveResults

@@ -31,6 +31,7 @@ Information
    GravitySites.activate_ties
    GravitySites.deactivate_ties
    GravitySites.get_points
+   GravitySites.get_site_ids
    GravitySites.get_ties
    GravitySites.sample_elevation
 

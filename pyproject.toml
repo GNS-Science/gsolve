@@ -30,7 +30,7 @@ dependencies = [
     "openpyxl>=3.1.5",
     "pandas[plot]<3",
     "pydata-sphinx-theme>=0.16.1",
-    "pygtide>=0.8.2",
+    "pygtide>=0.9.1",
     "pyhardisp>=0.2.1",
     "rioxarray>=0.22.0",
     "tqdm>=4.67.3",
@@ -116,7 +116,7 @@ ignore = ["ANN101", "ANN102", "ANN003", "D105", "DOC502", "DOC501"]
 preview = true
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["ANN001", "ANN201", "ANN202", "D"]
+"tests/**" = ["ANN001", "ANN201", "ANN202", "D", "DOC"]
 "examples/scripts/**" = ["D100"]
 
 [tool.ruff.lint.pydocstyle]

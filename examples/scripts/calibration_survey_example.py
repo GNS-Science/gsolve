@@ -88,8 +88,8 @@ Here we use solve method "2", as we have high confidence in our absolute station
 We process each loop individually and apply a 99 percentile cutoff filter to the residuals.
 """
 
-results = survey.solve_lstsq(
-    method=2, use_loops=True, calculate_calibration_factor=True, percentile_clipping=100
+results = survey.solve_calibration_factor(
+    method=2, use_loops=True, percentile_clipping=100
 )
 
 # results.site_solution contains the adjusted gravity per station
@@ -114,7 +114,7 @@ _ = results.plot_residual_cdf(
 # as individual csv files
 results.site_solution.to_csv(cal_data_path / "calibration_site_solution.csv")
 results.obs_solution.to_csv(cal_data_path / "calibration_observations_solution.csv")
-
+print(results.params.to_dict())
 # # or save as single excel
 # report = GSolveReport(survey, results)
 # report.to_excel(cal_data_path / "calibration_survey_results.xlsx")

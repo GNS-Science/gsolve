@@ -1,9 +1,9 @@
-# Calculate the calibration factor
+# Calculate the instrument calibration factor
 
 ```{tip}  Example script to process the calibration data in the examples folder.
 ```
 
-Here is an example on how to use gSolve to calculate the ```calibration_factor```.  The ```calibration_factor``` scales the readings against a set of well constrained absolute stations on a calibration range.  Note that the calibration_factor is calculated using un-corrected data and is solved as part of the network adjustment.
+Here is an example on how to use gSolve to calculate the ```calibration_factor``` for a given gravity meter.  The ```calibration_factor``` scales meter readings against a set of well constrained absolute stations on a calibration range.  Note that the calibration_factor is calculated using un-corrected data and is solved as part of the network adjustment.
 
 Once the calibration_factor is calculated you can use the previous tutorial to apply it to your measurements.
 
@@ -86,17 +86,17 @@ Refer to [pygtide documentation](https://github.com/hydrogeoscience/pygtide) for
 
 ```python
 longman = LongmanTidalCorrection(amp_factor=1.2)
-obs.apply_earth_tide_correction(sites, tide_corrector = longman)
+obs.apply_earth_tide_correction(sites, tide_corrector=longman)
 ```
 
 Another option is to use pygtide for corrections which uses the more accurate ETERNA tidal model.
 
 ```python
 eterna = EternaPredictTidalCorrection(tidalpoten=8)
-obs.apply_earth_tide_correction(sites, tide_corrector = eterna)
+obs.apply_earth_tide_correction(sites, tide_corrector=eterna)
 ```
 
-Other tidal parameters for Eterna can be set through ```set_tidal_params``` once the tide correction object is initialised. e.g. ```eterna.set_tidal_params([0, 100, 1.15, 0])```
+Other tidal parameters for Eterna can be set through ```set_tidal_params``` once the tide correction object is initialised. e.g. ```eterna.set_tidal_params([0, 10, 1.15, 0])```
 
 ### calculate earth tide corrected gravity
 
@@ -118,11 +118,11 @@ surv = GravitySurvey(obs, sites)
 
 ## Run the network adjustment
 
-As this is a calibration survey we set calculate_calibration=True.  Here we use solve method "2", as we have high confidence in our absolute stations.  We process each loop individually and use all data (confidence_interval=100).
+As this is a calibration survey we call the method `solve_calibration_factor`.  Here we use solve method "2", as we have high confidence in our absolute stations.  We process each loop individually and use all data (confidence_interval=100).
 
 ```python
-results = surv.solve_lstsq(
-    method=2, use_loops=True, calculate_calibration=True, confidence_interval=100
+results = surv.solve_calibration_factor(
+    method=2, use_loops=True, confidence_interval=100
 )
 ```
 

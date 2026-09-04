@@ -637,10 +637,10 @@ class GravitySites(GSolveTable):
         return to_1d_ndarray(self.data.index).copy().astype(str)
 
 
-def _siteid_exists(site_id: str, other: _pd.DataFrame | GSolveTable) -> bool:
-    if isinstance(other, GSolveTable):
-        other = other.data
-    return site_id in other.index
+# def _siteid_exists(site_id: str, other: _pd.DataFrame | GSolveTable) -> bool:
+#     if isinstance(other, GSolveTable):
+#         other = other.data
+#     return site_id in other.index
 
 
 class ReferenceGravity(GSolveTable):

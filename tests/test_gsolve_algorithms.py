@@ -24,7 +24,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from gsolve.gsolve_algorithms import call_gsolve_lstsq, g_solver_lstsq
+from gsolve.gsolve_algorithms import (
+    call_gsolve_lstsq,
+    call_gsolve_calibration,
+    g_solver_lstsq,
+)
 from gsolve.gsolve_outputs import GSolveResults
 
 
@@ -123,6 +127,26 @@ class TestCallGSolveLstsq:
         with pytest.raises(ValueError, match="no tie sites"):
             call_gsolve_lstsq(obs=obs, ref_sites=ref, method=1)
 
+    def test_missing_input_column_raises(self) -> None:
+        obs = _obs_df()
+        ref = _ref_df()
+
+        with pytest.raises(KeyError, match="obs dataframe missing required column"):
+            call_gsolve_lstsq(
+                obs=obs.rename(columns={"gravity": "xxgravity"}),
+                ref_sites=ref,
+                method=1,
+            )
+
+        with pytest.raises(
+            KeyError, match="ref_sites dataframe missing required column"
+        ):
+            call_gsolve_lstsq(
+                obs=obs,
+                ref_sites=ref.rename(columns={"reference_gravity": "xx"}),
+                method=1,
+            )
+
     def test_returns_gsolve_results_object(self) -> None:
         obs = _obs_df()
         ref = _ref_df()
@@ -140,30 +164,63 @@ class TestCallGSolveLstsq:
         assert result.obs_solution.shape[0] == obs.shape[0]
         assert set(result.site_solution.index) == {"A", "B"}
 
-    def test_calibration_enabled_returns_float(self) -> None:
+
+class TestCallGSolveCalibration:
+    def test_no_tie_sites_raises(self) -> None:
+        obs = _obs_df(include_meter_reading=True)
+        ref = _ref_df(index=["X", "Y"])
+
+        with pytest.raises(ValueError, match="no tie sites"):
+            call_gsolve_lstsq(obs=obs, ref_sites=ref, method=1)
+
+    def test_returns_gsolve_results_object(self) -> None:
         obs = _obs_df(include_meter_reading=True)
         ref = _ref_df()
 
-        result = call_gsolve_lstsq(
+        result = call_gsolve_calibration(
+            obs=obs,
+            ref_sites=ref,
+            method=2,
+            use_loops=True,
+            percentile_clipping=100.0,
+        )
+
+        assert isinstance(result, GSolveResults)
+        assert result.params.method == 2
+        assert result.obs_solution.shape[0] == obs.shape[0]
+        assert set(result.site_solution.index) == {"A", "B"}
+
+    def test_returns_calibration_as_float(self) -> None:
+        obs = _obs_df(include_meter_reading=True)
+        ref = _ref_df()
+
+        result = call_gsolve_calibration(
             obs=obs,
             ref_sites=ref,
             method=1,
-            calculate_calibration_factor=True,
         )
 
         assert isinstance(result.calibration_factor, float)
         assert np.isfinite(result.calibration_factor)
 
-    def test_calibration_enabled_without_meter_reading_raises(self) -> None:
-        obs = _obs_df(include_meter_reading=False)
+    def test_missing_input_column_raises(self) -> None:
+        obs = _obs_df(include_meter_reading=True)
         ref = _ref_df()
 
-        with pytest.raises(KeyError, match="meter_reading_mgal"):
+        with pytest.raises(KeyError, match="obs dataframe missing required column"):
             call_gsolve_lstsq(
-                obs=obs,
+                obs=obs.rename(columns={"gravity": "xxgravity"}),
                 ref_sites=ref,
                 method=1,
-                calculate_calibration_factor=True,
+            )
+
+        with pytest.raises(
+            KeyError, match="ref_sites dataframe missing required column"
+        ):
+            call_gsolve_lstsq(
+                obs=obs,
+                ref_sites=ref.rename(columns={"reference_gravity": "xx"}),
+                method=1,
             )
 
 
