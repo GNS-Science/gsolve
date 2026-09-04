@@ -1652,18 +1652,18 @@ class GravitySurvey:
 
     def solve_calibration_factor(
         self,
-        method: GSolveSolverMethod,
+        method: GSolveSolverMethod = 2,
         percentile_clipping: float = 100,
         use_loops: bool = True,
     ) -> GSolveResults:
         """Solve for gravity meter calibration factor.
 
-        Something something.
-
         Parameters
         ----------
-        method : GSolveSolverMethod
+        method : {1, 2, 3}
             The solver method to use for the least squares adjustment.
+            Method 2 - 'Partially constrained least squares' is the appropriate strategy
+            for determining calibrations.
         percentile_clipping : float, default=100
             The percentile of residuals to use for clipping.  Values outside this
             percentile will be excluded from the adjustment.  Must be between 0 and 100.
@@ -1674,7 +1674,7 @@ class GravitySurvey:
         Returns
         -------
         GSolveResults
-            The results of the network adjustment.
+            The results of the network adjustment with calibration_factor attribute set.
         """
         meter_ids = self.observations.data["meter_id"].unique()
         if len(meter_ids) > 1:

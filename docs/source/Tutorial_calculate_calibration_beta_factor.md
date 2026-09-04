@@ -96,7 +96,7 @@ eterna = EternaPredictTidalCorrection(tidalpoten=8)
 obs.apply_earth_tide_correction(sites, tide_corrector=eterna)
 ```
 
-Other tidal parameters for Eterna can be set through ```set_tidal_params``` once the tide correction object is initialised. e.g. ```eterna.set_tidal_params([0, 100, 1.15, 0])```
+Other tidal parameters for Eterna can be set through ```set_tidal_params``` once the tide correction object is initialised. e.g. ```eterna.set_tidal_params([0, 10, 1.15, 0])```
 
 ### calculate earth tide corrected gravity
 
