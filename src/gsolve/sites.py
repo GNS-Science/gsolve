@@ -16,11 +16,12 @@
 
 # Copyright (c) 2025 Earth Sciences New Zealand.
 
+"""Classes to store gravity station/site data."""
+
 from __future__ import annotations
 
-import typing as _typing
 from collections.abc import Iterable, Mapping, Sequence
-
+from typing import Literal, Self
 import numpy as _np
 import numpy.typing as _npt
 import pandas as _pd
@@ -33,7 +34,12 @@ from gsolve.core._typing import (
     Points3DTrue,
     Renamer,
 )
-from gsolve.core.data import COMMON_FIELDS, DataFieldSpecification, GSolveTable
+from gsolve.core.data import (
+    COMMON_FIELDS,
+    DataFieldSpecification,
+    GSolveTable,
+    _concat_gsolvetable_dataframes_with_fill,
+)
 from gsolve.core.excel_io import read_excel_worksheet, write_excel_worksheet
 from gsolve.core.utils import (
     GSolveDataWarning,
@@ -50,7 +56,6 @@ __all__ = [
     "GravitySites",
     "combine_gravity_sites",
     "ReferenceGravity",
-    "combine_reference_gravity",
 ]
 
 
@@ -196,7 +201,7 @@ class GravitySites(GSolveTable):
         ignore_unknown_fields: bool = True,
         mapper: Renamer | None = None,
         **kwargs,
-    ) -> _typing.Self:
+    ) -> Self:
         """
         Create a GravitySites object from an excel workbook.
 
@@ -323,7 +328,7 @@ class GravitySites(GSolveTable):
 
     def set_reference_gravity(
         self,
-        ref_sites: _typing.Union["ReferenceGravity", _pd.DataFrame, dict],
+        ref_sites: Self | _pd.DataFrame | dict,
         reset: bool = False,
     ) -> None:
         """Load reference gravity values into the sites table.
@@ -636,11 +641,58 @@ class GravitySites(GSolveTable):
         """
         return to_1d_ndarray(self.data.index).copy().astype(str)
 
+    def merge(
+        self,
+        other: Self,
+        if_duplicate: Literal["drop", "error"] = "drop",
+    ) -> Self:
+        """Merge GravitySites objects.
 
-# def _siteid_exists(site_id: str, other: _pd.DataFrame | GSolveTable) -> bool:
-#     if isinstance(other, GSolveTable):
-#         other = other.data
-#     return site_id in other.index
+        Returns a new instance containing copies of the input data.
+
+        Parameters
+        ----------
+        other : GravitySites
+            The sites object to be merged with
+        if_duplicate : {'drop', 'error'}, default is "drop"
+            How to handle duplicate site_id's in ``other``.
+
+                - "drop": drop the duplicates.
+                - "error": raise a ValueError.
+
+        Returns
+        -------
+        GravitySites
+            The new GravitySites sites object
+        """
+        if not isinstance(other, type(self)):
+            raise TypeError(
+                f"invalid type for other: "
+                f"expected {type(self).__name__}, got {type(other)}"
+            )
+
+        valid_duplicates_args = {"drop", "error"}
+        if if_duplicate not in valid_duplicates_args:
+            raise ValueError(
+                f"duplicates must be one of {valid_duplicates_args}, not '{if_duplicate}'"
+            )
+
+        other_df = other.data
+        is_duplicate = other_df.index.isin(self.data.index)
+        if any(is_duplicate):
+            msg = f"{is_duplicate.sum()} duplicate sites in 'other'"
+            if is_duplicate.sum() <= 10:
+                msg = msg + f": {other_df.loc[~is_duplicate].to_list()}"
+
+            if if_duplicate == "drop":
+                other_df = other_df.loc[~is_duplicate]
+            elif if_duplicate == "error":
+                raise ValueError(msg)
+
+        combined_df = _concat_gsolvetable_dataframes_with_fill(
+            df1=self.data, df2=other_df, known_fields=self._known_fields
+        )
+        return type(self).from_dataframe(combined_df)
 
 
 class ReferenceGravity(GSolveTable):
@@ -865,7 +917,7 @@ class ReferenceGravity(GSolveTable):
         cls,
         data: Mapping,
         set_active: bool = True,
-    ) -> _typing.Self:
+    ) -> Self:
         """Create a ReferenceGravity object from a dictionary.
 
         This method provides a simple mechanism for users to add reference
@@ -905,105 +957,55 @@ class ReferenceGravity(GSolveTable):
 
         return cls(site_id=site_ids, gravity=ref_grav, active=active)
 
+    def merge(
+        self,
+        other: Self,
+        if_duplicate: Literal["drop", "error"] = "drop",
+    ) -> Self:
+        """Merge ReferenceSite objects.
 
-def combine_gravity_sites(
-    sites: Sequence[GravitySites],
-    duplicates: _typing.Literal["drop", "error"] = "drop",
-) -> GravitySites:
-    """Combine two or more GravitySites objects into a single object.
+        Returns a new instance containing copies of the input data.
 
-    Parameters
-    ----------
-    sites : GravitySites
-        The sites to be combined.
-    duplicates : {'drop', 'error'}, default is "drop"
-        How to behave if any site_id's are duplicated.
-        - "drop": drop the duplicates.
-        - "error": raise a ValueError.
+        Parameters
+        ----------
+        other : ReferenceSite
+            The Reference gravity objects to be merged into this.
+        if_duplicate : {'drop', 'error'}, default is "drop"
+            How to handle duplicate site_id's in ``other``.
 
-    Returns
-    -------
-    GravitySites
-        The new GravitySites sites object
+                - "drop": drop the duplicates.
+                - "error": raise a ValueError.
 
-    """
-    if not is_list_like(sites) or len(sites) < 2:
-        raise ValueError("Must specify at least 2 GravitySites objects.")
-
-    valid_duplicates_args = {"drop", "error"}
-    if duplicates not in valid_duplicates_args:
-        raise ValueError(
-            f"duplicates must be one of {valid_duplicates_args}, not '{duplicates}'"
-        )
-
-    for s in sites:
-        if not isinstance(s, GravitySites):
+        Returns
+        -------
+        ReferenceGravity
+            The new ReferenceGravity object.
+        """
+        if not isinstance(other, type(self)):
             raise TypeError(
-                f"All arguments must be {GravitySites.__name__} objects, "
-                f"not '{type(s)}'"
+                f"invalid type for other: "
+                f"expected {type(self).__name__}, got {type(other)}"
             )
 
-    final_df = _pd.concat([o.data for o in sites])
-
-    if final_df.index.duplicated().any():
-        if duplicates == "drop":
-            final_df = final_df[~final_df.index.duplicated(keep="first")]
-        elif duplicates == "error":
-            dupe_idx = final_df.index[final_df.index.duplicated().tolist()].unique()
-            dupe_idx = [str(d) for d in dupe_idx]
+        valid_duplicates_args = {"drop", "error"}
+        if if_duplicate not in valid_duplicates_args:
             raise ValueError(
-                f"Duplicate 'site_id' values found in merged data: {dupe_idx}"
+                f"duplicates must be one of {valid_duplicates_args}, not '{if_duplicate}'"
             )
 
-    return GravitySites.from_dataframe(final_df)
+        other_df = other.data
+        is_duplicate = other_df.index.isin(self.data.index)
+        if any(is_duplicate):
+            msg = f"{is_duplicate.sum()} duplicate sites in 'other'"
+            if is_duplicate.sum() <= 10:
+                msg = msg + f": {other_df.loc[~is_duplicate].to_list()}"
 
+            if if_duplicate == "drop":
+                other_df = other_df.loc[~is_duplicate]
+            elif if_duplicate == "error":
+                raise ValueError(msg)
 
-def combine_reference_gravity(
-    ref_sites: Sequence[ReferenceGravity],
-    duplicates: _typing.Literal["drop", "error"] = "drop",
-) -> ReferenceGravity:
-    """Combine two or more ReferenceSite objects into a single object.
-
-    Parameters
-    ----------
-    ref_sites : list-like
-        The Reference gravity objects to be combined.
-    duplicates : {'drop', 'error'}, default is 'drop'
-        How to handle duplicate site_id's.  If ``duplicates='drop'``, then
-        keep the first occurrence and drop the rest.  If ``duplicates='error'``, then
-        raise a ValueError.
-
-    Returns
-    -------
-    ReferenceGravity
-        The new ReferenceGravity object.
-
-    """
-    if not is_list_like(ref_sites) or len(ref_sites) < 2:
-        raise ValueError("Must specify at least 2 ReferenceGravity objects.")
-
-    valid_duplicates_args = {"drop", "error"}
-    if duplicates not in valid_duplicates_args:
-        raise ValueError(
-            f"duplicates must be one of {valid_duplicates_args}, not '{duplicates}'"
+        combined_df = _concat_gsolvetable_dataframes_with_fill(
+            df1=self.data, df2=other_df, known_fields=self._known_fields
         )
-
-    for s in ref_sites:
-        if not isinstance(s, ReferenceGravity):
-            raise TypeError(
-                f"All arguments must be ReferenceGravity objects, not '{type(s)}'"
-            )
-
-    final_df = _pd.concat([o.data for o in ref_sites])
-
-    if final_df.index.duplicated().any():
-        if duplicates == "drop":
-            final_df = final_df[~final_df.index.duplicated(keep="first")]
-        elif duplicates == "error":
-            dupe_idx = final_df.index[final_df.index.duplicated().tolist()].unique()
-            dupe_idx = [str(d) for d in dupe_idx]
-            raise ValueError(
-                f"Duplicate 'site_id' values found in merged data: {dupe_idx}"
-            )
-
-    return ReferenceGravity.from_dataframe(final_df)
+        return type(self).from_dataframe(combined_df)
