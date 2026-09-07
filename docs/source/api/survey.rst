@@ -11,6 +11,7 @@ GravitySurvey
 
    GravitySurvey
    GravitySurvey.from_excel
+   GravitySurvey.merge
    GravitySurvey.apply_dial_to_mgal
    GravitySurvey.apply_earth_tide_correction
    GravitySurvey.set_calibration_factor
@@ -20,11 +21,3 @@ GravitySurvey
    GravitySurvey.solve_lstsq
    GravitySurvey.solve_calibration_factor
 
-Functions
----------
-.. currentmodule:: gsolve.observations
-
-.. autosummary::
-   :toctree: api/
-
-   combine_gravity_surveys
