@@ -54,7 +54,6 @@ from gsolve.core.xr_methods import load_dem, prepare_dem
 
 __all__ = [
     "GravitySites",
-    "combine_gravity_sites",
     "ReferenceGravity",
 ]
 
@@ -682,7 +681,7 @@ class GravitySites(GSolveTable):
         if any(is_duplicate):
             msg = f"{is_duplicate.sum()} duplicate sites in 'other'"
             if is_duplicate.sum() <= 10:
-                msg = msg + f": {other_df.loc[~is_duplicate].to_list()}"
+                msg = msg + f": {other_df.loc[is_duplicate].index.to_list()}"
 
             if if_duplicate == "drop":
                 other_df = other_df.loc[~is_duplicate]
@@ -998,7 +997,7 @@ class ReferenceGravity(GSolveTable):
         if any(is_duplicate):
             msg = f"{is_duplicate.sum()} duplicate sites in 'other'"
             if is_duplicate.sum() <= 10:
-                msg = msg + f": {other_df.loc[~is_duplicate].to_list()}"
+                msg = msg + f": {other_df.loc[is_duplicate].index.to_list()}"
 
             if if_duplicate == "drop":
                 other_df = other_df.loc[~is_duplicate]

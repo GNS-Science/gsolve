@@ -67,6 +67,10 @@ def dummy_observations() -> GravityObservations:
     return GravityObservations(**dummy_data())
 
 
+def dummy_observation_mgal() -> GravityObservations:
+    return GravityObservations(**dummy_data_mgal())
+
+
 class TestObservationsInit:
     def test_gravity_observations_init_mgal(self) -> None:
         data = dummy_data_mgal()
@@ -223,40 +227,25 @@ class TestObservationsMerge:
         obj_dupe_obsid.data.index = obj_orig.data.index
 
         with pytest.raises(ValueError, match=r"duplicate obs_id"):
-            _ = obj_orig.merge(obj_dupe_obsid, if_duplicated_obs_id="error")
+            _ = obj_orig.merge(
+                obj_dupe_obsid,
+                if_duplicate_obs_ids="error",
+            )
 
         with pytest.warns(UserWarning, match=r"dropping"):
-            _ = obj_orig.merge(obj_dupe_obsid, if_duplicated_obs_id="drop")
+            _ = obj_orig.merge(obj_dupe_obsid, if_duplicate_obs_ids="drop")
 
         with pytest.warns(UserWarning, match=r"adding suffix"):
-            _ = obj_orig.merge(obj_dupe_obsid, if_duplicated_obs_id="rename")
-
-
-# # change datetime of obj2 to avoid duplicate site_ids
-# df["datetime"] = pd.to_datetime(df["datetime"]) + pd.Timedelta("1d")
-# obj_unique = GravityObservations.from_dataframe(df)
-
-# # now test duplicate loop id's
-# with pytest.raises(ValueError, match=r"Duplicate loop id\(s\) found"):
-#     _ = combine_gravity_observations([obj_orig, obj_unique])
-# with pytest.warns(UserWarning):
-#     _ = combine_gravity_observations([obj_orig, obj_unique], ignore_duplicates=True)
-
-# # ensure loop_id is not duplicated
-# df["loop"] = "xxx"
-# obj_unique = GravityObservations.from_dataframe(df)
-
-# obj3 = combine_gravity_observations([obj_orig, obj_unique], ignore_duplicates=True)
-# assert obj3.data.shape[0] == 2 * len(dummy_data["site_id"])
+            _ = obj_orig.merge(obj_dupe_obsid, if_duplicate_obs_ids="rename")
 
 
 class TestObservationTimedelta:
-    def test_gravity_observations_tdelta(self, dummy_data: dict) -> None:
-        obj1 = GravityObservations(**dummy_data)
-        obj2 = GravityObservations(**dummy_data)
+    def test_gravity_observations_tdelta(self) -> None:
+        obj1 = GravityObservations(**dummy_data())
+        obj2 = GravityObservations(**dummy_data())
         obj2.set_column("loop", 2)
         obj2.set_column(
-            "datetime", pd.to_datetime(dummy_data["datetime"]) + pd.Timedelta("1d")
+            "datetime", pd.to_datetime(dummy_data()["datetime"]) + pd.Timedelta("1d")
         )
         obj2.set_obs_id()
         obj3 = obj1.merge(obj2)
@@ -279,30 +268,29 @@ class TestObservationTimedelta:
 
     def test_gravity_observations_timedelta_unit(
         self,
-        dummy_observations: GravityObservations,
     ) -> None:
         # test that default tdelta unit is set correctly
-        assert dummy_observations.timedelta_unit() == pd.Timedelta("1h")
-        dummy_observations.set_tdelta()
-        td_hr = dummy_observations.data["survey_tdelta"].copy()
+        obs = dummy_observations()
+        assert obs.timedelta_unit() == pd.Timedelta("1h")
+        obs.set_tdelta()
+        td_hr = obs.data["survey_tdelta"].copy()
 
         # test that tdelta unit is set correctly
-        dummy_observations.set_timedelta_unit(pd.Timedelta("1s"))
-        assert dummy_observations.timedelta_unit() == pd.Timedelta("1s")
+        obs.set_timedelta_unit(pd.Timedelta("1s"))
+        assert obs.timedelta_unit() == pd.Timedelta("1s")
 
         # test that new tdelta unit was applied to data
-        assert_series_equal(td_hr, dummy_observations.data["survey_tdelta"] / 3600.0)
+        assert_series_equal(td_hr, obs.data["survey_tdelta"] / 3600.0)
 
         # now set it back to default
-        dummy_observations.set_timedelta_unit(pd.Timedelta("1h"))
-        assert dummy_observations.timedelta_unit() == pd.Timedelta("1h")
-        assert_series_equal(td_hr, dummy_observations.data["survey_tdelta"])
+        obs.set_timedelta_unit(pd.Timedelta("1h"))
+        assert obs.timedelta_unit() == pd.Timedelta("1h")
+        assert_series_equal(td_hr, obs.data["survey_tdelta"])
 
     def test_gravity_observations_fixed_time_datum(
         self,
-        dummy_observations: GravityObservations,
     ) -> None:
-        obs = dummy_observations
+        obs = dummy_observations()
         # test that default fixed_time_datum is undefined as expected
         assert pd.isna(obs.fixed_time_datum())
 
@@ -327,10 +315,8 @@ class TestObservationTimedelta:
         assert_series_equal(td1, obs.data["survey_tdelta"])
 
 
-def test_gravity_observations_properties(
-    dummy_observations: GravityObservations,
-) -> None:
-    obs = dummy_observations
+def test_gravity_observations_properties() -> None:
+    obs = dummy_observations()
     assert obs.loop_ids == ["1"]
     assert obs.starttime == obs.data["datetime"].min()
     assert obs.endtime == obs.data["datetime"].max()
@@ -344,10 +330,8 @@ def test_gravity_observations_properties(
     assert obs.loop_ids == ["2", "1"]
 
 
-def test_gravity_observations_activate_deactivate(
-    dummy_observations: GravityObservations,
-) -> None:
-    obs = dummy_observations
+def test_gravity_observations_activate_deactivate() -> None:
+    obs = dummy_observations()
     active_column = "active"
     assert obs.data[active_column].eq(True).all()
 

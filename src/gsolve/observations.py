@@ -58,7 +58,7 @@ from gsolve.gsolve_algorithms import (
 )
 from gsolve.gsolve_outputs import GSolveResults
 from gsolve.meter_conversion import MeterReadingConverter
-from gsolve.sites import GravitySites, ReferenceGravity, combine_gravity_sites
+from gsolve.sites import GravitySites, ReferenceGravity
 from gsolve.tide.earth_tide import (
     EarthTideCorrectionProvider,
     LongmanTidalCorrection,
