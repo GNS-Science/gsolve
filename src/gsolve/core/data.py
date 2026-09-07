@@ -478,13 +478,13 @@ class GSolveTable:
 class GSolveParameters:
     """Base class to store parameters related to GSolveTable derived classes."""
 
-    def __copy__(self) -> Self:
-        # Ensure all copies are deep copies.
-        return deepcopy(self)
-
     def __param_str__(self) -> str:
         # Return a string representation of the parameters
         return repr(self).partition("(")[2].rpartition(")")[0]
+
+    def __copy__(self) -> Self:
+        # Ensure all copies are deep copies.
+        return deepcopy(self)
 
     def copy(self) -> Self:
         """Return a deep copy of object."""  # noqa: DOC201
@@ -689,6 +689,7 @@ def _concat_gsolvetable_dataframes_with_fill(
             f"incompatible kwarg axis={kwargs['axis']}, "
             "function operates in vstack (axis=0) mode only."
         )
+    kwargs["axis"] = 0
 
     use_known_fields = False
     if known_fields is not None:
