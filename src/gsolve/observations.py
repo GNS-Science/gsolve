@@ -1605,12 +1605,21 @@ class GravitySurvey:
 
     """
 
+    observations: GravityObservations
+    sites: GravitySites
+
     def __init__(self, obs: GravityObservations, sites: GravitySites) -> None:
-        self.observations: GravityObservations = obs
-        self.sites: GravitySites = sites
-        # self.results = []
+        self.observations = obs
+        self.sites = sites
         self.observations.check_data()
         self.sites.check_data()
+
+    def __copy__(self) -> Self:
+        return type(self)(obs=self.observations.copy(), sites=self.sites.copy())
+
+    def copy(self) -> Self:
+        """Return a deep copy."""  # ruff: ignore[docstring-missing-returns]
+        return self.__copy__()
 
     @classmethod
     def from_excel(
@@ -1695,10 +1704,6 @@ class GravitySurvey:
     ) -> None:
         """Set reference gravity values for sites."""
         self.sites.set_reference_gravity(ref_grav, reset)
-
-    # def summary(self, fmt: str = "dict") -> dict | _pd.DataFrame:
-    #     raise NotImplementedError("summary not implemented")
-    #     return self.observations.summary()
 
     def pre_flight_check(self, warn: bool = True) -> bool:
         """Check data are valid before performing network adjustment.

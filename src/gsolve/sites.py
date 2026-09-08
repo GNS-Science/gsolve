@@ -149,6 +149,9 @@ class GravitySites(GSolveTable):
         "easting": DataFieldSpecification("easting", float, _np.nan, False),
         "northing": DataFieldSpecification("northing", float, _np.nan, False),
         "height_orthometric": DataFieldSpecification("height_orthometric", float, 0.0),
+        "absolute_gravity": DataFieldSpecification(
+            "absolute_gravity", float, _np.nan, False
+        ),
     }
 
     _index_field: str = "site_id"

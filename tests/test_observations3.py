@@ -59,8 +59,23 @@ def _make_sites() -> GravitySites:
     )
 
 
-def _make_survey() -> GravitySurvey:
-    return GravitySurvey(obs=_make_obs(), sites=_make_sites())
+def _make_survey(n_loops: int = 2, n_per_loop: int = 3) -> GravitySurvey:
+    return GravitySurvey(obs=_make_obs(n_loops, n_per_loop), sites=_make_sites())
+
+
+def _make_survey_uniq(
+    suffix: str = "x", n_loops: int = 2, n_per_loop: int = 3
+) -> GravitySurvey:
+    survey = _make_survey(n_loops=n_loops, n_per_loop=n_per_loop)
+    survey.observations.data.index = survey.observations.data.index + suffix
+    survey.observations.data.loc[:, "site_id"] = (
+        survey.observations.data.loc[:, "site_id"] + suffix
+    )
+    survey.observations.data.loc[:, "loop"] = (
+        survey.observations.data.loc[:, "loop"] + suffix
+    )
+    survey.sites.data.index = survey.sites.data.index + suffix
+    return survey
 
 
 # ---------------------------------------------------------------------------
@@ -122,6 +137,32 @@ class TestGravitySurvey:
         survey = GravitySurvey(obs=obs, sites=sites_partial)
         result = survey.pre_flight_check(warn=False)
         assert result is False
+
+    def test_merge(self) -> None:
+        surv_1 = _make_survey()
+        surv_2 = _make_survey_uniq()
+        surv_merged = surv_1.merge(surv_2)
+        assert surv_merged.observations.data.size == surv_1.observations.data.size * 2
+        assert surv_merged.sites.data.size == surv_1.sites.data.size * 2
+
+    def test_merge_bad_other(self):
+        surv_1 = _make_survey()
+        with pytest.raises(
+            expected_exception=TypeError, match="invalid type for other"
+        ):
+            surv_1.merge("bad_arg")
+
+    def test_merge_dupe_obs_id(self) -> None:
+        surv_1 = _make_survey()
+        surv_2 = _make_survey_uniq()
+        # un-uniqify obs_id
+        surv_2.observations.set_obs_id(surv_1.observations.data.index)
+
+        # default should be error
+        with pytest.raises(
+            expected_exception=ValueError, match="duplicate obs_id's found in other"
+        ):
+            _ = surv_1.merge(surv_2)
 
 
 # ---------------------------------------------------------------------------
