@@ -6,8 +6,8 @@ Gravity Observations
 GravityObservations
 ===================
 
-A class for handling gravity observation data, including methods for data manipulation,
-correction.
+A class for handling gravity observation data, including methods for data manipulation
+and reduction.
 
 .. currentmodule:: gsolve
 
@@ -17,26 +17,28 @@ Object Creation
    :toctree: api/
 
    GravityObservations
-   GravityObservations.from_dataframe
    GravityObservations.from_excel
+   GravityObservations.from_dataframe
    GravityObservations.from_csv
+   GravityObservations.merge
+   GravityObservations.copy
 
-Data Attributes
----------------
+Data Attributes and Methods
+---------------------------
 .. autosummary::
    :toctree: api/
 
-   GravityObservations.known_fields
-   GravityObservations.required_fields
    GravityObservations.set_column
    GravityObservations.set_obs_id
+   GravityObservations.known_fields
+   GravityObservations.required_fields
+   GravityObservations.check_data
    GravityObservations.loop_ids
    GravityObservations.loop_summary
    GravityObservations.site_summary
    GravityObservations.params
    GravityObservations.activate
    GravityObservations.deactivate
-   GravityObservations.check_data
 
 Time Handing
 ------------
@@ -67,8 +69,8 @@ Data Export
 .. autosummary::
    :toctree: api/
 
-   GravityObservations.write_to_csv
    GravityObservations.to_excel
+   GravityObservations.write_to_csv
 
 Plotting
 --------
@@ -98,12 +100,3 @@ in a GravityObservations object.
    GravityObservationsParameters.to_dict
    GravityObservationsParameters.to_excel
    GravityObservationsParameters.to_series
-
-Functions
-=========
-.. currentmodule:: gsolve.observations
-
-.. autosummary::
-   :toctree: api/
-
-   combine_gravity_observations

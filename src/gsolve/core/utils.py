@@ -29,7 +29,13 @@ from os import PathLike
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike, NDArray
-from pandas.api.types import is_datetime64_any_dtype, is_dict_like, is_list_like
+from pandas.api.types import (
+    is_datetime64_any_dtype,
+    is_dict_like,
+    is_list_like,
+    is_string_dtype,
+    is_bool_dtype,
+)
 from pandas.api.typing import NaTType, NAType
 
 from gsolve.core._typing import (
@@ -42,6 +48,7 @@ from gsolve.core._typing import (
     FilePath,
     Points3D,
 )
+
 
 __all__ = [
     "is_list_like",

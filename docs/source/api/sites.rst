@@ -13,17 +13,17 @@ Object Creation
 
    GravitySites
    GravitySites.from_excel
-   GravitySites.from_csv
    GravitySites.from_dataframe
+   GravitySites.from_csv
+   GravitySites.merge
    GravitySites.copy
-   GravitySites.set_column
 
-
-Information
------------
+Data Attributes and Methods
+---------------------------
 .. autosummary::
    :toctree: api/
 
+   GravitySites.set_column
    GravitySites.known_fields
    GravitySites.required_fields
    GravitySites.check_data
@@ -51,25 +51,15 @@ ReferenceGravity
    :toctree: api/
 
    ReferenceGravity
-   ReferenceGravity.copy
-   ReferenceGravity.from_csv
-   ReferenceGravity.from_dataframe
-   ReferenceGravity.from_dict
    ReferenceGravity.from_excel
+   ReferenceGravity.from_dataframe
+   ReferenceGravity.from_csv
+   ReferenceGravity.from_dict
+   ReferenceGravity.merge
+   ReferenceGravity.copy
    ReferenceGravity.known_fields
    ReferenceGravity.required_fields
    ReferenceGravity.set_column
    ReferenceGravity.to_excel
    ReferenceGravity.write_to_csv
-
-
-Functions
-=========
-.. currentmodule:: gsolve.sites
-
-.. autosummary::
-   :toctree: api/
-
-   combine_gravity_sites
-   combine_reference_gravity
 

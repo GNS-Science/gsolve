@@ -26,6 +26,7 @@ from typing import Any, Self
 
 import numpy.typing as _npt
 import pandas as _pd
+from pandas.api.types import is_bool_dtype, is_string_dtype
 
 from gsolve.core._typing import (
     FilePath,
@@ -477,13 +478,13 @@ class GSolveTable:
 class GSolveParameters:
     """Base class to store parameters related to GSolveTable derived classes."""
 
-    def __copy__(self) -> Self:
-        # Ensure all copies are deep copies.
-        return deepcopy(self)
-
     def __param_str__(self) -> str:
         # Return a string representation of the parameters
         return repr(self).partition("(")[2].rpartition(")")[0]
+
+    def __copy__(self) -> Self:
+        # Ensure all copies are deep copies.
+        return deepcopy(self)
 
     def copy(self) -> Self:
         """Return a deep copy of object."""  # noqa: DOC201
@@ -672,3 +673,71 @@ class GSolveParameters:
         if as_list:
             return txt
         return "\n".join(txt)
+
+
+def _concat_gsolvetable_dataframes_with_fill(
+    df1: _pd.DataFrame,
+    df2: _pd.DataFrame,
+    fill_str: str | None = "",
+    fill_bool: bool | None = None,
+    known_fields: dict[str, Any] | None = None,
+    **kwargs,
+) -> _pd.DataFrame:
+
+    if kwargs.get("axis", 0) != 0:
+        raise ValueError(
+            f"incompatible kwarg axis={kwargs['axis']}, "
+            "function operates in vstack (axis=0) mode only."
+        )
+    kwargs["axis"] = 0
+
+    use_known_fields = False
+    if known_fields is not None:
+        use_known_fields = True
+        if not all([hasattr(f, "default") for f in known_fields.values()]):
+            raise TypeError(
+                f"if specified, known_fields must be a dict of DataFieldSpecification objects"
+            )
+
+    do_str_fill = fill_str is not None
+    if do_str_fill:
+        fill_str = str(fill_str)
+
+    do_bool_fill = fill_bool is not None
+    if do_bool_fill:
+        fill_bool = bool(fill_bool)
+
+    combined_df = _pd.concat([df1, df2], **kwargs)
+    if not use_known_fields and not do_str_fill and not do_bool_fill:
+        return combined_df
+
+    in_df1_only = [c for c in df1.columns if c not in df2.columns]
+    idx = df2.index
+    for c in in_df1_only:
+        if use_known_fields and c in known_fields:
+            if known_fields[c].default is not None:
+                combined_df.loc[idx, c] = combined_df.loc[idx, c].fillna(
+                    known_fields[c].default
+                )
+                continue
+        if do_str_fill and is_string_dtype(df1[c]):
+            combined_df.loc[idx, c] = combined_df.loc[idx, c].fillna(fill_str)
+        elif do_bool_fill and is_bool_dtype(df1[c]):
+            combined_df.loc[idx, c] = combined_df.loc[idx, c].fillna(fill_bool)
+
+    in_df2_only = [c for c in df2.columns if c not in df1.columns]
+    idx = df1.index
+    for c in in_df2_only:
+        if use_known_fields and c in known_fields:
+            if known_fields[c].default is not None:
+                combined_df.loc[idx, c] = combined_df.loc[idx, c].fillna(
+                    known_fields[c].default
+                )
+                continue
+        if do_str_fill and is_string_dtype(df2[c]):
+            combined_df.loc[idx, c] = combined_df.loc[idx, c].fillna(fill_str)
+            continue
+        elif do_bool_fill and is_bool_dtype(df2[c]):
+            combined_df.loc[idx, c] = combined_df.loc[idx, c].fillna(fill_bool)
+
+    return combined_df

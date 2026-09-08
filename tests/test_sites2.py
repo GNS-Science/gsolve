@@ -18,6 +18,7 @@
 """Tests for gsolve.sites — GravitySites, ReferenceGravity, and combine helpers."""
 
 from __future__ import annotations
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -26,8 +27,6 @@ import pytest
 from gsolve.sites import (
     GravitySites,
     ReferenceGravity,
-    combine_gravity_sites,
-    combine_reference_gravity,
 )
 
 
@@ -281,7 +280,7 @@ class TestCheckData:
 
 
 class TestGravitySitesCsv:
-    def test_write_to_csv_and_read_back(self, tmp_path):
+    def test_write_to_csv_and_read_back(self, tmp_path: Path):
         gs = _make_sites(3, with_ref_gravity=True)
         gs.activate_ties("S0")
         fpath = tmp_path / "sites.csv"
@@ -342,7 +341,7 @@ class TestReferenceGravityInit:
         ref = ReferenceGravity.from_dataframe(df)
         assert ref.data.loc["A", "gravity"] == pytest.approx(980000.0)
 
-    def test_write_to_csv(self, tmp_path):
+    def test_write_to_csv(self, tmp_path: Path):
         ref = _make_ref_gravity()
         fpath = tmp_path / "ref.csv"
         ref.write_to_csv(fpath)
@@ -355,8 +354,8 @@ class TestReferenceGravityInit:
 # ---------------------------------------------------------------------------
 
 
-class TestCombineGravitySites:
-    def test_combine_two(self):
+class TestMergeGravitySites:
+    def test_merge_two(self):
         gs1 = GravitySites(
             site_id=["A", "B"],
             latitude=[0.0, 1.0],
@@ -369,11 +368,11 @@ class TestCombineGravitySites:
             longitude=[2.0, 3.0],
             height_ellipsoidal=[0.0, 0.0],
         )
-        combined = combine_gravity_sites([gs1, gs2])
+        combined = gs1.merge(gs2)
         assert len(combined) == 4
         assert set(combined.data.index) == {"A", "B", "C", "D"}
 
-    def test_combine_drops_duplicates_by_default(self):
+    def test_merge_drops_duplicates_by_default(self):
         gs1 = GravitySites(
             site_id=["A", "B"],
             latitude=[0.0, 1.0],
@@ -386,35 +385,30 @@ class TestCombineGravitySites:
             longitude=[9.0, 3.0],
             height_ellipsoidal=[0.0, 0.0],
         )
-        combined = combine_gravity_sites([gs1, gs2])
+        combined = gs1.merge(gs2)
         assert len(combined) == 3
         # first occurrence of B is kept
         assert combined.data.loc["B", "latitude"] == pytest.approx(1.0)
 
-    def test_combine_error_on_duplicates(self):
+    def test_merge_error_on_duplicates(self):
         gs1 = GravitySites(
             site_id=["A"], latitude=[0.0], longitude=[0.0], height_ellipsoidal=[0.0]
         )
         gs2 = GravitySites(
             site_id=["A"], latitude=[1.0], longitude=[1.0], height_ellipsoidal=[0.0]
         )
-        with pytest.raises(ValueError, match="Duplicate"):
-            combine_gravity_sites([gs1, gs2], duplicates="error")
+        with pytest.raises(ValueError, match="duplicate"):
+            gs1.merge(gs2, if_duplicate="error")
 
-    def test_too_few_sites_raises(self):
-        gs = _make_sites(2)
-        with pytest.raises(ValueError, match="at least 2"):
-            combine_gravity_sites([gs])
-
-    def test_bad_duplicates_arg_raises(self):
+    def test_merge_bad_if_duplicate_arg(self):
         gs1, gs2 = _make_sites(2), _make_sites(2)
         with pytest.raises(ValueError, match="duplicates must be one of"):
-            combine_gravity_sites([gs1, gs2], duplicates="invalid")
+            gs1.merge(gs2, if_duplicate="invalid")
 
-    def test_non_sites_object_raises(self):
-        gs = _make_sites(2)
+    def test_merge_non_sites_object(self):
+        gs1 = _make_sites(2)
         with pytest.raises(TypeError):
-            combine_gravity_sites([gs, "not_a_sites"])
+            gs1.merge("not_a_sites")
 
 
 # ---------------------------------------------------------------------------
@@ -422,32 +416,27 @@ class TestCombineGravitySites:
 # ---------------------------------------------------------------------------
 
 
-class TestCombineReferenceGravity:
-    def test_combine_two(self):
+class TestReferenceGravityMerge:
+    def test_merge_simple(self):
         r1 = _make_ref_gravity(("A", "B"), (1.0, 2.0))
         r2 = _make_ref_gravity(("C", "D"), (3.0, 4.0))
-        combined = combine_reference_gravity([r1, r2])
+        combined = r1.merge(r2)
         assert len(combined) == 4
 
-    def test_combine_drops_duplicates_by_default(self):
+    def test_merge_drops_duplicates_by_default(self):
         r1 = _make_ref_gravity(("A",), (1.0,))
         r2 = _make_ref_gravity(("A",), (99.0,))
-        combined = combine_reference_gravity([r1, r2])
+        combined = r1.merge(r2)
         assert len(combined) == 1
         assert combined.data.loc["A", "gravity"] == pytest.approx(1.0)
 
-    def test_combine_error_on_duplicates(self):
+    def test_merge_error_on_duplicates(self):
         r1 = _make_ref_gravity(("A",), (1.0,))
         r2 = _make_ref_gravity(("A",), (2.0,))
-        with pytest.raises(ValueError, match="Duplicate"):
-            combine_reference_gravity([r1, r2], duplicates="error")
-
-    def test_too_few_raises(self):
-        r = _make_ref_gravity()
-        with pytest.raises(ValueError, match="at least 2"):
-            combine_reference_gravity([r])
+        with pytest.raises(ValueError, match="duplicate sites"):
+            r1.merge(r2, if_duplicate="error")
 
     def test_non_ref_gravity_object_raises(self):
         r = _make_ref_gravity()
         with pytest.raises(TypeError):
-            combine_reference_gravity([r, "bad"])
+            r.merge("bad")

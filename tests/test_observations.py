@@ -25,7 +25,6 @@ from pandas.testing import assert_frame_equal, assert_index_equal, assert_series
 
 from gsolve import GravityObservations, GravitySites
 from gsolve.core import data
-from gsolve.observations import combine_gravity_observations
 
 
 @pytest.fixture
@@ -34,7 +33,6 @@ def legacy_observations(shared_datadir: Path) -> GravityObservations:
     return GravityObservations.from_excel(obs_file)
 
 
-@pytest.fixture
 def dummy_data() -> dict:
     return {
         "site_id": [1, 2, 3],
@@ -50,7 +48,6 @@ def dummy_data() -> dict:
     }
 
 
-@pytest.fixture
 def dummy_data_mgal() -> dict:
     return {
         "site_id": [1, 2, 3],
@@ -66,201 +63,192 @@ def dummy_data_mgal() -> dict:
     }
 
 
-@pytest.fixture()
-def dummy_observations(dummy_data: dict) -> GravityObservations:
-    return GravityObservations(**dummy_data)
+def dummy_observations() -> GravityObservations:
+    return GravityObservations(**dummy_data())
 
 
-@pytest.mark.parametrize("data_in", ["dummy_data", "dummy_data_mgal"])
-def test_gravity_observations_init(
-    data_in: dict, request: pytest.FixtureRequest
-) -> None:
-    data = request.getfixturevalue(data_in)
-    obj = GravityObservations(**data)
-    n = len(data["site_id"])
-    assert obj.data["loop"].to_list() == [str(data["loop"])] * n
-    assert obj.data["comment"].to_list() == data["comment"]
+def dummy_observation_mgal() -> GravityObservations:
+    return GravityObservations(**dummy_data_mgal())
 
 
-def test_gravity_observations_init_no_meter_readings(dummy_data: dict) -> None:
-    data = dummy_data.copy()
-    data.pop("meter_reading")
-    with pytest.raises(
-        ValueError, match=r"meter_reading or meter_reading_mgal must be specified"
-    ):
-        _ = GravityObservations(**data)
+class TestObservationsInit:
+    def test_gravity_observations_init_mgal(self) -> None:
+        data = dummy_data_mgal()
+        obj = GravityObservations(**data)
+        n = len(data["site_id"])
+        assert obj.data["loop"].to_list() == [str(data["loop"])] * n
+        assert obj.data["comment"].to_list() == data["comment"]
 
+    def test_gravity_observations_init_meter_units(self) -> None:
+        data = dummy_data()
+        obj = GravityObservations(**data)
+        n = len(data["site_id"])
+        assert obj.data["loop"].to_list() == [str(data["loop"])] * n
+        assert obj.data["comment"].to_list() == data["comment"]
 
-def test_gravity_observations_init_has_obsid(dummy_data: dict) -> None:
-    data = dummy_data.copy()
+    def test_gravity_observations_init_no_meter_readings(self) -> None:
+        data = dummy_data()
+        data.pop("meter_reading")
+        with pytest.raises(
+            ValueError, match=r"meter_reading or meter_reading_mgal must be specified"
+        ):
+            _ = GravityObservations(**data)
 
-    # obs_id not specified
-    obj_unspec = GravityObservations(**data)
-    assert obj_unspec.data.index.dtype.name in ("object", "str")
+    def test_gravity_observations_init_has_obsid(self) -> None:
+        data = dummy_data()
 
-    prefixes = obj_unspec.data.index.str.partition(".").get_level_values(0)
-    assert_index_equal(
-        prefixes, pd.Index(obj_unspec.data["site_id"]), check_names=False
-    )
+        # obs_id not specified
+        obj_unspec = GravityObservations(**data)
+        assert obj_unspec.data.index.dtype.name in ("object", "str")
 
-    # obs_id specified but is None
-    obj_none = GravityObservations(**data, obs_id=None)
-    assert_frame_equal(obj_none.data, obj_unspec.data)
-
-    # obs_id is a sequence
-    idx = ["id1", "id2", "id3"]
-    obj_seq = GravityObservations(**data, obs_id=idx)
-    assert_index_equal(obj_seq.data.index, pd.Index(idx), check_names=False)
-
-
-def test_gravity_observations_bad_inputs(dummy_data: dict) -> None:
-    df = pd.DataFrame(dummy_data)
-
-    # Case 1: missing a required field
-    with pytest.raises(ValueError, match=r"site_id"):
-        _ = GravityObservations.from_dataframe(df.drop(columns=["site_id"]))
-
-    # Case 2: Test where inputs uneven length
-    d = df.to_dict(orient="list")
-    d["site_id"] = [1, 2]
-    with pytest.raises(ValueError):
-        _ = GravityObservations(**d)  # ty:ignore[invalid-argument-type]
-
-    # Case 3: Test inputs of invalid type
-    d = df.to_dict(orient="list")
-    d["meter_reading"] = ["a", "b", "c"]
-    with pytest.raises((TypeError, ValueError)):
-        _ = GravityObservations(**d)  # ty:ignore[invalid-argument-type]
-
-
-def test_gravity_observations_from_dataframe(dummy_data: dict) -> None:
-    n = len(dummy_data["site_id"])
-    df = pd.DataFrame(dummy_data)
-    obj = GravityObservations.from_dataframe(df)
-    assert obj.data["loop"].to_list() == [str(dummy_data["loop"])] * n
-    obj = GravityObservations.from_dataframe(df, ignore_unknown_fields=False)
-    assert obj.data["comment"].to_list() == dummy_data["comment"]
-
-
-def test_gravity_observations_from_excel(shared_datadir: Path) -> None:
-    # test 1 read legacy file
-    obj1 = GravityObservations.from_excel(shared_datadir / "legacy_format.xlsx")
-    assert obj1.data.shape[0] == 220
-
-    # test read new format
-    obs_file = shared_datadir / "current_format.xlsx"
-    obj2 = GravityObservations.from_excel(shared_datadir / "current_format.xlsx")
-    assert obj2.data.shape[0] == 220
-
-    assert_frame_equal(obj1.data, obj2.data)
-
-    # test read from a non-existent sheet
-    with pytest.raises(ValueError, match=r"not found in"):
-        _ = GravityObservations.from_excel(obs_file, sheet_name="not found in")
-
-    # test missing datetime column
-    with pytest.raises(
-        ValueError, match=r"DataFrame missing required columns \[\'datetime\'\]"
-    ):
-        GravityObservations.from_excel(obs_file, parse_split_datetime=False)
-
-    # GravityObservations.from_excel(obs_file,
-
-
-def test_combine_gravity_observations(dummy_data: dict) -> None:
-    obj_orig = GravityObservations(**dummy_data)
-
-    obj_unique = obj_orig.copy()
-    obj_unique.data["loop"] = obj_unique.data["loop"] + "xx"
-    obj_unique.set_obs_id(obj_orig.data.index + "_xx")
-
-    with pytest.raises(ValueError, match=r"at least 2 GravityObservations"):
-        _ = combine_gravity_observations(obj_orig)
-
-    with pytest.raises(TypeError, match=r"invalid type for elements in obs"):
-        _ = combine_gravity_observations([obj_orig, "hello"])
-
-    with pytest.raises(ValueError, match=r"invalid duplicated_loops arg"):
-        _ = combine_gravity_observations(
-            [obj_orig, obj_orig], duplicated_loops="bad_arg"
-        )
-    with pytest.raises(ValueError, match=r"invalid duplicated_obs_id arg"):
-        _ = combine_gravity_observations(
-            [obj_orig, obj_orig], duplicated_obs_ids="bad_arg"
+        prefixes = obj_unspec.data.index.str.partition(".").get_level_values(0)
+        assert_index_equal(
+            prefixes, pd.Index(obj_unspec.data["site_id"]), check_names=False
         )
 
-    # catch duplicate loop_id
-    obj_dupe_loop = obj_unique.copy()
-    obj_dupe_loop.data["loop"] = obj_orig.data["loop"].to_numpy()
+        # obs_id specified but is None
+        obj_none = GravityObservations(**data, obs_id=None)
+        assert_frame_equal(obj_none.data, obj_unspec.data)
 
-    with pytest.raises(ValueError):
-        _ = combine_gravity_observations(
-            [obj_orig, obj_dupe_loop],
-            duplicated_loops="error",
-            duplicated_obs_ids="keep",
-        )
-    assert obj_dupe_loop.data["loop"].to_list() == obj_orig.data["loop"].to_list()
-    with pytest.warns(UserWarning, match="keeping"):
-        _ = combine_gravity_observations(
-            [obj_orig, obj_dupe_loop], duplicated_loops="keep"
-        )
-    with pytest.warns(UserWarning, match="dropping"):
-        _ = combine_gravity_observations(
-            [obj_orig, obj_dupe_loop],
-            duplicated_loops="drop",
-        )
+        # obs_id is a sequence
+        idx = ["id1", "id2", "id3"]
+        obj_seq = GravityObservations(**data, obs_id=idx)
+        assert_index_equal(obj_seq.data.index, pd.Index(idx), check_names=False)
 
-    with pytest.warns(UserWarning, match=r"adding suffix"):
-        _ = combine_gravity_observations(
-            [obj_orig, obj_dupe_loop],
-            duplicated_loops="rename",
-        )
+    def test_gravity_observations_init_bad_inputs(self) -> None:
+        df = pd.DataFrame(dummy_data())
 
-    # catch duplicate obs_id
-    obj_dupe_obsid = obj_unique.copy()
-    obj_dupe_obsid.data.index = obj_orig.data.index
+        # Case 1: missing a required field
+        with pytest.raises(ValueError, match=r"site_id"):
+            _ = GravityObservations.from_dataframe(df.drop(columns=["site_id"]))
 
-    with pytest.raises(ValueError, match=r"duplicate obs_id"):
-        _ = combine_gravity_observations(
-            [obj_orig, obj_dupe_obsid], duplicated_obs_ids="error"
-        )
-    with pytest.warns(UserWarning, match=r"dropping"):
-        _ = combine_gravity_observations(
-            [obj_orig, obj_dupe_obsid], duplicated_obs_ids="drop"
-        )
-    with pytest.warns(UserWarning, match=r"adding suffix"):
-        _ = combine_gravity_observations(
-            [obj_orig, obj_dupe_obsid], duplicated_obs_ids="rename"
-        )
+        # Case 2: Test where inputs uneven length
+        d = df.to_dict(orient="list")
+        d["site_id"] = [1, 2]
+        with pytest.raises(ValueError):
+            _ = GravityObservations(**d)  # ty:ignore[invalid-argument-type]
 
-    # # change datetime of obj2 to avoid duplicate site_ids
-    # df["datetime"] = pd.to_datetime(df["datetime"]) + pd.Timedelta("1d")
-    # obj_unique = GravityObservations.from_dataframe(df)
+        # Case 3: Test inputs of invalid type
+        d = df.to_dict(orient="list")
+        d["meter_reading"] = ["a", "b", "c"]
+        with pytest.raises((TypeError, ValueError)):
+            _ = GravityObservations(**d)  # ty:ignore[invalid-argument-type]
 
-    # # now test duplicate loop id's
-    # with pytest.raises(ValueError, match=r"Duplicate loop id\(s\) found"):
-    #     _ = combine_gravity_observations([obj_orig, obj_unique])
-    # with pytest.warns(UserWarning):
-    #     _ = combine_gravity_observations([obj_orig, obj_unique], ignore_duplicates=True)
+    def test_gravity_observations_from_dataframe(self) -> None:
+        data = dummy_data()
+        n = len(data["site_id"])
+        df = pd.DataFrame(data)
+        obj = GravityObservations.from_dataframe(df)
+        assert obj.data["loop"].to_list() == [str(data["loop"])] * n
+        obj = GravityObservations.from_dataframe(df, ignore_unknown_fields=False)
+        assert obj.data["comment"].to_list() == data["comment"]
 
-    # # ensure loop_id is not duplicated
-    # df["loop"] = "xxx"
-    # obj_unique = GravityObservations.from_dataframe(df)
+    def test_gravity_observations_from_excel(self, shared_datadir: Path) -> None:
+        # test 1 read legacy file
+        obj1 = GravityObservations.from_excel(shared_datadir / "legacy_format.xlsx")
+        assert obj1.data.shape[0] == 220
 
-    # obj3 = combine_gravity_observations([obj_orig, obj_unique], ignore_duplicates=True)
-    # assert obj3.data.shape[0] == 2 * len(dummy_data["site_id"])
+        # test read new format
+        obs_file = shared_datadir / "current_format.xlsx"
+        obj2 = GravityObservations.from_excel(shared_datadir / "current_format.xlsx")
+        assert obj2.data.shape[0] == 220
+
+        assert_frame_equal(obj1.data, obj2.data)
+
+        # test read from a non-existent sheet
+        with pytest.raises(ValueError, match=r"not found in"):
+            _ = GravityObservations.from_excel(obs_file, sheet_name="not found in")
+
+        # test missing datetime column
+        with pytest.raises(
+            ValueError, match=r"DataFrame missing required columns \[\'datetime\'\]"
+        ):
+            GravityObservations.from_excel(obs_file, parse_split_datetime=False)
+
+        # GravityObservations.from_excel(obs_file,
+
+
+class TestObservationsMerge:
+    @staticmethod
+    def _observations_objects() -> tuple[GravityObservations, GravityObservations]:
+        obj_orig = dummy_observations()
+        obj_unique = obj_orig.copy()
+        obj_unique.data["loop"] = obj_unique.data["loop"] + "xx"
+        obj_unique.set_obs_id(obj_orig.data.index + "_xx")
+        return obj_orig, obj_unique
+
+    def test_gravity_observations_merge(self) -> None:
+        obj_orig, obj_unique = self._observations_objects()
+        obj_final = obj_orig.merge(obj_unique)
+
+        assert len(obj_final.data) == len(obj_unique) + len(obj_orig)
+
+        # ensure that paraeters are set to orig
+        obj_unique.set_fixed_time_datum("2010-10-10T00:00:00")
+        obj_unique.set_timedelta_unit("1s")
+        obj_final = obj_orig.merge(obj_unique)
+        assert obj_final.fixed_time_datum() == obj_orig.fixed_time_datum()
+        assert obj_final.timedelta_unit() == obj_orig.timedelta_unit()
+
+    def test_gravity_observations_merge_bad_args(self) -> None:
+        obj_orig, obj_unique = self._observations_objects()
+
+        with pytest.raises(TypeError, match=r"invalid type for other"):
+            _ = obj_orig.merge("ddd")
+
+        with pytest.raises(ValueError, match=r"invalid if_duplicate_loops arg"):
+            _ = obj_orig.merge(obj_unique, if_duplicate_loops="bad_arg")
+
+        with pytest.raises(ValueError, match=r"invalid if_duplicate_obs_ids arg"):
+            _ = obj_orig.merge(obj_unique, if_duplicate_obs_ids="bad_arg")
+
+    def test_gravity_observations_merge_duplicate_loop_flags(self) -> None:
+        obj_orig, obj_unique = self._observations_objects()
+        obj_dupe_loop = obj_unique.copy()
+        obj_dupe_loop.data["loop"] = obj_orig.data["loop"].to_numpy()
+
+        with pytest.raises(ValueError):
+            _ = obj_orig.merge(
+                obj_dupe_loop, if_duplicate_loops="error", if_duplicate_obs_ids="keep"
+            )
+
+        assert obj_dupe_loop.data["loop"].to_list() == obj_orig.data["loop"].to_list()
+        with pytest.warns(UserWarning, match="keeping"):
+            _ = obj_orig.merge(obj_dupe_loop, if_duplicate_loops="keep")
+
+        with pytest.warns(UserWarning, match="dropping"):
+            _ = obj_orig.merge(obj_dupe_loop, if_duplicate_loops="drop")
+
+        with pytest.warns(UserWarning, match=r"adding suffix"):
+            _ = obj_orig.merge(obj_dupe_loop, if_duplicate_loops="rename")
+
+        # catch duplicate obs_id
+        obj_dupe_obsid = obj_unique.copy()
+        obj_dupe_obsid.data.index = obj_orig.data.index
+
+        with pytest.raises(ValueError, match=r"duplicate obs_id"):
+            _ = obj_orig.merge(
+                obj_dupe_obsid,
+                if_duplicate_obs_ids="error",
+            )
+
+        with pytest.warns(UserWarning, match=r"dropping"):
+            _ = obj_orig.merge(obj_dupe_obsid, if_duplicate_obs_ids="drop")
+
+        with pytest.warns(UserWarning, match=r"adding suffix"):
+            _ = obj_orig.merge(obj_dupe_obsid, if_duplicate_obs_ids="rename")
 
 
 class TestObservationTimedelta:
-    def test_gravity_observations_tdelta(self, dummy_data: dict) -> None:
-        obj1 = GravityObservations(**dummy_data)
-        obj2 = GravityObservations(**dummy_data)
+    def test_gravity_observations_tdelta(self) -> None:
+        obj1 = GravityObservations(**dummy_data())
+        obj2 = GravityObservations(**dummy_data())
         obj2.set_column("loop", 2)
         obj2.set_column(
-            "datetime", pd.to_datetime(dummy_data["datetime"]) + pd.Timedelta("1d")
+            "datetime", pd.to_datetime(dummy_data()["datetime"]) + pd.Timedelta("1d")
         )
         obj2.set_obs_id()
-        obj3 = combine_gravity_observations([obj1, obj2])
+        obj3 = obj1.merge(obj2)
 
         # test that timedelta_unit is set correctly
         assert obj1.timedelta_unit() == pd.Timedelta("1h")
@@ -280,30 +268,29 @@ class TestObservationTimedelta:
 
     def test_gravity_observations_timedelta_unit(
         self,
-        dummy_observations: GravityObservations,
     ) -> None:
         # test that default tdelta unit is set correctly
-        assert dummy_observations.timedelta_unit() == pd.Timedelta("1h")
-        dummy_observations.set_tdelta()
-        td_hr = dummy_observations.data["survey_tdelta"].copy()
+        obs = dummy_observations()
+        assert obs.timedelta_unit() == pd.Timedelta("1h")
+        obs.set_tdelta()
+        td_hr = obs.data["survey_tdelta"].copy()
 
         # test that tdelta unit is set correctly
-        dummy_observations.set_timedelta_unit(pd.Timedelta("1s"))
-        assert dummy_observations.timedelta_unit() == pd.Timedelta("1s")
+        obs.set_timedelta_unit(pd.Timedelta("1s"))
+        assert obs.timedelta_unit() == pd.Timedelta("1s")
 
         # test that new tdelta unit was applied to data
-        assert_series_equal(td_hr, dummy_observations.data["survey_tdelta"] / 3600.0)
+        assert_series_equal(td_hr, obs.data["survey_tdelta"] / 3600.0)
 
         # now set it back to default
-        dummy_observations.set_timedelta_unit(pd.Timedelta("1h"))
-        assert dummy_observations.timedelta_unit() == pd.Timedelta("1h")
-        assert_series_equal(td_hr, dummy_observations.data["survey_tdelta"])
+        obs.set_timedelta_unit(pd.Timedelta("1h"))
+        assert obs.timedelta_unit() == pd.Timedelta("1h")
+        assert_series_equal(td_hr, obs.data["survey_tdelta"])
 
     def test_gravity_observations_fixed_time_datum(
         self,
-        dummy_observations: GravityObservations,
     ) -> None:
-        obs = dummy_observations
+        obs = dummy_observations()
         # test that default fixed_time_datum is undefined as expected
         assert pd.isna(obs.fixed_time_datum())
 
@@ -328,10 +315,8 @@ class TestObservationTimedelta:
         assert_series_equal(td1, obs.data["survey_tdelta"])
 
 
-def test_gravity_observations_properties(
-    dummy_observations: GravityObservations,
-) -> None:
-    obs = dummy_observations
+def test_gravity_observations_properties() -> None:
+    obs = dummy_observations()
     assert obs.loop_ids == ["1"]
     assert obs.starttime == obs.data["datetime"].min()
     assert obs.endtime == obs.data["datetime"].max()
@@ -345,10 +330,8 @@ def test_gravity_observations_properties(
     assert obs.loop_ids == ["2", "1"]
 
 
-def test_gravity_observations_activate_deactivate(
-    dummy_observations: GravityObservations,
-) -> None:
-    obs = dummy_observations
+def test_gravity_observations_activate_deactivate() -> None:
+    obs = dummy_observations()
     active_column = "active"
     assert obs.data[active_column].eq(True).all()
 
@@ -377,7 +360,7 @@ def test_gravity_observations_activate_deactivate(
     # site
     target_column = "site_id"
     idx = obs.data.sample(1).index[0]
-    target_value = obs.data.at[idx, target_column]
+    target_value = obs.data.loc[idx, target_column]
     expected = pd.Series(index=obs.data.index, data=True)
     expected[idx] = False
     kwargs = {target_column: target_value}
