@@ -1066,7 +1066,7 @@ class GravityObservations(GSolveTable):
             bool_to_int=bool_to_int,
         )
 
-    def write_to_csv(
+    def write_to_csv(  # ruff: ignore[undocumented-public-method]
         self,
         fname: FilePath,
         *,

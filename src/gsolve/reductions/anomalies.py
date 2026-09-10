@@ -19,10 +19,8 @@
 
 """Functions and classes to compute standard gravity anomalies."""
 
-from types import MappingProxyType
-
-import numpy as np
-import pandas as pd
+import numpy as _np
+import pandas as _pd
 from numpy.typing import ArrayLike
 
 from gsolve.core.data import DataFieldSpecification, GSolveTable

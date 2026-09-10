@@ -428,7 +428,7 @@ class GravitySites(GSolveTable):
         normalize_column_names: bool = True,
         bool_to_int: bool = True,
         include_unknown_fields: bool = True,
-    ) -> pd.DataFrame:
+    ) -> _pd.DataFrame:
         """
         Return GravitySite data as a DataFrame suitable for writing to an excel or csv file.
 
