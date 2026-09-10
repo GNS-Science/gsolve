@@ -18,11 +18,13 @@
 
 """Base class and function definitions for Gsolve data structures."""
 
+from dask.array import ma
+
 import dataclasses
 import warnings
 from collections.abc import Callable, Sequence
 from copy import deepcopy
-from typing import Any, Self
+from typing import Any, Self, ClassVar
 
 import numpy.typing as _npt
 import pandas as _pd
@@ -114,8 +116,8 @@ class GSolveTable:
 
     """
 
-    _known_fields: dict[str, DataFieldSpecification]
-    _default_excel_sheet_name: str | tuple[str, ...] = ""
+    _known_fields: ClassVar[dict[str, DataFieldSpecification]]
+    _default_excel_sheet_name: ClassVar[str | tuple[str, ...]] = ""
 
     def __init__(self) -> None:
         self.data: _pd.DataFrame
@@ -275,7 +277,7 @@ class GSolveTable:
 
         if mapper is not None:
             df = df.rename(columns=mapper)
-        df.columns = [str(c).lower() for c in df.columns]
+        df = normalize_field_names(df)
 
         for c in cls.known_fields():
             if c not in df.columns:
@@ -348,7 +350,7 @@ class GSolveTable:
         **kwargs,
     ) -> Self:
         """
-        Create a object from an Excel file.
+        Create an object from an Excel file.
 
         Parameters
         ----------
@@ -357,7 +359,7 @@ class GSolveTable:
         sheet_name : str, int, or  list-like, optional
             The name or index of the worksheet to read. If None, then
             try to use the default sheet name(s) defined in the class.
-        ignore_unknown_fields : bool, default True
+        ignore_unknown_fields : bool, default False
             Only include known fields in the resulting object.
         parse_split_datetime: bool, default False
             If True, parse discrete year, month, day columns into a single
@@ -365,14 +367,20 @@ class GSolveTable:
             are [year, month, day, hour, minute, second, microsecond, nanosecond],
             with at least year, month, and day being required.
         mapper : dict-like or function, default None
-            Rename fields/columns after loading. See
-            ``pandas.DataFrame.rename`` for details.
+            Dict-like or function transformations to apply to column names before
+            creating object. The simplest approach is to provide a dict of the form
+            ``{'input_name': 'output_name', ...}``
         kwargs
             Additional keyword arguments to be passed to ``pandas.read_excel``.
 
         Returns
         -------
         GSolveTable
+
+        See Also
+        --------
+        pandas.read_excel : For available ``kwargs`` .
+        pandas.DataFrame.rename : For full details of `mapper`` argument.
         """
         _sheet_name: str | int | list[str | int]
         if sheet_name is None:
@@ -385,16 +393,8 @@ class GSolveTable:
                 )
         else:
             _sheet_name = sheet_name
+
         df = read_excel_worksheet(excel_file, sheet_name=_sheet_name, **kwargs)
-        df = normalize_field_names(df)
-
-        for f in cls.known_fields():
-            if f not in df.columns:
-                legacy_name = cls._known_fields[f].legacy_name
-                if legacy_name is not None and legacy_name in df.columns:
-                    cols = {legacy_name: f}
-                    df = df.rename(columns=cols)
-
         return cls.from_dataframe(
             df,
             use_index=False,
@@ -410,7 +410,7 @@ class GSolveTable:
         expand_datetime: str | None = None,
         drop_datetime: bool = False,
         bool_to_int: bool = False,
-        include_unknown_fields: bool = False,
+        include_unknown_fields: bool = True,
         **kwargs,
     ) -> None:
         """Write data to a csv file.
