@@ -18,14 +18,13 @@
 
 """Base class and function definitions for Gsolve data structures."""
 
-import abc
-import copy
+from dask.array import ma
+
 import dataclasses
 import warnings
 from collections.abc import Callable
 from copy import deepcopy
-from types import MappingProxyType
-from typing import Any, ClassVar, Protocol, Self
+from typing import Any, Self, ClassVar
 
 import numpy as np
 import pandas as pd
@@ -401,8 +400,12 @@ class GSolveTable(_HasKnownFields, abc.ABC):
         The primary data storage object.
     """
 
-    data: pd.DataFrame
-    params: GSolveParameters | None
+    _known_fields: ClassVar[dict[str, DataFieldSpecification]]
+    _default_excel_sheet_name: ClassVar[str | tuple[str, ...]] = ""
+
+    def __init__(self) -> None:
+        self.data: _pd.DataFrame
+        pass
 
     def __repr__(self) -> str:
         rval = []
@@ -658,10 +661,9 @@ class GSolveTable(_HasKnownFields, abc.ABC):
             are [year, month, day, hour, minute, second, microsecond, nanosecond],
             with at least year, month, and day being required.
         mapper : dict-like or function, default None
-            Dict-like or function transformations to apply to column names before.
-            Allows non-standard column/field names to be corrected prior to
-            object creation. The simplest use case is to provide a dict of
-            input_name, output_name pairs e.g. ``{'lat': 'latitude', ...}``
+            Dict-like or function transformations to apply to column names before
+            creating object. The simplest approach is to provide a dict of the form
+            ``{'input_name': 'output_name', ...}``
         kwargs
             Additional keyword arguments to be passed to ``pandas.read_excel``.
 
@@ -672,7 +674,7 @@ class GSolveTable(_HasKnownFields, abc.ABC):
         See Also
         --------
         pandas.read_excel : For available ``kwargs`` .
-        pandas.DataFrame.rename : For full details of ``mapper`` argument.
+        pandas.DataFrame.rename : For full details of `mapper`` argument.
         """
         if sheet_name is None:
             try:
@@ -684,9 +686,9 @@ class GSolveTable(_HasKnownFields, abc.ABC):
                 )
                 raise ValueError(msg) from None
         else:
-            sheet_name_ = sheet_name
+            _sheet_name = sheet_name
 
-        df = read_excel_worksheet(excel_file, sheet_name=sheet_name_, **kwargs)
+        df = read_excel_worksheet(excel_file, sheet_name=_sheet_name, **kwargs)
         return cls.from_dataframe(
             df,
             use_index=False,
@@ -702,6 +704,7 @@ class GSolveTable(_HasKnownFields, abc.ABC):
         expand_datetime: str | None = None,
         drop_datetime: bool = False,
         bool_to_int: bool = False,
+        include_unknown_fields: bool = True,
         **kwargs,
     ) -> None:
         """Write data to a csv file.
