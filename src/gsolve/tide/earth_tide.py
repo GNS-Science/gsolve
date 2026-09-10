@@ -16,6 +16,8 @@
 
 # Copyright (c) 2025 Earth Sciences New Zealand.
 
+"""Classes to calculate earth tide corrections."""
+
 import dataclasses
 import warnings
 from typing import Literal, Protocol, Self, overload, runtime_checkable

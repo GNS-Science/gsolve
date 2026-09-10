@@ -1012,12 +1012,12 @@ class GravityObservations(GSolveTable):
         expand_datetime: str | None = "datetime",
         drop_datetime: bool = False,
         bool_to_int: bool = True,
-        include_unknown_fields: bool | Sequence[str] = False,
+        include_unknown_fields: bool | Sequence[str] = True,
         active_only: bool = False,
     ) -> _pd.DataFrame:
         """Return a DataFrame suitable for writing to an excel or csv file."""  # noqa: DOC201
         cols = [c for c in self.known_fields() if c in self.data.columns]
-        if include_unknown_fields is not False:
+        if include_unknown_fields:
             if include_unknown_fields is True:
                 cols.extend(c for c in self.data.columns if c not in cols)
             elif is_list_like(include_unknown_fields):
@@ -1027,7 +1027,7 @@ class GravityObservations(GSolveTable):
                 if bad_fields:
                     raise ValueError(
                         "invalid 'include_unknown_fields' arg: "
-                        f"specified fields {bad_fields} not found in data"
+                        f"{bad_fields} not found in data"
                     )
                 cols.extend(c for c in include_unknown_fields if c not in cols)
 
@@ -1044,14 +1044,14 @@ class GravityObservations(GSolveTable):
             bool_to_int=bool_to_int,
         )
 
-    def write_to_csv(
+    def write_to_csv(  # ruff: ignore[undocumented-public-method]
         self,
         fname: FilePath,
         normalize_column_names: bool = True,
         expand_datetime: str | None = "datetime",
         drop_datetime: bool = False,
         bool_to_int: bool = True,
-        include_unknown_fields: bool | Sequence[str] = False,
+        include_unknown_fields: bool | Sequence[str] = True,
         active_only: bool = False,
         **kwargs,
     ) -> None:
@@ -1074,7 +1074,7 @@ class GravityObservations(GSolveTable):
         expand_datetime: str | None = "datetime",
         drop_datetime: bool = False,
         bool_to_int: bool = True,
-        include_unknown_fields: bool | Sequence[str] = False,
+        include_unknown_fields: bool | Sequence[str] = True,
         active_only: bool = False,
         if_workbook_exists: IfWorkbookExists = "error",
         if_sheet_exists: IfSheetExists = "error",

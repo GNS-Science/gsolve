@@ -16,6 +16,9 @@
 
 # Copyright (c) 2025 Earth Sciences New Zealand.
 
+
+"""Functions and classes to compute standard gravity anomalies."""
+
 import numpy as _np
 import pandas as _pd
 from numpy.typing import ArrayLike

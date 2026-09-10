@@ -236,13 +236,6 @@ class GravitySites(GSolveTable):
             sheet_name = list(cls._default_excel_sheet_name)
 
         df = read_excel_worksheet(excel_file, sheet_name, **kwargs)
-        df = normalize_field_names(df)
-
-        for f in cls.known_fields():
-            if f not in df.columns:
-                legacy_name = cls._known_fields[f].legacy_name
-                if legacy_name is not None and legacy_name in df.columns:
-                    df = df.rename(columns={legacy_name: f})
 
         return cls.from_dataframe(
             df,
@@ -422,7 +415,7 @@ class GravitySites(GSolveTable):
         self,
         normalize_column_names: bool = True,
         bool_to_int: bool = True,
-        include_unknown_fields: bool = False,
+        include_unknown_fields: bool = True,
     ) -> _pd.DataFrame:
         """
         Return GravitySite data as a DataFrame suitable for writing to an excel or csv file.
@@ -433,7 +426,7 @@ class GravitySites(GSolveTable):
             If True, convert column names to snake case.
         bool_to_int : bool, default=True
             If True, convert boolean True/False to 1/0.
-        include_unknown_fields : bool, default=False
+        include_unknown_fields : bool, default True
             If True, include columns that are not defined as known fields.
 
         Returns
@@ -458,7 +451,7 @@ class GravitySites(GSolveTable):
         csv_file: FilePath,
         normalize_column_names: bool = True,
         bool_to_int: bool = True,
-        include_unknown_fields: bool = False,
+        include_unknown_fields: bool = True,
         **kwargs,
     ) -> None:
         """Write data DataFrame to csv file.
@@ -471,7 +464,7 @@ class GravitySites(GSolveTable):
             Convert columns name to snake case.
         bool_to_int : bool, default True
             Convert boolean True/False to 1,0.
-        include_unknown_fields : bool, default False
+        include_unknown_fields : bool, default True
             Include columns that are not defined as known fields.
         kwargs
             Additional keyword arguments passed to ``pandas.DataFrame.to_csv``.
@@ -496,7 +489,7 @@ class GravitySites(GSolveTable):
         sheet_name: str | None = None,
         normalize_column_names: bool = True,
         bool_to_int: bool = True,
-        include_unknown_fields: bool = False,
+        include_unknown_fields: bool = True,
         if_workbook_exists: IfWorkbookExists = "error",
         if_sheet_exists: IfSheetExists = "error",
         **kwargs,
@@ -514,7 +507,7 @@ class GravitySites(GSolveTable):
             Convert columns name to snake case.
         bool_to_int : bool, default True
             Convert boolean True/False to 1,0.
-        include_unknown_fields : bool, default False
+        include_unknown_fields : bool, default True
             Include fields not in the known fields.
         if_workbook_exists : {"error", "replace", "append"}, default "error"
             Behaviour if the excel file already exists.
@@ -784,7 +777,7 @@ class ReferenceGravity(GSolveTable):
     def _get_writable_df(
         self,
         normalize_column_names: bool = True,
-        include_unknown_fields: bool = False,
+        include_unknown_fields: bool = True,
         bool_to_int: bool = True,
     ) -> _pd.DataFrame:
         """
@@ -796,7 +789,7 @@ class ReferenceGravity(GSolveTable):
             If True, convert column names to snake case.
         bool_to_int : bool, default=True
             If True, convert boolean True/False to 1/0.
-        include_unknown_fields : bool, default=False
+        include_unknown_fields : bool, default True
             If True, include columns that are not defined as known fields.
 
         Returns
@@ -819,7 +812,7 @@ class ReferenceGravity(GSolveTable):
         csv_file: FilePath,
         normalize_column_names: bool = True,
         bool_to_int: bool = True,
-        include_unknown_fields: bool = False,
+        include_unknown_fields: bool = True,
         **kwargs,
     ) -> None:
         """Write data to a csv file.
@@ -832,7 +825,7 @@ class ReferenceGravity(GSolveTable):
             Convert columns name to snake case.
         bool_to_int : bool, default True
             Convert boolean True/False to 1,0.
-        include_unknown_fields : bool, default False
+        include_unknown_fields : bool, default True
             Include fields not in the known fields.
         kwargs
             Additional keyword arguments passed to ``pandas.DataFrame.to_csv``.
@@ -856,7 +849,7 @@ class ReferenceGravity(GSolveTable):
         sheet_name: str | None = None,
         normalize_column_names: bool = True,
         bool_to_int: bool = True,
-        include_unknown_fields: bool = False,
+        include_unknown_fields: bool = True,
         if_workbook_exists: IfWorkbookExists = "error",
         if_sheet_exists: IfSheetExists = "error",
         **kwargs,
@@ -873,7 +866,7 @@ class ReferenceGravity(GSolveTable):
             Convert columns name to snake case.
         bool_to_int : bool, default True
             Convert boolean True/False to 1,0.
-        include_unknown_fields : bool, default False
+        include_unknown_fields : bool, default True
             Include fields not in the known fields.
         if_workbook_exists : {"error", "replace", "append"}, default "error"
             Behaviour if the excel file already exists.
