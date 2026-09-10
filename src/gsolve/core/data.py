@@ -637,7 +637,7 @@ class GSolveTable(_HasKnownFields, abc.ABC):
     def from_excel(
         cls,
         excel_file: FilePath,
-        sheet_name: str | int | list[str | int] | tuple[str] | None = None,
+        sheet_name: str | int | list[str | int] | None = None,
         ignore_unknown_fields: bool = False,
         parse_split_datetime: bool = True,
         mapper: Renamer | None = None,
@@ -661,9 +661,10 @@ class GSolveTable(_HasKnownFields, abc.ABC):
             are [year, month, day, hour, minute, second, microsecond, nanosecond],
             with at least year, month, and day being required.
         mapper : dict-like or function, default None
-            Dict-like or function transformations to apply to column names before
-            creating object. The simplest approach is to provide a dict of the form
-            ``{'input_name': 'output_name', ...}``
+            Dict-like or function transformations to apply to column names before.
+            Allows non-standard column/field names to be corrected prior to
+            object creation. The simplest use case is to provide a dict of
+            input_name, output_name pairs e.g. ``{'lat': 'latitude', ...}``
         kwargs
             Additional keyword arguments to be passed to ``pandas.read_excel``.
 
@@ -674,7 +675,7 @@ class GSolveTable(_HasKnownFields, abc.ABC):
         See Also
         --------
         pandas.read_excel : For available ``kwargs`` .
-        pandas.DataFrame.rename : For full details of `mapper`` argument.
+        pandas.DataFrame.rename : For full details of ``mapper`` argument.
         """
         if sheet_name is None:
             try:
