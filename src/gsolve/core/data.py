@@ -263,12 +263,19 @@ class GSolveTable:
             are [year, month, day, hour, minute, second, microsecond, nanosecond],
             with at least year, month, and day being required.
         mapper : dict-like or function, default None
-            Rename input fields/columns prior to loading. See
-            ``pandas.DataFrame.rename`` for details.
+            Dict-like or function transformations to apply to column names before.
+            Allows non-standard column/field names to be corrected prior to
+            object creation. The simplest use case is to provide a dict of
+            input_name, output_name pairs e.g. ``{'lat': 'latitude', ...}``
 
         Returns
         -------
         GSolveTable
+
+        See Also
+        --------
+        pandas.read_excel : For available ``kwargs`` .
+        pandas.DataFrame.rename : For full details of ``mapper`` argument.
         """
         if use_index:
             df = df.reset_index()
@@ -322,14 +329,21 @@ class GSolveTable:
             are [year, month, day, hour, minute, second, microsecond, nanosecond],
             with at least year, month, and day being required.
         mapper : dict-like or function, default None
-            Rename input fields/columns prior to loading. See
-            ``pandas.DataFrame.rename`` for details.
+            Dict-like or function transformations to apply to column names before.
+            Allows non-standard column/field names to be corrected prior to
+            object creation. The simplest use case is to provide a dict of
+            input_name, output_name pairs e.g. ``{'lat': 'latitude', ...}``
         kwargs
             Additional keyword arguments to be passed to ``pandas.read_csv``.
 
         Returns
         -------
         GSolveTable
+
+        See Also
+        --------
+        pandas.read_csv : For available ``kwargs`` .
+        pandas.DataFrame.rename : For full details of ``mapper`` argument.
         """
         return cls.from_dataframe(
             _pd.read_csv(csv_file, **kwargs),
@@ -344,7 +358,7 @@ class GSolveTable:
         cls,
         excel_file: FilePath,
         sheet_name: str | int | list[str | int] | None = None,
-        ignore_unknown_fields: bool = True,
+        ignore_unknown_fields: bool = False,
         parse_split_datetime: bool = True,
         mapper: Renamer | None = None,
         **kwargs,
@@ -367,9 +381,10 @@ class GSolveTable:
             are [year, month, day, hour, minute, second, microsecond, nanosecond],
             with at least year, month, and day being required.
         mapper : dict-like or function, default None
-            Dict-like or function transformations to apply to column names before
-            creating object. The simplest approach is to provide a dict of the form
-            ``{'input_name': 'output_name', ...}``
+            Dict-like or function transformations to apply to column names before.
+            Allows non-standard column/field names to be corrected prior to
+            object creation. The simplest use case is to provide a dict of
+            input_name, output_name pairs e.g. ``{'lat': 'latitude', ...}``
         kwargs
             Additional keyword arguments to be passed to ``pandas.read_excel``.
 
@@ -380,7 +395,7 @@ class GSolveTable:
         See Also
         --------
         pandas.read_excel : For available ``kwargs`` .
-        pandas.DataFrame.rename : For full details of `mapper`` argument.
+        pandas.DataFrame.rename : For full details of ``mapper`` argument.
         """
         _sheet_name: str | int | list[str | int]
         if sheet_name is None:
