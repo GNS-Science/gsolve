@@ -221,8 +221,10 @@ class GravitySites(GSolveTable):
             Use ``GravitySites.known_fields()`` to return a list of the
             defined fields
         mapper : dict or function, optional
-            Dict-like or function transformations to apply to column names before
-            creating object. See ``DataFrame.rename`` method for full documentation
+            Dict-like or function transformations to apply to column names before.
+            Allows non-standard column/field names to be corrected prior to
+            object creation. The simplest use case is to provide a dict of
+            input_name, output_name pairs e.g. ``{'lat': 'latitude', ...}``
         kwargs :
             Keyword arguments are passed to ``pandas.read_excel`` method.
 
@@ -231,6 +233,10 @@ class GravitySites(GSolveTable):
         Sites
             The GravitySites object created from the excel worksheet.
 
+        See Also
+        --------
+        pandas.read_excel : For available ``kwargs`` .
+        pandas.DataFrame.rename : For full details of ``mapper`` argument.
         """
         if sheet_name is None:
             sheet_name = list(cls._default_excel_sheet_name)
