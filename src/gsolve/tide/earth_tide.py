@@ -66,8 +66,7 @@ class EarthTideCorrectionProvider(Protocol):
         elev: FloatArray,
         date_time: DatetimeArray,
         site_id: SiteIDArray | None = None,
-        **kwargs: Any,
-    ) -> NDArray[np.float64]: ...
+    ) -> NDArray[_np.float64]: ...
 
     def identifier(self, **kwargs) -> str: ...  # ruff: ignore[undocumented-public-method]
 
@@ -96,7 +95,7 @@ def gravimetric_factor(
     .. [1] Agnew, D. C. (2007). 3.06 Earth Tides. In Treatise on Geophysics (pp. 163-195).
        Elsevier. https://doi.org/10.1016/B978-044452748-6.00056-0
     """
-    h2 = to_1d_ndarray(h2, dtype=float).astype(float)
+    h2 = to_1d_ndarray(h2).astype(float)
     k2 = to_1d_ndarray(k2, expected_size=h2.size).astype(float)
     gfactor = 1 + h2 - 1.5 * k2
     return gfactor[0] if gfactor.size == 1 else gfactor
@@ -229,7 +228,9 @@ class LongmanTidalCorrection(EarthTideCorrectionProvider):
             elev = to_1d_ndarray(elev, expected_size=lon.size).astype(float)
         except ValueError:
             msg = "Invalid lat, lon, or elev: must be equal sized 1d arrays of floats"
-            raise ValueError(msg) from None
+            raise ValueError(
+                msg
+            )
 
         T = _decimal_julian_century(dt)
         t0 = _decimal_hour_of_day(dt)
@@ -464,20 +465,31 @@ class LongmanTidalCorrection(EarthTideCorrectionProvider):
         valid_methods = {"correction", "acceleration"}
         if method not in valid_methods:
             msg = f"method parameter must be one of {valid_methods}, not '{method}'."
-            raise ValueError(msg)
+            raise ValueError(
+                msg
+            )
 
         try:
-            step = pd.Timedelta(step)
+            step = _pd.Timedelta(step)
+            if not isinstance(step, _pd.Timedelta):
+                msg_0 = "step must be a valid timedelta or timedelta string."
+                raise ValueError(msg_0)
         except ValueError as e:
             msg = f"error parsing step: {e}"
             raise ValueError(msg) from e
 
-        t0 = convert_single_timestamp_arg(
-            starttime, allow_nat=False, err_prefix="error parsing starttime"
-        )
-        t1 = convert_single_timestamp_arg(
-            endtime, allow_nat=False, err_prefix="error parsing endtime"
-        )
+        try:
+            t0 = to_naive_utc_datetime(starttime, allow_nat=False)
+            t1 = to_naive_utc_datetime(endtime, allow_nat=False)
+            if not isinstance(t0, _pd.Timestamp) or not isinstance(t1, _pd.Timestamp):
+                msg_0 = "not convertible to Timestamp."
+                raise ValueError(msg_0)
+            if t0 >= t1:
+                msg_0 = "starttime is after or equal to endtime."
+                raise ValueError(msg_0)
+        except ValueError as e:
+            msg = f"error parsing starttime and endtime: {e}"
+            raise ValueError(msg) from None
 
         if t0 >= t1:
             msg = "starttime is after or equal to endtime."
@@ -550,17 +562,19 @@ def _decimal_julian_century(
     pandas.to_datetime : Convert argument to datetime.
 
     """
-    dt_ = to_naive_utc_datetime(dt, allow_nat=False, **kwargs)
-    if dt_ is None or isinstance(dt_, NaTType):
+    _dt = to_naive_utc_datetime(dt, allow_nat=False, **kwargs)
+    if _dt is None or isinstance(_dt, NaTType):
         msg = "dt cannot be NaT or None."
-        raise TypeError(msg)
-    if isinstance(dt_, pd.Timestamp):
-        dt_ = pd.DatetimeIndex([dt_])
-    elif isinstance(dt_, (pd.DatetimeIndex, pd.Series)):
-        dt_ = pd.DatetimeIndex(dt_)
+        raise ValueError(msg)
+    if isinstance(_dt, _pd.Timestamp):
+        _dt = _pd.DatetimeIndex([_dt])
+    elif isinstance(_dt, (_pd.DatetimeIndex, _pd.Series)):
+        _dt = _pd.DatetimeIndex(_dt)
     else:
         msg = "dt could not be resolved to a datetime, DatetimeIndex, Series, or array-like of datetimes."
-        raise TypeError(msg)
+        raise ValueError(
+            msg
+        )
 
     julian_century_origin = pd.Timestamp("1899-12-31T12:00:00", tz=None)
     td_seconds = (dt_ - julian_century_origin).total_seconds()
@@ -593,13 +607,15 @@ def _decimal_hour_of_day(
         The decimal hour. This is a scalar if ``date_time`` is a single value.
 
     """
-    dt = to_naive_utc_datetime(date_time, allow_nat=False)
-    if isinstance(dt, NaTType) or dt is None:
+    _dt = to_naive_utc_datetime(date_time, allow_nat=False)
+    if isinstance(_dt, NaTType) or _dt is None:
         msg = "date_time cannot be NaT or None."
         raise ValueError(msg)
-    if not isinstance(dt, (pd.Timestamp, pd.Series, pd.DatetimeIndex)):
+    if not isinstance(_dt, (_pd.Timestamp, _pd.Series, _pd.DatetimeIndex)):
         msg = "date_time could not be resolved to a datetime, DatetimeIndex, Series, or array-like of datetimes."
-        raise TypeError(msg)
+        raise ValueError(
+            msg
+        )
 
     if isinstance(dt, pd.Timestamp):
         dt = pd.DatetimeIndex([dt])
@@ -668,13 +684,17 @@ class EternaTidalParameters:
         **kwargs,
     ) -> None:
 
-        freq_start = to_1d_ndarray(freq_start, dtype=float)
-        s = freq_start.size
-        freq_stop = to_1d_ndarray(freq_stop, expected_size=s, dtype=float)
-        amplitude = to_1d_ndarray(amplitude, expected_size=s, dtype=float)
-        phase_lead = to_1d_ndarray(phase_lead, expected_size=s, dtype=float)
-        if wave_group is not None:
-            wave_group = to_1d_ndarray(wave_group, expected_size=s, dtype=str)
+        try:
+            freq_start = to_1d_ndarray(freq_start).astype(float)
+            s = freq_start.size
+            freq_stop = to_1d_ndarray(freq_stop, expected_size=s).astype(float)
+            amplitude = to_1d_ndarray(amplitude, expected_size=s).astype(float)
+            phase_lead = to_1d_ndarray(phase_lead, expected_size=s).astype(float)
+            if wave_group is not None:
+                wave_group = to_1d_ndarray(wave_group, expected_size=s).astype(str)
+        except ValueError as e:
+            msg = f"Error parsing tidal parameters: {e}"
+            raise ValueError(msg)
 
         self.data = pd.DataFrame.from_dict(
             data={
@@ -864,7 +884,9 @@ class EternaTidalParameters:
         df = pd.read_excel(fname, sheet_name=sheet_name)
         if isinstance(df, dict):
             msg = "Excel file contains multiple sheets. Please specify sheet_name."
-            raise ValueError(msg)  # ruff: ignore[type-check-without-type-error]
+            raise ValueError(
+                msg
+            )
 
         return cls.from_dataframe(df)
 
@@ -1131,23 +1153,20 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
             duration_uncorr = int(
                 np.ceil(pd.to_timedelta(duration).total_seconds() / 3600.0)
             )
-        if duration_uncorr <= 0:
-            msg = f"invalid duration {duration}: must be a positive timedelta or number of hours."
-            raise ValueError(msg)
-
-        # pygtide outputs corrections from start of UTC day only
-        # so we must manipulate supplied starttime and duration
-        # such that the generated tides cover the specified interval
-        orig_endtime = starttime_uncorr + pd.Timedelta(hours=duration_uncorr)
-
-        duration_final = int(
-            np.ceil((orig_endtime - starttime).total_seconds() / 3600.0)
-        )
+        if _duration_uncorr <= 0:
+            msg = "duration must be a positive timedelta or number of hours."
+            raise ValueError(
+                msg
+            )
+        _orig_endtime = _starttime_uncorr + _pd.Timedelta(hours=_duration_uncorr)
+        _duration = int(_np.ceil((_orig_endtime - _starttime).total_seconds() / 3600.0))
 
         sample_interval = int(sample_interval)
         if sample_interval <= 0:
-            msg = f"invalid sample_interval {sample_interval}: must be a positive integer number of seconds."
-            raise ValueError(msg)
+            msg = "sample_interval must be a positive integer number of seconds."
+            raise ValueError(
+                msg
+            )
 
         with warnings.catch_warnings():
             self._pgt.msg = False
@@ -1166,10 +1185,10 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
                 **this_run_kwargs,
             )
 
-        tides_df = self._pgt.results()
-        if not isinstance(tides_df, pd.DataFrame):
+        df = self._pgt.results()
+        if not isinstance(df, _pd.DataFrame):
             msg = "No results returned from pygtide prediction."
-            raise ValueError(msg)  # ruff: ignore[type-check-without-type-error]
+            raise ValueError(msg)
 
         normalised_cols = ["datetime", "signal", "tide", "pole_tide", "lod_tide"]
         df = df.rename(
@@ -1244,6 +1263,9 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
                 "site_id is a required parameter for "
                 "EternaPredictTidalCorrection tidal_correction method."
             )
+            raise ValueError(
+                msg
+            )
         if isinstance(site_id, str):
             site_id = [site_id] * lat.size
         site_id = to_1d_ndarray(site_id, expected_size=lat.size, dtype=str)
@@ -1274,19 +1296,17 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
                 unit=unit,
             ).mul(-1.0)
 
-            if not isinstance(ts.index, pd.DatetimeIndex):
+            if not isinstance(ts.index, _pd.DatetimeIndex):
                 msg = "Unexpected time series index type from pygtide results."
-                raise ValueError(msg)  # ruff: ignore[type-check-without-type-error]
+                raise ValueError(
+                    msg
+                )
             ts = ts.set_index(ts.index.round(freq="1s"))
 
-            if not np.isnan(corrs[site_mask]).all():
-                msg = (
-                    f"Some values for site {site_id}: have already been set: "
-                    "this should not happen"
-                )
+            if not (corrs[site_mask] == 0.0).all():
+                msg = "Unexpected non-zero values in corrs for site mask."
                 raise ValueError(msg)
-
-            corrs[site_mask] = np.interp(
+            corrs[site_mask] = _np.interp(
                 x=date_time[site_mask],
                 xp=ts.index,
                 fp=ts["signal"].to_numpy(),

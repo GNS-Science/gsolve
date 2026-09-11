@@ -249,7 +249,7 @@ def compute_free_air_anomaly(
     if any(_args_contain_nulls(absolute_gravity, normal_gravity, free_air_correction)):
         msg = "inputs contain nan's"
         raise ValueError(msg)
-    return np.atleast_1d(
+    return _np.atleast_1d(
         to_1d_ndarray_or_float(absolute_gravity)
         - (
             to_1d_ndarray_or_float(normal_gravity)
@@ -419,7 +419,9 @@ class GravityAnomalies(GSolveTable):
             abs_grav_df = absolute_gravity.to_frame(name="absolute_gravity")
         else:
             msg = f"invalid type for arg 'absolute_gravity': {type(absolute_gravity)}"
-            raise TypeError(msg)
+            raise TypeError(
+                msg
+            )
         if abs_grav_df is None:
             msg_0 = "absolute_gravity has no site_solution data"
             raise ValueError(msg_0)
@@ -458,12 +460,15 @@ class GravityAnomalies(GSolveTable):
                 "invalid type for corrections_provider argument: "
                 f"{type(corrections_parameters).__name__}"
             )
-            raise TypeError(msg)
+            raise TypeError(
+                msg
+            )
 
         # ensure we have entry in `sites` for all absolute gravity data sites
         if not abs_grav_df.index.isin(sites_df.index).all():
-            msg_0 = (
-                "absolute_gravity has sites with no corresponding site info in sites"
+            msg_0 = "absolute_gravity has sites with no corresponding site info in sites"
+            raise ValueError(
+                msg_0
             )
             raise ValueError(msg_0)
 
@@ -478,8 +483,9 @@ class GravityAnomalies(GSolveTable):
             corrs = corr_provider.compute(sites=sites_df)
         else:
             if not self.data.index.isin(precomputed_corrections.data.index).all():
-                msg_0 = (
-                    "precomputed corrections do not provide corrections for all sites"
+                msg_0 = "precomputed corrections do not provide corrections for all sites"
+                raise ValueError(
+                    msg_0
                 )
                 raise ValueError(msg_0)
             precomputed_corrections.data = precomputed_corrections.data.loc[
@@ -497,7 +503,9 @@ class GravityAnomalies(GSolveTable):
                     "required TerrainCorrectionData: "
                     f"got {type(terrain_corrections).__name__}"
                 )
-                raise TypeError(msg)
+                raise TypeError(
+                    msg
+                )
             tc = terrain_corrections.get_corrections(
                 self.data.index, if_missing="fill", fill_value=np.nan
             )

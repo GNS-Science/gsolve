@@ -151,7 +151,9 @@ class TCorrMethods:
                     "GravitySites object missing required point columns: "
                     f"{self.xdim}, {self.ydim}"
                 )
-                raise TypeError(msg)
+                raise TypeError(
+                    msg
+                )
             x = points.data[self.xdim].to_numpy()
             y = points.data[self.ydim].to_numpy()
 
@@ -435,9 +437,11 @@ class TCorrMethods:
         np.ndarray
             A boolean array of same dimensions as the calling DataArray.
         """
-        if mask_type not in {"radial", "rectangular"}:
+        if mask_type not in ("radial", "rectangular"):
             msg = f"mask_type must be 'radial' or 'rectangular', not '{mask_type}'"
-            raise ValueError(msg)
+            raise ValueError(
+                msg
+            )
         if max_dist is not None and max_dist <= min_dist:
             msg = f"invalid {max_dist=}, must be > {min_dist=}"
             raise ValueError(msg)

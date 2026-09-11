@@ -173,7 +173,9 @@ class GSolveResults:
                     "calibration factor was not calculated but "
                     "calculate_calibration_factor is True."
                 )
-                raise ValueError(msg)
+                raise ValueError(
+                    msg
+                )
             # store the calculated calibration factor in the params object
             self.params.calculated_calibration_factor = calibration_factor
 
@@ -266,7 +268,7 @@ class GSolveResults:
                 unit_label = "mGal"
                 precision = ".04f"
         else:
-            msg = f"unrecognized unit '{unit}'. Must be 'mGal' or 'uGal'"
+            msg = f"unrecgnised unit '{unit}'. Must be 'mGal' or 'uGal'"
             raise ValueError(msg)
 
         df_loops: list[str] = [str(l) for l in df["loop"].unique()]
@@ -402,7 +404,7 @@ class GSolveResults:
                 unit_label = "mGal"
                 precision = ".04f"
         if unit_label is None:
-            msg = f"unrecognized unit '{unit}'. Must be 'mGal' or 'uGal'"
+            msg = f"unrecgnised unit '{unit}'. Must be 'mGal' or 'uGal'"
             raise ValueError(msg)
 
         x = df[x_col].to_numpy()

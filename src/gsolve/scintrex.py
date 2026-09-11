@@ -287,16 +287,27 @@ class CG6Data(ScintrexData):
             # if this_dtype is float:
             try:
                 df[c] = df[c].astype(this_dtype)
-            except Exception as err_read:
-                if on_error == "raise":
+            except Exception:
+                if on_error in ["warn", "ignore"]:
+                    if on_error == "warn":
+                        warnings.warn(
+                            f"bad data encountered in column '{c}', setting to nan"
+                        )
+                    try:
+                        df[c] = (
+                            df[c]
+                            .replace(to_replace=["--", "****", "******"], value=np.nan)
+                            .astype(this_dtype)
+                        )
+                    except Exception as err:
+                        msg = f"unfixable error converting data in column '{c}' to {this_dtype}"
+                        raise TypeError(
+                            msg
+                        ) from err
+                else:
                     msg = f"error converting data in column '{c}' to {this_dtype}"
-                    raise TypeError(msg) from err_read
-
-                try:
-                    df[c] = (
-                        df[c]
-                        .replace(to_replace=["--", "****", "******"], value=np.nan)
-                        .astype(this_dtype)
+                    raise TypeError(
+                        msg
                     )
                 except Exception as err_cant_replace:
                     msg = f"unfixable error converting data in column '{c}' to {this_dtype}"
@@ -376,10 +387,6 @@ class CG6Data(ScintrexData):
         file_data = _slurp_scintrex_text_file(cg6_file)
         if not file_data:
             msg = f"No data read from {cg6_file}"
-            raise ValueError(msg)
-
-        if not file_data[0].startswith("/"):
-            msg = f"No header data found in {cg6_file}"
             raise ValueError(msg)
 
         idx_column_names = 0
@@ -471,13 +478,16 @@ class CG6Data(ScintrexData):
             Name of the output column.
         """
         if loop_format and "LOOP" not in loop_format:
-            raise ValueError("format_str must contain 'LOOP'.")
+            msg = "format_str must contain 'LOOP'."
+            raise ValueError(msg)
 
         # ensure only one method is used
         args = (field, array, datetimes, time_gap)
         if all(a is None for a in args):
             msg = "At least one of 'field', 'array', 'datetimes' or 'time_gap' must be set."
-            raise ValueError(msg)
+            raise ValueError(
+                msg
+            )
         if sum(a is not None for a in args) > 1:
             msg = "Only one of 'field', 'array', or 'datetimes' can be set."
             raise ValueError(msg)
@@ -485,7 +495,9 @@ class CG6Data(ScintrexData):
         if field is not None:
             if field not in self.data.columns:
                 msg = f"arg {field=}, but not column name '{field}' found in obj.data."
-                raise KeyError(msg)
+                raise KeyError(
+                    msg
+                )
             self.data[output_column] = self.data[field].astype(str)
             return
 
@@ -493,7 +505,9 @@ class CG6Data(ScintrexData):
             array = np.atleast_1d(array)
             if len(array) != len(self.data):
                 msg_0 = "Length of 'array' must match the number of observations."
-                raise ValueError(msg_0)
+                raise ValueError(
+                    msg_0
+                )
             self.data[output_column] = array.astype(str).tolist()
             return
 
@@ -511,7 +525,9 @@ class CG6Data(ScintrexData):
                 )
             else:
                 msg_0 = "datetimes must be a dictionary, Series or array-like object."
-                raise TypeError(msg_0)
+                raise TypeError(
+                    msg_0
+                )
 
             if not dates.is_monotonic_increasing:
                 msg_0 = "datetimes must be sorted in increasing order."
@@ -521,7 +537,9 @@ class CG6Data(ScintrexData):
                     f"First datetime in 'datetimes' ({dates[0]}) must be <= "
                     f"earliest observation time ({self.data.datetime.min()})"
                 )
-                raise ValueError(msg)
+                raise ValueError(
+                    msg
+                )
             if dates[-1] < self.data["datetime"].max():
                 t_max = self.data["datetime"].max() + pd.Timedelta(seconds=1)
                 dates = pd.DatetimeIndex([*dates.to_list(), t_max])
@@ -617,8 +635,9 @@ class CG6Data(ScintrexData):
             include_non_standard_fields = [str(f) for f in include_non_standard_fields]
             missing = [f for f in include_non_standard_fields if f not in df.columns]
             if missing:
+                msg = f"Requested non-standard fields not found in data: {missing}"
                 raise KeyError(
-                    f"Requested non-standard fields not found in data: {missing}"
+                    msg
                 )
 
             to_drop = set(df.columns) - set(
@@ -670,9 +689,11 @@ class CG6Data(ScintrexData):
         GravitySites
 
         """
-        if coords_source not in {"user", "gps"}:
+        if coords_source not in ("user", "gps"):
             msg = f"coords_source must be 'user' or 'gps', not {coords_source}."
-            raise ValueError(msg)
+            raise ValueError(
+                msg
+            )
 
         coord_cols = [f"{c}{coords_source}" for c in ("lat", "lon", "elev")]
         agg_method = "mean" if coords_source == "gps" else "first"
@@ -732,9 +753,11 @@ class CG6Data(ScintrexData):
         drift_zero_time = to_naive_utc_datetime(drift_zero_time)
         drift_rate = float(drift_rate)
 
-        if not isinstance(drift_zero_time, pd.Timestamp):
+        if not isinstance(_drift_zero_time, pd.Timestamp):
             msg = "drift_zero_time could not be converted to a valid Timestamp."
-            raise TypeError(msg)
+            raise ValueError(
+                msg
+            )
 
         drift_corr = (
             (self.data["datetime"] - drift_zero_time)

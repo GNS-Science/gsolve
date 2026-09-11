@@ -300,7 +300,9 @@ class GravitySites(GSolveTable):
             site_id = [str(s) for s in site_id]
         else:
             msg = "site_id must be None, a string, or an array-like of strings"
-            raise TypeError(msg)
+            raise TypeError(
+                msg
+            )
 
         self._check_bad_site_ids(site_id)
 
@@ -678,12 +680,16 @@ class GravitySites(GSolveTable):
                 f"invalid type for other: "
                 f"expected {type(self).__name__}, got {type(other)}"
             )
-            raise TypeError(msg)
+            raise TypeError(
+                msg
+            )
 
         valid_duplicates_args = {"drop", "error"}
         if if_duplicate not in valid_duplicates_args:
             msg = f"duplicates must be one of {valid_duplicates_args}, not '{if_duplicate}'"
-            raise ValueError(msg)
+            raise ValueError(
+                msg
+            )
 
         other_df = other.data
         is_duplicate = other_df.index.isin(self.data.index)
@@ -764,14 +770,22 @@ class ReferenceGravity(GSolveTable):
                 "creating ReferenceGravity object: "
                 f"site_id field contains duplicated values: {duplicates}"
             )
-            raise ValueError(msg)
+            raise ValueError(
+                msg
+            )
 
         # catch empty site_id
-        if idx.isna().any() or (idx == "").any():  # ruff: ignore[compare-to-empty-string]
+        if idx.isna().any() or (idx == "").any():  # type: ignore[unresolved-attribute, ty:unresolved-attribute]
+            m = idx.isna() | (idx == "")
+            empty = _pd.Series(m)
+            empty = empty.loc[m.tolist()].index.to_list()
             msg = (
-                "creating ReferenceGravity object: site_id field contains empty values"
+                "creating ReferenceGravity object: "
+                f"site_id field contains empty values at rows: {empty}"
             )
-            raise ValueError(msg)
+            raise ValueError(
+                msg
+            )
 
         self.data = pd.DataFrame(index=idx, data=None)
         self.set_column("gravity", gravity)
@@ -783,7 +797,9 @@ class ReferenceGravity(GSolveTable):
                 "creating ReferenceGravity object: "
                 f"gravity field contains null values for sites: {nodata}"
             )
-            raise ValueError(msg)
+            raise ValueError(
+                msg
+            )
 
         for k, v in kwargs.items():
             self.set_column(k, v)
@@ -996,12 +1012,16 @@ class ReferenceGravity(GSolveTable):
                 f"invalid type for other: "
                 f"expected {type(self).__name__}, got {type(other)}"
             )
-            raise TypeError(msg)
+            raise TypeError(
+                msg
+            )
 
         valid_duplicates_args = {"drop", "error"}
         if if_duplicate not in valid_duplicates_args:
             msg = f"duplicates must be one of {valid_duplicates_args}, not '{if_duplicate}'"
-            raise ValueError(msg)
+            raise ValueError(
+                msg
+            )
 
         other_df = other.data
         is_duplicate = other_df.index.isin(self.data.index)

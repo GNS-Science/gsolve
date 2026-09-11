@@ -159,25 +159,12 @@ ignore = [
     "RET504",  # Allow variable assignment only for return
     "PT001",   # Conventions for parenthesis on pytest.fixture
     "D200",    # Allow single line docstrings in their own line
+    "B028",    # Allow no stacklevel in warnings.warn
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"examples/scripts/**" = [
-    "D",     # Docs not required for scripts
-    "DOC",   # ditto
-    "print", # Allow print() in scripts
-]
-"tests/**" = [
-    "missing-type-function-argument",                   # type annotations not required for func args
-    "missing-return-type-undocumented-public-function", # or public func return
-    "missing-return-type-private-function",             # or private func return
-    "D",                                                # Docstrings not required
-    "DOC",                                              # Docstrings not required
-    "no-self-use",                                      # allow unused self in test classes
-    "import-private-name",                              # permit import of private functions etc - we are need to test em
-    "pytest-raises-too-broad",                          # allow tests to catch exceptions without a 'match' arg
-    "pytest-warns-too-broad",                           # allow tests to catch warnings without a 'match' arg
-]
+"tests/**" = ["ANN001", "ANN201", "ANN202", "D", "DOC", "PLR6301"]
+"examples/scripts/**" = ["D100"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
@@ -230,3 +217,11 @@ notice = '''
 # SPDX-License-Identifier: GPLv3
 '''
 exclude = ["__init__.py"]
+
+
+[tool.ty.src]
+include = ["gsolve/", "examples/scripts/"]
+
+
+[tool.numpydoc_validation]
+checks = ["all", "EX01", "SA01"]
