@@ -237,43 +237,33 @@ class GravityObservations(GSolveTable):
 
     """
 
-    _known_fields: MappingProxyType[str, DataFieldSpecification] = MappingProxyType(
-        {
-            "site_id": COMMON_FIELDS["site_id"],
-            "datetime": COMMON_FIELDS["datetime"],
-            "meter_id": DataFieldSpecification(
-                "meter_id", str, "", True, legacy_name="meter"
-            ),
-            "loop": COMMON_FIELDS["loop"],
-            "active": COMMON_FIELDS["active"],
-            "meter_reading": DataFieldSpecification(
-                "meter_reading", float, np.nan, False, legacy_name="reading"
-            ),
-            "meter_reading_mgal": DataFieldSpecification(
-                "meter_reading_mgal", float, np.nan, False
-            ),
-            "loop_tdelta": DataFieldSpecification("loop_tdelta", float, np.nan, False),
-            "survey_tdelta": DataFieldSpecification(
-                "survey_tdelta", float, np.nan, False
-            ),
-            "calibration_factor": DataFieldSpecification(
-                "calibration_factor", float, 1.0, False
-            ),
-            "earth_tide_corr": DataFieldSpecification(
-                "earth_tide_corr", float, 0.0, False
-            ),
-            "ocean_load_corr": DataFieldSpecification(
-                "ocean_load_corr", float, 0.0, False
-            ),
-            "custom_corr": DataFieldSpecification("custom_corr", float, 0.0, False),
-            "gravity_corr": DataFieldSpecification(
-                "gravity_corr", float, np.nan, False
-            ),
-            "meter_reading_converter_id": DataFieldSpecification(
-                "meter_reading_converter_id", str, "NA", False
-            ),
-        }
-    )
+    _known_fields: dict[str, DataFieldSpecification] = {
+        "site_id": COMMON_FIELDS["site_id"],
+        "datetime": COMMON_FIELDS["datetime"],
+        "meter_id": DataFieldSpecification(
+            "meter_id", str, "", True, legacy_name="meter"
+        ),
+        "loop": COMMON_FIELDS["loop"],
+        "active": COMMON_FIELDS["active"],
+        "meter_reading": DataFieldSpecification(
+            "meter_reading", float, np.nan, False, legacy_name="reading"
+        ),
+        "meter_reading_mgal": DataFieldSpecification(
+            "meter_reading_mgal", float, np.nan, False
+        ),
+        "loop_tdelta": DataFieldSpecification("loop_tdelta", float, np.nan, False),
+        "survey_tdelta": DataFieldSpecification("survey_tdelta", float, np.nan, False),
+        "calibration_factor": DataFieldSpecification(
+            "calibration_factor", float, 1.0, False
+        ),
+        "earth_tide_corr": DataFieldSpecification("earth_tide_corr", float, 0.0, False),
+        "ocean_load_corr": DataFieldSpecification("ocean_load_corr", float, 0.0, False),
+        "custom_corr": DataFieldSpecification("custom_corr", float, 0.0, False),
+        "gravity_corr": DataFieldSpecification("gravity_corr", float, np.nan, False),
+        "meter_reading_converter_id": DataFieldSpecification(
+            "meter_reading_converter_id", str, "NA", False
+        ),
+    }
     _index_field: str = "obs_id"
     _default_excel_sheet_name: str | tuple[str, ...] = ("observations", "Survey Data")
 
@@ -377,7 +367,7 @@ class GravityObservations(GSolveTable):
         site_id_tstamp_labels = (
             self.data["site_id"].astype(str).str.cat(tstamps, sep=".")
         )
-        new_idx = pd.Index(site_id_tstamp_labels, name=self._index_field, dtype=str)
+        new_idx = pd.Index(siteid_tstamp_labels, name=self._index_field, dtype=str)
         return self._index_deduplicator(new_idx)
 
     @staticmethod
@@ -461,7 +451,7 @@ class GravityObservations(GSolveTable):
 
         elif is_list_like(idx) and isinstance(idx, Iterable):
             # a sequence will converted to index
-            new_idx = pd.Index([str(i) for i in idx], name=self._index_field, dtype=str)
+            new_idx = pd.Index(_idx, name=self._index_field, dtype=str)
 
         else:
             msg = f"invalid idx arg of type '{type(idx).__name__}'"
@@ -479,7 +469,8 @@ class GravityObservations(GSolveTable):
             msg = f"{len(dupes)} duplicated obs_id's : {dupes.unique().to_list()}"
 
             if duplicated_obs_id == "error":
-                raise ValueError(f"{msg}")
+                msg_0 = f"{msg}"
+                raise ValueError(msg_0)
             if duplicated_obs_id == "keep":
                 _warnings.warn(f"keeping {msg}")
             elif duplicated_obs_id == "rename":
@@ -616,10 +607,10 @@ class GravityObservations(GSolveTable):
         if t is None or pd.isna(t):
             self._fixed_time_datum = None
         else:
-            t = to_naive_utc_datetime(t)
-            if isinstance(t, pd.Timestamp):
-                self._fixed_time_datum = t
-            elif t is pd.NaT:
+            _t = to_naive_utc_datetime(t)
+            if isinstance(_t, pd.Timestamp):
+                self._fixed_time_datum = _t
+            elif _t is pd.NaT:
                 self._fixed_time_datum = None
             else:
                 msg = f"invalid fixed_time_datum of type '{type(t).__name__}'"
@@ -776,7 +767,7 @@ class GravityObservations(GSolveTable):
             If ``corrector`` does not implement the ``OceanLoadCorrectionProvider`` protocol.
         """
         if not isinstance(corrector, OceanLoadCorrectionProvider):
-            msg = "ocean_load_corrector must implement OceanLoadCorrectionProvider protocol"
+            msg = f"ocean_load_corrector must implement OceanLoadCorrectionProvider protocol"
             raise TypeError(msg)
 
         corrections = corrector.ocean_load_correction(
@@ -819,9 +810,9 @@ class GravityObservations(GSolveTable):
                 raise ValueError(msg)
 
         if self.data["meter_id"].nunique() > 1 and meter_id is None:  # ruff: ignore[pandas-nunique-constant-series-check]
-            raise ValueError(
-                "Multiple gravity meters found in data, must specify ``meter_id``"
-            )
+            msg = "Multiple gravity meters found in data, must specify ``meter_id``"
+            raise ValueError(msg)
+
         if meter_id is None:
             self.set_column(c_label, float(calibration_factor))
         else:
@@ -991,7 +982,8 @@ class GravityObservations(GSolveTable):
                 return [o]
             if isinstance(o, Iterable):
                 return [str(oi) for oi in o]
-            raise TypeError(f"invalid input of type '{type(o).__name__}'")
+            msg = f"invalid input of type '{type(o).__name__}'"
+            raise TypeError(msg)
 
         # parse all args first to check for errors before modifying data
         obs_id = _parse_inputs(obs_id)
@@ -1032,7 +1024,7 @@ class GravityObservations(GSolveTable):
         bool_to_int: bool = True,
         include_unknown_fields: bool | Sequence[str] = True,
         active_only: bool = False,
-    ) -> _pd.DataFrame:
+    ) -> pd.DataFrame:
         """Return a DataFrame suitable for writing to an excel or csv file."""  # ruff: ignore[docstring-missing-returns]
         cols = [c for c in self.known_fields() if c in self.data.columns]
         if include_unknown_fields:
@@ -1063,7 +1055,7 @@ class GravityObservations(GSolveTable):
             bool_to_int=bool_to_int,
         )
 
-    def write_to_csv(  # ruff: ignore[undocumented-public-method]
+    def write_to_csv(
         self,
         fname: FilePath,
         *,
@@ -1221,6 +1213,10 @@ class GravityObservations(GSolveTable):
         return fig, ax
 
     def _make_network(self, sites: GravitySites) -> pd.DataFrame:
+        df = self.data.assign(
+            group=self.data["site_id"].ne(self.data["site_id"].shift()).cumsum()
+        )
+
         station_order = (
             self.data.assign(
                 group=self.data["site_id"].ne(self.data["site_id"].shift()).cumsum()
@@ -1232,9 +1228,9 @@ class GravityObservations(GSolveTable):
         )
 
         # merge with 'site' object to get location information
-        network_df = station_order.merge(sites.data, on="site_id", how="inner").loc[
-            :, ["site_id", "loop", "latitude", "longitude"]
-        ]
+        network_df = pd.merge(
+            left=station_order, right=sites.data, on="site_id", how="inner"
+        ).loc[:, ["site_id", "loop", "latitude", "longitude"]]
         station_occupations = network_df.site_id.value_counts()
 
         return network_df, station_occupations
@@ -1351,9 +1347,9 @@ class GravityObservations(GSolveTable):
             ticks=list(site_id_to_int.values()), labels=list(site_id_to_int.keys())
         )
 
-    def loop_summary(self) -> _pd.DataFrame:
+    def loop_summary(self) -> pd.DataFrame:
         """Return a summary of the observations by loop."""  # ruff: ignore[docstring-missing-returns]
-        from gsolve.core._summary_functions import (
+        from gsolve.core._summary_functions import (  # ruff: ignore[import-outside-top-level]
             duration_hr,
             endtime_utc,
             n_sites,
@@ -1835,7 +1831,7 @@ class GravitySurvey:
         meter_ids = self.observations.data["meter_id"].unique()
         if len(meter_ids) > 1:
             msg = (
-                "Calibration factor can only be calculated for a single instrument. "
+                "Calibration factor can only be calulated for a single instrument. "
                 f"Observations include data from {len(meter_ids)} meter_id's = {meter_ids}"
             )
             raise ValueError(msg)

@@ -108,7 +108,8 @@ def is_in_literal(value: Any, literal_type: TypeAliasType) -> bool:  # ruff: ign
 
     if get_origin(literal_type.__value__) is Literal:
         return value in get_args(literal_type.__value__)
-    raise TypeError(f"{literal_type} is not a Literal type")
+    msg = f"{literal_type} is not a Literal type"
+    raise TypeError(msg)
 
 
 def is_datetime_array(v: Any) -> bool:  # ruff: ignore[any-type]
@@ -160,7 +161,9 @@ def to_points3d(
     """
     if not is_points3d_like(v):
         msg = "object is not Points3D-like so cannot be converted to a true Points3D"
-        raise TypeError(msg)
+        raise TypeError(
+            msg
+        )
     x, y, z = v
     x = to_1d_ndarray(v[0]).astype(np.float64)
     y = to_1d_ndarray(v[1], expected_size=x.size).astype(np.float64)
@@ -231,8 +234,9 @@ def to_naive_utc_datetime(
         if not allow_nat:
             if isinstance(v, (pd.DatetimeIndex, pd.Series)):
                 if any(v.isna()):
-                    msg_0 = (
-                        "input contains values that resolve to NaT and allow_nat=False"
+                    msg_0 = "input contains values that resolve to NaT and allow_nat=False"
+                    raise ValueError(
+                        msg_0
                     )
                     raise ValueError(msg_0)
             elif v is pd.NaT:
@@ -267,9 +271,12 @@ def to_naive_utc_datetime(
     try:
         idx = pd.to_datetime(t, **kwargs)
     except Exception:
-        raise ValueError(
+        msg = (
             f"unable to convert input '{t}' of type {type(t).__name__} "
             "to Timestamp or DateTimeIndex"
+        )
+        raise ValueError(
+            msg
         )
 
     rval = _nat_check(
@@ -284,9 +291,13 @@ def to_1d_ndarray(
     a: ArrayLike,
     expected_size: int | None = None,
     extend_len_1_array: bool = False,
-    dtype: DTypeLike | None = None,
-) -> np.ndarray[tuple[int], np.dtype[Any]]:
-    """Convert input to a 1D numpy array.
+) -> NDArray:
+    _a = np.atleast_1d(a)
+    if _a.ndim > 1:
+        _a = np.squeeze(_a)
+    if _a.ndim != 1:
+        msg = f"input not convertible to 1d array"
+        raise ValueError(msg)
 
     Replicates the functionality of numpy.atleast_1d, but with additional
     checks for expected size and optional extension of length-1 arrays.
@@ -321,10 +332,14 @@ def to_1d_ndarray(
             a = np.full(expected_size, a[0])
         else:
             msg_0 = "expected_size must be specified if extend_len_1_array is True"
-            raise ValueError(msg_0)
-    if expected_size is not None and a.size != expected_size:
-        msg = f"expected array of size {expected_size}, got size = {a.size}"
-        raise ValueError(msg)
+            raise ValueError(
+                msg_0
+            )
+    if expected_size is not None and _a.size != expected_size:
+        msg = f"expected array of size {expected_size}, got size = {_a.size}"
+        raise ValueError(
+            msg
+        )
 
     if dtype is not None:
         a = a.astype(dtype=dtype)
@@ -343,15 +358,20 @@ def to_1d_ndarray_or_float(a: ArrayLike) -> NDArray[np.float64] | np.float64:
 def check_duplicate_index(idx: pd.Index | pd.DataFrame | pd.Series) -> None:
     """Raise a ValueError if the index contains duplicate values."""
     if isinstance(idx, (pd.DataFrame, pd.Series)):
-        idx = idx.index
-    elif not isinstance(idx, pd.Index):
+        _idx = idx.index
+    elif isinstance(idx, pd.Index):
+        _idx = idx
+    else:
         msg = f"idx must be a pandas Index, DataFrame, or Series, not {type(idx).__name__}"
-        raise TypeError(msg)
+        raise TypeError(
+            msg
+        )
 
     if _idx.duplicated().any():
         idx_name = _idx.name or "index"
         idx_dupes = _idx[_idx.duplicated().tolist()]
-        raise ValueError(f"duplicate index values: {idx_dupes.unique().to_list()}")
+        msg = f"duplicate index values: {idx_dupes.unique().to_list()}"
+        raise ValueError(msg)
 
 
 @overload
@@ -387,7 +407,8 @@ def normalize_field_names(df: pd.DataFrame | pd.Series) -> pd.DataFrame | pd.Ser
         df = df.rename_axis(index=normalize_str)
         df.name = normalize_str(str(df.name))
         return df
-    raise TypeError(f"df must be a pandas DataFrame or Series, not {type(df).__name__}")
+    msg = f"df must be a pandas DataFrame or Series, not {type(df).__name__}"
+    raise TypeError(msg)
 
 
 @overload
@@ -529,7 +550,9 @@ def columns_to_timestamp(
     ts_columns = ts_columns or DEFAULT_TIMESTAMP_COLUMNS
     if not is_list_like(ts_columns):
         msg = f"ts_columns must be list-like, not {type(ts_columns).__name__}"
-        raise TypeError(msg)
+        raise TypeError(
+            msg
+        )
 
     n_ts_columns = len(ts_columns)
     if not 3 <= n_ts_columns <= len(DEFAULT_TIMESTAMP_COLUMNS):
@@ -537,7 +560,9 @@ def columns_to_timestamp(
             f"length of ts_columns is {n_ts_columns}, "
             "must be between 3 (=ymd) and 8 (=ymdHMSun)"
         )
-        raise ValueError(msg)
+        raise ValueError(
+            msg
+        )
     matched_columns = [c for c in ts_columns if c in df.columns]
     n_matched = len(matched_columns)
 
@@ -547,14 +572,18 @@ def columns_to_timestamp(
             f"found {n_matched} columns matching ts_columns, "
             f"must be >= 3 (ymd) and <= {n_ts_columns} the length of ts_columns"
         )
-        raise ValueError(msg)
+        raise ValueError(
+            msg
+        )
     if matched_columns != list(ts_columns[:n_matched]):
         msg = (
             f"expected columns {ts_columns[:n_matched]} "
             f"!= matched columns {matched_columns}"
         )
-        raise ValueError(msg)
-    rename_map = dict(zip(matched_columns, DEFAULT_TIMESTAMP_COLUMNS, strict=False))
+        raise ValueError(
+            msg
+        )
+    rename_map = dict(zip(matched_columns, DEFAULT_TIMESTAMP_COLUMNS))
     return pd.to_datetime(
         df.loc[:, matched_columns].rename(columns=rename_map), **kwargs
     )
@@ -608,7 +637,9 @@ def timestamp_to_columns(
     if resolution is not None:
         if resolution not in AVAIL_TRUNCATION_COLUMNS:
             msg = f"resolution '{resolution}' is not in {AVAIL_TRUNCATION_COLUMNS}"
-            raise ValueError(msg)
+            raise ValueError(
+                msg
+            )
 
         res = _TIMESTAMP_COLUMNS_TO_RESOLUTION[resolution]
 
@@ -619,7 +650,7 @@ def timestamp_to_columns(
         elif round_method == "ceil":
             ds = ds.dt.ceil(res)
         else:
-            msg_0 = f"unrecognized rounding method '{round_method}'"
+            msg_0 = "unreconised rounding method '{round_method}'"
             raise ValueError(msg_0)
 
     df = pd.DataFrame(
@@ -731,27 +762,30 @@ def expand_datetime_column(
         cols_to_split = list(column_name)
     else:
         msg = f"column_name must be a string or list-like, not {type(column_name).__name__}"
-        raise TypeError(msg)
+        raise TypeError(
+            msg
+        )
 
     cols_to_split = [str(c) for c in cols_to_split if str(c) in candidate_columns]
     if not cols_to_split:
         msg = (
-            "the specified column_name(s) are either missing or or are "
+            f"the specified column_name(s) are either missing or or are "
             "not datetime-like columns"
         )
-        raise ValueError(msg)
-
-    if prefix is None or not prefix:
-        prefixes = [f"{n}_" for n in cols_to_split] if len(cols_to_split) > 1 else [""]
+        raise ValueError(
+            msg
+        )
 
     else:
         prefixes = list(prefix) if is_list_like(prefix) else [prefix]
         if len(prefixes) != len(cols_to_split):
             msg = (
-                f"inconsistent 'column_name' and 'prefix' arg lengths: "
+                f"inconsisitent 'column_name' and 'prefix' arg lengths: "
                 f"{len(cols_to_split)} != {len(prefixes)}"
             )
-            raise ValueError(msg)
+            raise ValueError(
+                msg
+            )
 
     for col, pre in zip(cols_to_split, prefixes, strict=True):
         ts_df = timestamp_to_columns(
@@ -760,8 +794,9 @@ def expand_datetime_column(
         existing = ts_df.columns.intersection(df.columns).to_list()
         if existing:
             if not overwrite:
-                msg = (
-                    f"overwrite=False and splitting would overwrite columns: {existing}"
+                msg = f"overwrite=False and splitting would overwrite columns: {existing}"
+                raise ValueError(
+                    msg
                 )
             df = df.drop(columns=existing)
 
@@ -771,7 +806,9 @@ def expand_datetime_column(
             i_dt = df.columns.get_loc(col)
             if not isinstance(i_dt, int):
                 msg_0 = "unexpected error: could not locate resolution column in output dataframe"
-                raise TypeError(msg_0)
+                raise TypeError(
+                    msg_0
+                )
             i_dt += 1
             df = pd.concat([df.iloc[:, :i_dt], ts_df, df.iloc[:, i_dt:]], axis=1)
 
@@ -929,7 +966,9 @@ def generate_loop_intervals(
     db = to_naive_utc_datetime(datetime_bounds, allow_nat=False)
     if not isinstance(db, (pd.Series, pd.DatetimeIndex)) or len(db) < 2:
         msg = "datetimes must be an array-like object with at least two elements."
-        raise ValueError(msg)
+        raise ValueError(
+            msg
+        )
     db = pd.Series(db)
 
     if not db.is_monotonic_increasing:
@@ -967,12 +1006,15 @@ def identify_loop_blocks(
     dt = to_naive_utc_datetime(datetimes, allow_nat=False)
     if not isinstance(dt, (pd.Series, pd.DatetimeIndex)) or len(dt) < 2:
         msg = "datetimes must be an array-like object with at least two elements."
-        raise ValueError(msg)
+        raise ValueError(
+            msg
+        )
     dt = pd.Series(dt)  # ensure we have a Series for diff() and indexing
     if not dt.is_monotonic_increasing:
         msg = "datetimes must be sorted in increasing order."
         raise ValueError(msg)
-
+    # if isinstance(_datetimes, pd.DatetimeIndex):
+    #     _datetimes = _datetimes.to_series()
     gap = pd.to_timedelta(gap)
     gaps = dt.diff().gt(gap)
 
@@ -1024,7 +1066,9 @@ def loops_from_gaps(
     dt = to_naive_utc_datetime(datetimes, allow_nat=False)
     if not isinstance(dt, (pd.Series, pd.DatetimeIndex)) or len(dt) < 2:
         msg = "datetimes must be an array-like object with at least two elements."
-        raise ValueError(msg)
+        raise ValueError(
+            msg
+        )
     loop_intervals = identify_loop_blocks(dt, gap, as_intervals=True)
     loop_ids = generate_loop_names(
         len(loop_intervals), start=loop_start, step=loop_step, format_str=loop_format

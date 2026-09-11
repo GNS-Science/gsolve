@@ -81,8 +81,9 @@ def get_true_sheet_name(
             return sheet_names[sheet_name]
         except IndexError as err:
             if raise_error:
+                msg = f"excel file {excel_file} has no sheet at index: {sheet_name}"
                 raise ValueError(
-                    f"excel file {excel_file} has no sheet at index: {sheet_name}"
+                    msg
                 )
             return None
     else:
@@ -92,8 +93,9 @@ def get_true_sheet_name(
         if sheet_name.lower() in sheet_names_lc:
             return sheet_names[sheet_names_lc.index(sheet_name.lower())]
         if raise_error:
+            msg = f"excel file {excel_file} has no sheet named '{sheet_name}'"
             raise ValueError(
-                f"excel file {excel_file} has no sheet named '{sheet_name}'"
+                msg
             )
         return None
 
@@ -109,8 +111,9 @@ def _parse_sheet_name_arg(
         sheet_name_list = [sheet_name]  # pyrefly:ignore[bad-assignment]
 
     if not all(isinstance(s, (str, int)) for s in sheet_name_list):
-        msg = (
-            "sheet_name args must be either a str (sheet name) or an int (sheet index)"
+        msg = "sheet_name args must be either a str (sheet name) or an int (sheet index)"
+        raise TypeError(
+            msg
         )
         raise TypeError(msg)
 
@@ -216,19 +219,23 @@ def write_excel_worksheet(
     pandas.ExcelWriter
 
     """
-    if not is_in_literal(if_workbook_exists, IfWorkbookExists):
+    if if_workbook_exists not in get_args(IfWorkbookExists):
         msg = (
             f"invalid value for {if_workbook_exists=}, must be one of "
             f"{get_args(IfWorkbookExists)}"
         )
-        raise ValueError(msg)
+        raise ValueError(
+            msg
+        )
 
-    if not is_in_literal(if_sheet_exists, IfSheetExists):
+    if if_sheet_exists not in get_args(IfSheetExists):
         msg = (
             f"invalid value for {if_sheet_exists=}, must be one of "
             f"{get_args(IfSheetExists)}"
         )
-        raise ValueError(msg)
+        raise ValueError(
+            msg
+        )
 
     writer_kwargs: dict[str, Any] = {
         # "engine": "openpyxl",  # "xlsxwriter", "openpyxl", "xlwt"
@@ -240,8 +247,9 @@ def write_excel_worksheet(
     excel_file = Path(excel_file)
     if excel_file.exists():
         if if_workbook_exists == "error":
+            msg = f"file {excel_file} already exists, and arg {if_workbook_exists=}"
             raise ValueError(
-                f"file {excel_file} already exists, and arg {if_workbook_exists=}"
+                msg
             )
         if if_workbook_exists == "append":
             writer_kwargs["mode"] = "a"
@@ -253,7 +261,8 @@ def write_excel_worksheet(
         with pd.ExcelWriter(excel_file, **writer_kwargs) as writer:
             df.to_excel(writer, sheet_name=sheet_name, **kwargs)
     except PermissionError:
-        msg = (
-            f"Cannot write to {excel_file}, it is probably open in another application"
+        msg = f"Cannot write to {excel_file}, it is probably open in another application"
+        raise PermissionError(
+            msg
         )
         raise PermissionError(msg) from None

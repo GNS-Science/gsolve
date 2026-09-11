@@ -135,9 +135,9 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
         **metadata,
     ) -> None:
         if isinstance(site_id, str):
-            site_id = np.array([site_id] * len(date_time))
-        site_id = to_1d_ndarray(site_id, dtype=str)
-        if site_id.ndim != 1:
+            _site_id = np.array([site_id] * len(date_time))
+        _site_id = np.atleast_1d(site_id).astype(str)
+        if _site_id.ndim != 1:
             msg = "site_id argument must be 1-dimensional."
             raise ValueError(msg)
 
@@ -152,7 +152,7 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
         )
         self.metadata: dict[str, Any] = metadata
 
-    def identifier(self, **kwargs) -> str:
+    def identifier(self) -> str:
         """Corrector identifier string."""  # ruff: ignore[docstring-missing-returns]
         return f"{type(self).__name__}()"
 
@@ -193,7 +193,7 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
         else:
             site_id = np.atleast_1d(site_id).astype(str)
 
-        if len(site_id) != len(dt):
+        if len(_site_id) != len(dt):
             msg = "site_id and datetime arguments must have the same length."
             raise ValueError(msg)
 
@@ -296,7 +296,7 @@ class OceanLoadTimeSeries(OceanLoadCorrectionProvider):
         md = ",".join([f"{v}={k}" for v, k in self.metadata.items()])
         return f"{cname}({md})"
 
-    def identifier(self, **kwargs) -> str:
+    def identifier(self) -> str:
         """Corrector identifier string."""  # ruff: ignore[docstring-missing-returns]
         return f"{self.__class__.__name__}()"
 
@@ -379,15 +379,16 @@ def _datetimes_to_np_datetime64(
     dt: DatetimeScalar | DatetimeArray, dtype: str = "datetime64"
 ) -> np.ndarray:
     """Convert datetimes to numpy datetime64 array."""  # ruff: ignore[docstring-missing-returns]
-    _dt = to_naive_utc_datetime(dt, allow_nat=False)
-    if isinstance(_dt, pd.Timestamp):
-        return np.array([_dt], dtype=dtype)
-    if isinstance(_dt, (pd.DatetimeIndex, pd.Series)):
-        return np.atleast_1d(_dt).astype(dtype)
-    raise TypeError(
+    dt = to_naive_utc_datetime(dt, allow_nat=False)
+    if isinstance(dt, pd.Timestamp):
+        return np.array([dt], dtype=dtype)
+    if isinstance(dt, (pd.DatetimeIndex, pd.Series)):
+        return np.atleast_1d(dt).astype(dtype)
+    msg = (
         "datetimes must be a pandas Timestamp, DatetimeIndex, or Series, not "
         f"{type(dt).__name__}."
     )
+    raise TypeError(msg)
 
 
 def _validate_timeseries_data(df: pd.DataFrame) -> None:
@@ -406,14 +407,14 @@ def _validate_timeseries_data(df: pd.DataFrame) -> None:
         msg = f"data must be a pandas DataFrame, not {type(df).__name__}."
         raise TypeError(msg)
     if not isinstance(df.index, pd.DatetimeIndex):
-        msg = "timeseries not indexed by datetime."
-        raise TypeError(msg)
+        msg_0 = "timeseries not indexed by datetime."
+        raise TypeError(msg_0)
     if df.shape[0] < 2:
-        msg = "timeseries must contain at least two rows."
-        raise ValueError(msg)
+        msg_0 = "timeseries must contain at least two rows."
+        raise ValueError(msg_0)
     if not df.index.is_monotonic_increasing:
-        msg = "timeseries not sorted in increasing order."
-        raise ValueError(msg)
+        msg_0 = "timeseries not sorted in increasing order."
+        raise ValueError(msg_0)
 
     # warn if non-uniform sampling interval/rate
     sample_intervals = (df.index[1:] - df.index[:-1]).total_seconds()
@@ -481,6 +482,9 @@ def qtp_to_corrector(
             corrections=df["BergerLoadCorrection"].to_numpy().astype(float),
             **metadata,
         )
+    else:
+        msg = f"invalid corr_type '{corr_type}', must be one of {'auto', 'timeseries', 'site-datetime'}."
+        raise ValueError(msg)
 
     msg = f"invalid corr_type '{corr_type}', must be one of {'auto', 'timeseries', 'site-datetime'}."
     raise ValueError(msg)
@@ -505,7 +509,7 @@ def read_qtp_timeseries(file_path: FilePath) -> pd.DataFrame:
     if not all(col in df.columns for col in expected_columns):
         msg = f"Format error reading '{file_path}': expected columns {expected_columns} not found, not QTP timeseries format?"
         raise ValueError(msg)
-    if bool(df.isna().any(axis=None)):
+    if df.isna().any(axis=None):
         msg = f"Missing values detected while reading '{file_path}': not QTP timeseries format?"
         raise ValueError(msg)
 
@@ -574,7 +578,7 @@ def read_qtp_multistation(file_path: FilePath) -> pd.DataFrame:
     )
 
     if df.shape[1] != len(column_definitions):
-        msg = f"Format error reading '{file_path}': not QTP multistation ocean load format?"
+        msg = f"Format error reading '{file_path}': not QTP multiistation ocean load format?"
         raise ValueError(msg)
 
     if df.isna().any(axis=None):
@@ -633,8 +637,11 @@ def generate_qtp_input(  # ruff: ignore[too-many-positional-arguments]
     else:
         elevation = np.atleast_1d(elevation).astype(float)
 
-    if not (site_id.size == datetimes.size == lat.size == lon.size == elevation.size):
+    if not (
+        _site_id.size == _datetimes.size == _lat.size == _lon.size == _elevation.size
+    ):
         msg = "site_id, datetimes, latitude, longitude, and elevation arguments must all have the same shape."
+        raise ValueError(msg)
         raise ValueError(msg)
 
     # initial data frame with station IDs and datetimes
@@ -648,13 +655,7 @@ def generate_qtp_input(  # ruff: ignore[too-many-positional-arguments]
         },
     )
 
-    # wrap to [-180, 180]
-    def _wrap_180(x: float) -> float:
-        return (x + 180.0) % 360 - 180.0
-
-    qtp_df["Longitude"] = qtp_df["Longitude"].apply(_wrap_180)
-
-    if any(qtp_df["Elevation"].isna()):
+    if qtp_df["Elevation"].isna().any():
         msg = "Some site elevations are missing and no 'fill_elevation' was specified."
         raise ValueError(msg)
 
@@ -722,7 +723,7 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
             "ocean_tide_model": "",
             "center_mass_correction": False,
         }
-        with pathlib.Path(f).open() as fh:
+        with pathlib.Path(f).open() as fh:  # ruff: ignore[unspecified-encoding]
             model_txt = [l.strip() for l in fh if l.startswith("$$")]
             for l in model_txt:
                 if l.startswith("$$ Greens function:"):
@@ -731,7 +732,7 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
                     metadata["ocean_tide_model"] = l.split(":", 1)[1].strip()
                 elif l.startswith("$$ CMC"):
                     v = l.split(":", 1)[1].strip().split()[0]
-                    metadata["center_mass_correction"] = v.upper() != "NO"
+                    matadata["center_mass_correction"] = v != "NO"
                 elif l.startswith("$$ END HEADER:"):
                     break
         self.metadata.update(metadata)

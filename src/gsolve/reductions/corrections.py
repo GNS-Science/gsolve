@@ -180,7 +180,9 @@ def normal_gravity_at_ellipsoid(
         b = 6356774.5161
     else:
         msg = f"Unknown ellipsoid '{ellipsoid}': must be one of {valid_ellipsoids}"
-        raise ValueError(msg)
+        raise ValueError(
+            msg
+        )
 
     lat = np.deg2rad(latitude)
     normal_gravity = (
@@ -473,8 +475,9 @@ def bouguer_slab_curvature_corrected(
         if isinstance(er, boule.Ellipsoid):
             Ro = float(er.mean_radius)
         else:
-            msg = (
-                f"Unknown ellipsoid '{ellipsoid_or_radius}': must be 'WGS84' or 'GRS80'"
+            msg = f"Unknown ellipsoid '{ellipsoid_or_radius}': must be 'WGS84' or 'GRS80'"
+            raise ValueError(
+                msg
             )
             raise ValueError(msg)  # ruff: ignore[type-check-without-type-error]
 
@@ -710,7 +713,9 @@ class GravityCorrectionProvider:
                 "params must be None or a GravityCorrectionParameters object, "
                 f"not '{type(params)}'"
             )
-            raise TypeError(msg)
+            raise TypeError(
+                msg
+            )
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}({self.params._param_str()})"
@@ -782,7 +787,9 @@ class GravityCorrectionProvider:
                 "argument 'sites' must be a Dataframe or GravitySites object, not "
                 f"'{type(sites)}'"
             )
-            raise TypeError(msg)
+            raise TypeError(
+                msg
+            )
 
         lon = sites_df[cols["longitude"]].to_numpy()
         lat = sites_df[cols["latitude"]].to_numpy()
@@ -799,7 +806,7 @@ class GravityCorrectionProvider:
                 c for c in corrs if c not in self.available_corrections()
             ]
             if has_bad_corrections:
-                msg = f"Unrecognized corrections: {has_bad_corrections}"
+                msg = f"Unrecognised corrections: {has_bad_corrections}"
                 raise ValueError(msg)
         else:
             corrs = self.params.bouguer_correction_fields()

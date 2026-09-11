@@ -139,17 +139,23 @@ def prepare_dem(
                     "DataArray object. Use 'var_name' to specify the variable to "
                     f"convert. Variables in dem: {list(dem.data_vars)}"
                 )
-                raise ValueError(msg)
-            input_var_name = str(next(iter(dem.data_vars)))
+                raise ValueError(
+                    msg
+                )
+            input_var_name = str(list(dem.data_vars.keys())[0])
         dem = dem[input_var_name]
     if not isinstance(dem, xr.DataArray):
         msg = f"dem must be an xarray Dataset or DataArray, not {type(dem).__name__}"
-        raise TypeError(msg)
+        raise TypeError(
+            msg
+        )
 
     dem = dem.squeeze()
     if dem.ndim != 2:
         msg = f"Dem must be a 2D array. Object is {dem.ndim}D with shape {dem.shape}"
-        raise ValueError(msg)
+        raise ValueError(
+            msg
+        )
 
     # Drop singleton coordinate variables that are not dimensions (e.g. 'band', 'spatial_ref')
     # These can cause xarray/rioxarray broadcasting/indexing issues during operations
@@ -166,7 +172,9 @@ def prepare_dem(
                     f"prepare_dem(): dropping unused coordinate '{coord_name}' "
                     f"failed with error: {e}"
                 )
-                raise RuntimeError(msg) from e
+                raise RuntimeError(
+                    msg
+                ) from e
 
     # set dimension names
     if y_dim and dem.tcorr.ydim != y_dim:

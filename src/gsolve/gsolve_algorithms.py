@@ -77,7 +77,8 @@ def call_gsolve_lstsq(
     # index in obs where ties are located
     m_ties = ref_sites.index.intersection(obs["site_id"].to_list())
     if m_ties.empty:
-        raise ValueError("no tie sites")
+        msg = "no tie sites"
+        raise ValueError(msg)
     ref_sites = ref_sites.loc[m_ties]
 
     # set up g_solver_lstsq input arguments - do this segmented so that can report
@@ -163,7 +164,8 @@ def call_gsolve_calibration(
     # index in obs where ties are located
     m_ties = ref_sites.index.intersection(obs["site_id"].to_list())
     if m_ties.empty:
-        raise ValueError("no tie sites")
+        msg = "no tie sites"
+        raise ValueError(msg)
     ref_sites = ref_sites.loc[m_ties]
 
     # set up g_solver_lstsq input arguments
@@ -292,7 +294,9 @@ def g_solver_lstsq(  # ruff: ignore[too-many-positional-arguments]
             f"invalid percentile value {percentile_clipping}, "
             "must be between 0 and 100 inclusive"
         )
-        raise ValueError(msg)
+        raise ValueError(
+            msg
+        )
 
     n_obs = np.size(obs_g)
     n_ties = np.size(ties_site_id)
@@ -345,7 +349,9 @@ def g_solver_lstsq(  # ruff: ignore[too-many-positional-arguments]
                     "obs_g_not_detided must be provided when "
                     "calculate_calibration_factor is True"
                 )
-                raise ValueError(msg_0)
+                raise ValueError(
+                    msg_0
+                )
             A[i, n_sites + (2 * n_loops)] = float(obs_g_not_detided[i])
 
     # Ties to absolute sites
