@@ -111,10 +111,10 @@ GNS_LAB_WAIRAKEI	2025-02-19	20:26:44	3973.5684	2	0.0633	0.0082	3975.8395	4.2	-1.
 """
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def cg6_file(tmp_path_factory: pytest.TempPathFactory) -> pathlib.Path:
     file = tmp_path_factory.mktemp("data") / "test.cg6"
-    with open(file, "w") as f:
+    with file.open("w") as f:
         f.write(cg6_data)
     return file
 

@@ -182,41 +182,43 @@ class LaCosteRombergDialConverter:
         _value_mgal = _np.atleast_1d(_np.array(value_mgal, dtype=_np.float64))
 
         if _c_reading.ndim != 1 or _c_reading.size == 0:
-            raise ValueError("counter_reading must be a non-empty 1-dimensional array.")
+            msg = "counter_reading must be a non-empty 1-dimensional array."
+            raise ValueError(msg)
         if _np.isnan(_c_reading).any():
-            raise ValueError("counter_reading contains NaN.")
+            msg = "counter_reading contains NaN."
+            raise ValueError(msg)
         if _value_mgal.ndim != 1 or _value_mgal.size == 0:
-            raise ValueError("value_mgal must be a non-empty 1-dimensional array.")
+            msg = "value_mgal must be a non-empty 1-dimensional array."
+            raise ValueError(msg)
         if _np.isnan(_value_mgal).any():
-            raise ValueError("value_mgal contains NaN.")
+            msg = "value_mgal contains NaN."
+            raise ValueError(msg)
 
         if _c_reading.size != _value_mgal.size:
-            raise ValueError(
-                "counter_reading and value_mgal arrays must be the same shape."
-            )
+            msg = "counter_reading and value_mgal arrays must be the same shape."
+            raise ValueError(msg)
 
         nrows: int = _c_reading.size
 
         if interval_factor is not None:
             _interval_factor = _np.atleast_1d(interval_factor).astype(float)
             if _interval_factor.ndim != 1 or _interval_factor.size == 0:
-                raise ValueError(
-                    "if specified, interval_factor must be a non-empty 1-dimensional array."
-                )
+                msg = "if specified, interval_factor must be a non-empty 1-dimensional array."
+                raise ValueError(msg)
 
             if _interval_factor.size == nrows:
                 _interval_factor[-1] = _np.nan
             elif _interval_factor.size == nrows - 1:
                 _interval_factor = _np.append(_interval_factor, _np.nan)
             else:
-                raise ValueError(
+                msg = (
                     f"invalid interval_factor: array size {_interval_factor.size} is not "
                     f"the same as or 1 less than counter_reading ({nrows})."
                 )
+                raise ValueError(msg)
             if _np.isnan(_interval_factor[:-1]).any():
-                raise ValueError(
-                    "interval_factor is specified, but contains NaN values."
-                )
+                msg_0 = "interval_factor is specified, but contains NaN values."
+                raise ValueError(msg_0)
             recalc_value_mgal = True
         else:
             _interval_factor = _np.full_like(_c_reading, _np.nan)
@@ -236,9 +238,8 @@ class LaCosteRombergDialConverter:
             not self.table.index.is_monotonic_increasing
             or not self.table.index.is_unique
         ):
-            raise ValueError(
-                "counter_reading values must be unique and in ascending order."
-            )
+            msg_0 = "counter_reading values must be unique and in ascending order."
+            raise ValueError(msg_0)
 
         if recalc_value_mgal:
             ifac = self.table["interval_factor"].astype(float).to_numpy()
@@ -263,7 +264,8 @@ class LaCosteRombergDialConverter:
     @meter_id.setter
     def meter_id(self, val: str) -> None:
         if val is None or not str(val).strip():
-            raise ValueError("meter_id must be specified.")
+            msg = "meter_id must be specified."
+            raise ValueError(msg)
         self._meter_id = str(val).strip()
 
     def set_datetime_range(
@@ -302,11 +304,11 @@ class LaCosteRombergDialConverter:
             try:
                 st = to_naive_utc_datetime(starttime, allow_nat=False)
             except ValueError as e:
-                raise ValueError(f"Error setting starttime: {e}")
+                msg = f"Error setting starttime: {e}"
+                raise ValueError(msg)
         else:
-            raise TypeError(
-                f"invalid starttime type {type(starttime)}. Should be datetimelike or None."
-            )
+            msg = f"invalid starttime type {type(starttime)}. Should be datetimelike or None."
+            raise TypeError(msg)
 
         if endtime is _pd.NaT or endtime is None:
             et = None
@@ -314,14 +316,17 @@ class LaCosteRombergDialConverter:
             try:
                 et = to_naive_utc_datetime(endtime, allow_nat=False)
             except ValueError as e:
-                raise ValueError(f"Error setting endtime: {e}")
+                msg = f"Error setting endtime: {e}"
+                raise ValueError(msg)
         else:
-            raise TypeError(
+            msg = (
                 f"invalid endtime type {type(endtime)}. Should be datetimelike or None."
             )
+            raise TypeError(msg)
 
         if st is not None and et is not None and st >= et:
-            raise ValueError(f"invalid time combination: ({st}) is >= endtime ({et})")
+            msg = f"invalid time combination: ({st}) is >= endtime ({et})"
+            raise ValueError(msg)
 
         self._starttime = st
         self._endtime = et
@@ -331,9 +336,8 @@ class LaCosteRombergDialConverter:
         """The date from which correction parameters are valid."""
         st = getattr(self, "_starttime", None)
         if st is not None and not isinstance(st, _pd.Timestamp):
-            raise TypeError(
-                f"invalid starttime type {type(st)}. Should be pandas.Timestamp or None."
-            )
+            msg = f"invalid starttime type {type(st)}. Should be pandas.Timestamp or None."
+            raise TypeError(msg)
         return st
 
     @property
@@ -341,9 +345,8 @@ class LaCosteRombergDialConverter:
         """The date up to which correction parameters are valid."""
         r = getattr(self, "_endtime", None)
         if r is not None and not isinstance(r, _pd.Timestamp):
-            raise TypeError(
-                f"invalid endtime type {type(r)}. Should be pandas.Timestamp or None."
-            )
+            msg = f"invalid endtime type {type(r)}. Should be pandas.Timestamp or None."
+            raise TypeError(msg)
         return r
 
     def convert_readings(
@@ -389,27 +392,27 @@ class LaCosteRombergDialConverter:
         if (_readings < interval_bounds.min()).any() | (
             _readings > interval_bounds.max()
         ).any():
-            raise ValueError(
+            msg = (
                 "1 or more readings are outside range of convertible values: "
                 f"{interval_bounds.min()} - {interval_bounds.max()}."
             )
+            raise ValueError(msg)
 
         if meter_id is not None:
             _m_meter_id = _np.atleast_1d(meter_id).astype(str) == self.meter_id
 
             if _m_meter_id.size == 0:
-                raise ValueError("invalid meter_id arg: empty array.")
+                msg_0 = "invalid meter_id arg: empty array."
+                raise ValueError(msg_0)
             if _m_meter_id.ndim != 1:
-                raise ValueError(
-                    "invalid meter_id arg: must be a scalar or 1-dimensional array."
-                )
+                msg_0 = "invalid meter_id arg: must be a scalar or 1-dimensional array."
+                raise ValueError(msg_0)
 
             if _m_meter_id.size == 1 and _readings.size > 1:
                 _m_meter_id = _np.full(_readings.shape, _m_meter_id[0])
             elif _m_meter_id.size != _readings.size:
-                raise ValueError(
-                    "invalid meter_id arg: length must match readings array."
-                )
+                msg_0 = "invalid meter_id arg: length must match readings array."
+                raise ValueError(msg_0)
         else:
             _m_meter_id = _np.full(_readings.shape, True)
 
@@ -420,16 +423,17 @@ class LaCosteRombergDialConverter:
             elif isinstance(_dt, (_pd.Series, _pd.DatetimeIndex)):
                 _date_time = _pd.DatetimeIndex(_dt)
             else:
-                raise TypeError(
+                msg_0 = (
                     "date_time could not be converted to a Timestamp or DatetimeIndex."
                 )
+                raise TypeError(msg_0)
 
             if _date_time.size != _readings.size:
-                raise ValueError(
-                    "invalid date_time array: date_time values must be the same length as readings."
-                )
+                msg_0 = "invalid date_time array: date_time values must be the same length as readings."
+                raise ValueError(msg_0)
             if any(_date_time.isna()):
-                raise ValueError("date_time contains NaT values.")
+                msg_0 = "date_time contains NaT values."
+                raise ValueError(msg_0)
 
             _m_datetime = _np.full_like(_readings, True, dtype=bool)
             if self.starttime is not None:
@@ -556,7 +560,8 @@ class LaCosteRombergDialConverter:
             with pathlib.Path(fname).open(encoding="utf-8-sig", mode="r") as fh:
                 data = fh.readlines()
         if not data:
-            raise ValueError("empty file")
+            msg = "empty file"
+            raise ValueError(msg)
         hdr = {}
         while data[0].startswith("#"):
             hdr_line = data.pop(0).lstrip("#").strip()
@@ -565,24 +570,26 @@ class LaCosteRombergDialConverter:
 
             h = [v.strip() for v in hdr_line.split(",")]
             if len(h) == 1:
-                raise ValueError(
+                msg = (
                     "reading csv header: "
                     f"header key '{h[0]}' has no corresponding value"
                 )
+                raise ValueError(msg)
             if len(h) > 2 and "".join(h[2:]):
-                raise ValueError(
+                msg = (
                     "reading csv header: "
                     f"key '{h[0]}' has multiple corresponding values '{hdr_line}'"
                 )
+                raise ValueError(msg)
             if h[0] not in cls._table_header_keys:
-                raise ValueError(
-                    f"reading csv header: invalid header key name '{h[0]}'"
-                )
+                msg = f"reading csv header: invalid header key name '{h[0]}'"
+                raise ValueError(msg)
 
             hdr[h[0]] = h[1]
 
         if "meter_id" not in hdr:
-            raise ValueError(f"reading '{fname}': meter_id not specified in header")
+            msg = f"reading '{fname}': meter_id not specified in header"
+            raise ValueError(msg)
 
         # if have column labels
         if data[0].strip() == ",".join(cls._table_column_labels):

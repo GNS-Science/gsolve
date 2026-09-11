@@ -81,6 +81,8 @@ dev = [
 [tool.uv]
 required-version = ">=0.11.8"
 
+[tool.setuptools.packages.find]
+where = ["src"]
 
 # ------------------------------
 # Other tools configuration
@@ -151,10 +153,11 @@ ignore = [
     "RET504",  # Allow variable assignment only for return
     "PT001",   # Conventions for parenthesis on pytest.fixture
     "D200",    # Allow single line docstrings in their own line
+    "B028",    # Allow no stacklevel in warnings.warn
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["ANN001", "ANN201", "ANN202", "D", "DOC"]
+"tests/**" = ["ANN001", "ANN201", "ANN202", "D", "DOC", "PLR6301"]
 "examples/scripts/**" = ["D100"]
 
 [tool.ruff.lint.pydocstyle]
@@ -184,8 +187,6 @@ exclude = ["__init__.py"]
 [tool.ty.src]
 include = ["gsolve/", "examples/scripts/"]
 
-[tool.setuptools.packages.find]
-where = ["src"]
 
 [tool.numpydoc_validation]
 checks = ["all", "EX01", "SA01"]

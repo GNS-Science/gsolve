@@ -30,7 +30,6 @@ from gsolve import GravityObservations, GravitySites
 from gsolve.observations import GravitySurvey
 from gsolve.sites import ReferenceGravity
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

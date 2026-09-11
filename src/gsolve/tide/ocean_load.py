@@ -79,10 +79,9 @@ class OceanLoadCorrectionProvider(Protocol):
         site_id: SiteIDArray,
         date_time: DatetimeArray,
         if_not_matched: Literal["error", "warn"] = "error",
-        **kwargs,
     ) -> NDArray[np.float64]: ...
 
-    def identifier(self, **kwargs) -> str: ...
+    def identifier(self) -> str: ...
 
 
 class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
@@ -139,20 +138,21 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
             _site_id = np.array([site_id] * len(date_time))
         _site_id = np.atleast_1d(site_id).astype(str)
         if _site_id.ndim != 1:
-            raise ValueError("site_id argument must be 1-dimensional.")
+            msg = "site_id argument must be 1-dimensional."
+            raise ValueError(msg)
 
         datetimes = _datetimes_to_np_datetime64(date_time)
         self.data = (
             pd.DataFrame(
                 data={"correction": corrections},
-                index=pd.MultiIndex.from_arrays([_site_id, datetimes]),
+                index=pd.MultiIndex.from_arrays([site_id, datetimes]),
             )
             .sort_index()
             .drop_duplicates(ignore_index=False)
         )
         self.metadata: dict[str, Any] = metadata
 
-    def identifier(self, **kwargs) -> str:
+    def identifier(self) -> str:
         """Corrector identifier string."""  # ruff: ignore[docstring-missing-returns]
         return f"{type(self).__name__}()"
 
@@ -161,7 +161,6 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
         site_id: SiteIDArray,
         date_time: DatetimeScalar | DatetimeArray,
         if_not_matched: Literal["error", "warn"] = "error",
-        **kwargs,
     ) -> NDArray[np.float64]:
         """
         Get ocean load corrections for specified site-datetime pairs.
@@ -180,10 +179,6 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
             Action to take when site_id/datetime pairs are not found in the data.
             If "error", then raise a ValueError. If "warn", issue a warning
             and return NaN for unmatched pairs.
-        kwargs :
-            Additional keyword arguments. This parameter is included to maintain
-            compatibility with the OceanLoadCorrectionProvider interface. kwargs
-            are ignored.
 
         Returns
         -------
@@ -194,17 +189,16 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
         dt = np.atleast_1d(_datetimes_to_np_datetime64(date_time))
 
         if isinstance(site_id, str):
-            _site_id = np.array([site_id] * len(dt), dtype=str)
+            site_id = np.array([site_id] * len(dt), dtype=str)
         else:
-            _site_id = np.atleast_1d(site_id).astype(str)
+            site_id = np.atleast_1d(site_id).astype(str)
 
         if len(_site_id) != len(dt):
-            raise ValueError(
-                "site_id and datetime arguments must have the same length."
-            )
+            msg = "site_id and datetime arguments must have the same length."
+            raise ValueError(msg)
 
         rval = pd.Series(
-            index=pd.MultiIndex.from_arrays([_site_id, dt]), data=np.nan, dtype=float
+            index=pd.MultiIndex.from_arrays([site_id, dt]), data=np.nan, dtype=float
         )
 
         present_mask = rval.index.isin(self.data.index)
@@ -302,7 +296,7 @@ class OceanLoadTimeSeries(OceanLoadCorrectionProvider):
         md = ",".join([f"{v}={k}" for v, k in self.metadata.items()])
         return f"{cname}({md})"
 
-    def identifier(self, **kwargs) -> str:
+    def identifier(self) -> str:
         """Corrector identifier string."""  # ruff: ignore[docstring-missing-returns]
         return f"{self.__class__.__name__}()"
 
@@ -323,7 +317,7 @@ class OceanLoadTimeSeries(OceanLoadCorrectionProvider):
 
     def ocean_load_correction(
         self,
-        site_id: SiteIDArray,
+        site_id: SiteIDArray,  # ruff: ignore[unused-method-argument]
         date_time: DatetimeScalar | DatetimeArray,
         if_not_matched: Literal["error", "warn"] = "error",
         **kwargs,
@@ -385,15 +379,16 @@ def _datetimes_to_np_datetime64(
     dt: DatetimeScalar | DatetimeArray, dtype: str = "datetime64"
 ) -> np.ndarray:
     """Convert datetimes to numpy datetime64 array."""  # ruff: ignore[docstring-missing-returns]
-    _dt = to_naive_utc_datetime(dt, allow_nat=False)
-    if isinstance(_dt, pd.Timestamp):
-        return np.array([_dt], dtype=dtype)
-    if isinstance(_dt, (pd.DatetimeIndex, pd.Series)):
-        return np.atleast_1d(_dt).astype(dtype)
-    raise TypeError(
+    dt = to_naive_utc_datetime(dt, allow_nat=False)
+    if isinstance(dt, pd.Timestamp):
+        return np.array([dt], dtype=dtype)
+    if isinstance(dt, (pd.DatetimeIndex, pd.Series)):
+        return np.atleast_1d(dt).astype(dtype)
+    msg = (
         "datetimes must be a pandas Timestamp, DatetimeIndex, or Series, not "
         f"{type(dt).__name__}."
     )
+    raise TypeError(msg)
 
 
 def _validate_timeseries_data(df: pd.DataFrame) -> None:
@@ -409,13 +404,17 @@ def _validate_timeseries_data(df: pd.DataFrame) -> None:
     """
     # test size and
     if not isinstance(df, pd.DataFrame):
-        raise TypeError(f"data must be a pandas DataFrame, not {type(df).__name__}.")
+        msg = f"data must be a pandas DataFrame, not {type(df).__name__}."
+        raise TypeError(msg)
     if not isinstance(df.index, pd.DatetimeIndex):
-        raise TypeError("timeseries not indexed by datetime.")
+        msg_0 = "timeseries not indexed by datetime."
+        raise TypeError(msg_0)
     if df.shape[0] < 2:
-        raise ValueError("timeseries must contain at least two rows.")
+        msg_0 = "timeseries must contain at least two rows."
+        raise ValueError(msg_0)
     if not df.index.is_monotonic_increasing:
-        raise ValueError("timeseries not sorted in increasing order.")
+        msg_0 = "timeseries not sorted in increasing order."
+        raise ValueError(msg_0)
 
     # warn if non-uniform sampling interval/rate
     sample_intervals = (df.index[1:] - df.index[:-1]).total_seconds()
@@ -469,24 +468,23 @@ def qtp_to_corrector(
 
     if corr_type == "timeseries":
         df = read_qtp_timeseries(file_path)
-        corr = OceanLoadTimeSeries(
+        return OceanLoadTimeSeries(
             date_time=df.index,
             corrections=df["BergerLoadCorrection"].to_numpy(),
             metadata=metadata,
         )
 
-    elif corr_type == "site-datetime":
+    if corr_type == "site-datetime":
         df = read_qtp_multistation(file_path)
-        corr = OceanLoadAtSiteTime(
+        return OceanLoadAtSiteTime(
             site_id=df.index.get_level_values("site_id"),
             date_time=df.index.get_level_values("datetime"),
             corrections=df["BergerLoadCorrection"].to_numpy().astype(float),
             **metadata,
         )
     else:
-        raise ValueError(
-            f"invalid corr_type '{corr_type}', must be one of {'auto', 'timeseries', 'site-datetime'}."
-        )
+        msg = f"invalid corr_type '{corr_type}', must be one of {'auto', 'timeseries', 'site-datetime'}."
+        raise ValueError(msg)
 
     return corr
 
@@ -508,13 +506,11 @@ def read_qtp_timeseries(file_path: FilePath) -> pd.DataFrame:
     # construct datetimes from Year, DOY, Time columns
     expected_columns = ["Year", "DOY", "Time"]
     if not all(col in df.columns for col in expected_columns):
-        raise ValueError(
-            f"Format error reading '{file_path}': expected columns {expected_columns} not found, not QTP timeseries format?"
-        )
+        msg = f"Format error reading '{file_path}': expected columns {expected_columns} not found, not QTP timeseries format?"
+        raise ValueError(msg)
     if df.isna().any(axis=None):
-        raise ValueError(
-            f"Missing values detected while reading '{file_path}': not QTP timeseries format?"
-        )
+        msg = f"Missing values detected while reading '{file_path}': not QTP timeseries format?"
+        raise ValueError(msg)
 
     dt_strings: pd.Series = (
         df["Year"]
@@ -579,14 +575,15 @@ def read_qtp_multistation(file_path: FilePath) -> pd.DataFrame:
         header=None,
         dtype=column_definitions,
     )
+
     if df.shape[1] != len(column_definitions):
-        raise ValueError(
-            f"Format error reading '{file_path}': not QTP multiistation ocean load format?"
-        )
+        msg = f"Format error reading '{file_path}': not QTP multiistation ocean load format?"
+        raise ValueError(msg)
+
     if df.isna().any(axis=None):
-        raise ValueError(
-            f"Missing values detected while reading '{file_path}': missing values detected, not QTP multi-station ocean load format?"
-        )
+        msg = f"Missing values detected while reading '{file_path}': missing values detected, not QTP multi-station ocean load format?"
+        raise ValueError(msg)
+
     df.columns = list(column_definitions.keys())
 
     # Remove UTF-8 BOM if present in site_id (some QTP files include a BOM)
@@ -629,40 +626,39 @@ def generate_qtp_input(
         Path to the output CSV file to be created.
 
     """
-    _site_id = np.atleast_1d(site_id).astype(str)
-    _datetimes = _datetimes_to_np_datetime64(datetimes)
-    _lat = np.atleast_1d(latitude).astype(float)
-    _lon = np.atleast_1d(longitude).astype(float)
+    site_id = np.atleast_1d(site_id).astype(str)
+    datetimes = _datetimes_to_np_datetime64(datetimes)
+    lat = np.atleast_1d(latitude).astype(float)
+    lon = np.atleast_1d(longitude).astype(float)
 
     if isinstance(elevation, (int, float, np.floating)):
-        _elevation = np.full(_lat.shape, float(elevation), dtype=np.float64)
+        elevation = np.full(lat.shape, float(elevation), dtype=np.float64)
     else:
-        _elevation = np.atleast_1d(elevation).astype(float)
+        elevation = np.atleast_1d(elevation).astype(float)
 
     if not (
         _site_id.size == _datetimes.size == _lat.size == _lon.size == _elevation.size
     ):
-        raise ValueError(
-            "site_id, datetimes, latitude, longitude, and elevation arguments must all have the same shape."
-        )
+        msg = "site_id, datetimes, latitude, longitude, and elevation arguments must all have the same shape."
+        raise ValueError(msg)
+        raise ValueError(msg)
 
     # initial data frame with station IDs and datetimes
     qtp_df = pd.DataFrame(
         data={
-            "Station ID": _site_id,
-            "DateTime": _datetimes,
-            "Latitude": _lat,
-            "Longitude": _lon,
-            "Elevation": _elevation,
+            "Station ID": site_id,
+            "DateTime": datetimes,
+            "Latitude": lat,
+            "Longitude": lon,
+            "Elevation": elevation,
         },
     )
     # wrap to [-180, 180]
     qtp_df["Longitude"] = qtp_df["Longitude"].apply(lambda x: (x + 180) % 360 - 180)
 
     if qtp_df["Elevation"].isna().any():
-        raise ValueError(
-            "Some site elevations are missing and no 'fill_elevation' was specified."
-        )
+        msg = "Some site elevations are missing and no 'fill_elevation' was specified."
+        raise ValueError(msg)
 
     # remove duplicates
     qtp_df = qtp_df.drop_duplicates(
@@ -715,7 +711,7 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
         md = ",".join([f"{v}={k}" for v, k in self.metadata.items()])
         return f"{cname}({md})"
 
-    def identifier(self, **kwargs) -> str:
+    def identifier(self) -> str:
         return repr(self)
 
     def _get_model_parameters(self, f: FilePath) -> None:
@@ -726,17 +722,16 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
             "ocean_tide_model": "",
             "center_mass_correction": False,
         }
-        with pathlib.Path(f).open() as fh:
+        with pathlib.Path(f).open() as fh:  # ruff: ignore[unspecified-encoding]
             model_txt = [l.strip() for l in fh if l.startswith("$$")]
             for l in model_txt:
-                # print(l)
                 if l.startswith("$$ Greens function:"):
                     matadata["Greens_function"] = l.split(":", 1)[1].strip()
                 elif l.startswith("$$ Ocean tide model:"):
                     matadata["ocean_tide_model"] = l.split(":", 1)[1].strip()
                 elif l.startswith("$$ CMC"):
                     v = l.split(":", 1)[1].strip().split()[0]
-                    matadata["center_mass_correction"] = False if v == "NO" else True
+                    matadata["center_mass_correction"] = v != "NO"
                 elif l.startswith("$$ END HEADER:"):
                     break
         self.metadata.update(matadata)
@@ -751,14 +746,13 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
         site_id: SiteIDArray,
         date_time: DatetimeArray,
         if_not_matched: Literal["error", "warn"] = "error",
-        **kwargs,
     ) -> NDArray[np.float64]:
 
-        _datetime = pd.DatetimeIndex(to_naive_utc_datetime(date_time, allow_nat=False))
-        _site_id = to_1d_ndarray(site_id).astype(str)
-        i_idx = np.arange(np.size(_site_id))
+        datetime = pd.DatetimeIndex(to_naive_utc_datetime(date_time, allow_nat=False))
+        site_id = to_1d_ndarray(site_id).astype(str)
+        i_idx = np.arange(np.size(site_id))
         scale_factor: float = 1e-4  # convert from nm/s2 to mGal
-        uniq_site_id = np.unique(_site_id)
+        uniq_site_id = np.unique(site_id)
 
         bad_site_ids = [s for s in uniq_site_id if s not in self.stations]
         if bad_site_ids:
@@ -782,8 +776,8 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
             )
 
         # simple first implementation non parallel
-        corrs = np.zeros_like(_site_id, dtype=np.float64)
-        for i, s, d in zip(i_idx, _site_id, _datetime):
+        corrs = np.zeros_like(site_id, dtype=np.float64)
+        for i, s, d in zip(i_idx, site_id, datetime, strict=True):
             if s not in site_computers:
                 corrs[i] = np.nan
                 continue

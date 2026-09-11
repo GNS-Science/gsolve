@@ -147,16 +147,20 @@ class TCorrMethods:
                 self.xdim not in points.data.columns
                 or self.ydim not in points.data.columns
             ):
-                raise TypeError(
+                msg = (
                     "GravitySites object missing required point columns: "
                     f"{self.xdim}, {self.ydim}"
+                )
+                raise TypeError(
+                    msg
                 )
             x = points.data[self.xdim].to_numpy()
             y = points.data[self.ydim].to_numpy()
 
         elif isinstance(points, xr.DataArray):
             if points.dims != self._obj.dims:
-                raise ValueError("DataArray's have incompatible dimensions")
+                msg_0 = "DataArray's have incompatible dimensions"
+                raise ValueError(msg_0)
             x = points.tcorr.xc
             y = points.tcorr.yc
         else:
@@ -434,13 +438,16 @@ class TCorrMethods:
             A boolean array of same dimensions as the calling DataArray.
         """
         if mask_type not in ("radial", "rectangular"):
+            msg = f"mask_type must be 'radial' or 'rectangular', not '{mask_type}'"
             raise ValueError(
-                f"mask_type must be 'radial' or 'rectangular', not '{mask_type}'"
+                msg
             )
         if max_dist is not None and max_dist <= min_dist:
-            raise ValueError(f"invalid {max_dist=}, must be > {min_dist=}")
+            msg = f"invalid {max_dist=}, must be > {min_dist=}"
+            raise ValueError(msg)
         if min_dist < 0.0:
-            raise ValueError(f"invalid {min_dist=}, must be >= 0.0")
+            msg = f"invalid {min_dist=}, must be >= 0.0"
+            raise ValueError(msg)
 
         if point is None:
             point = (
