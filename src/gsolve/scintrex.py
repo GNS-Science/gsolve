@@ -258,7 +258,8 @@ class CG6Data(ScintrexData):
         for k_orig, v_orig in metadata.items():
             k = _normalize_keyword(k_orig)
             if k not in self._metadata_fields:
-                raise ValueError(f"Unknown metadata field '{k}'.")
+                msg = f"Unknown metadata field '{k}'."
+                raise ValueError(msg)
             v = _scintrex_header_type_conversion(v_orig, self._metadata_fields[k])
             self.metadata[k] = v if v is not None else ""
             if metadata_units is not None:
@@ -290,12 +291,14 @@ class CG6Data(ScintrexData):
                             .astype(this_dtype)
                         )
                     except Exception as err:
+                        msg = f"unfixable error converting data in column '{c}' to {this_dtype}"
                         raise TypeError(
-                            f"unfixable error converting data in column '{c}' to {this_dtype}"
+                            msg
                         ) from err
                 else:
+                    msg = f"error converting data in column '{c}' to {this_dtype}"
                     raise TypeError(
-                        f"error converting data in column '{c}' to {this_dtype}"
+                        msg
                     )
 
         if (
@@ -308,7 +311,8 @@ class CG6Data(ScintrexData):
             )
             i_date_col = df.columns.get_loc("date")
             if not isinstance(i_date_col, int):
-                raise TypeError("Unexpected error finding 'date' column index.")
+                msg_0 = "Unexpected error finding 'date' column index."
+                raise TypeError(msg_0)
             df.insert(i_date_col, "datetime", dt)  # ty:ignore[invalid-argument-type]
             df = df.drop(columns=["date", "time"])
 
@@ -368,7 +372,8 @@ class CG6Data(ScintrexData):
         """
         file_data = _slurp_scintrex_text_file(cg6_file)
         if not file_data:
-            raise ValueError(f"No data read from {cg6_file}")
+            msg = f"No data read from {cg6_file}"
+            raise ValueError(msg)
 
         idx_column_names = 0
         for idx_column_names, line in enumerate(file_data):
@@ -458,21 +463,25 @@ class CG6Data(ScintrexData):
             Name of the output column.
         """
         if loop_format and "LOOP" not in loop_format:
-            raise ValueError("format_str must contain 'LOOP'.")
+            msg = "format_str must contain 'LOOP'."
+            raise ValueError(msg)
 
         # ensure only one method is used
         args = (field, array, datetimes, time_gap)
         if all(a is None for a in args):
+            msg = "At least one of 'field', 'array', 'datetimes' or 'time_gap' must be set."
             raise ValueError(
-                "At least one of 'field', 'array', 'datetimes' or 'time_gap' must be set."
+                msg
             )
         if sum(a is not None for a in args) > 1:
-            raise ValueError("Only one of 'field', 'array', or 'datetimes' can be set.")
+            msg = "Only one of 'field', 'array', or 'datetimes' can be set."
+            raise ValueError(msg)
 
         if field is not None:
             if field not in self.data.columns:
+                msg = f"arg {field=}, but not column name '{field}' found in obj.data."
                 raise KeyError(
-                    f"arg {field=}, but not column name '{field}' found in obj.data."
+                    msg
                 )
             self.data[output_column] = self.data[field].astype(str)
             return
@@ -480,8 +489,9 @@ class CG6Data(ScintrexData):
         if array is not None:
             array = np.atleast_1d(array)
             if len(array) != len(self.data):
+                msg_0 = "Length of 'array' must match the number of observations."
                 raise ValueError(
-                    "Length of 'array' must match the number of observations."
+                    msg_0
                 )
             self.data[output_column] = array.astype(str).tolist()
             return
@@ -499,16 +509,21 @@ class CG6Data(ScintrexData):
                     len(dates), start=loop_start, step=loop_step
                 )
             else:
+                msg_0 = "datetimes must be a dictionary, Series or array-like object."
                 raise TypeError(
-                    "datetimes must be a dictionary, Series or array-like object."
+                    msg_0
                 )
 
             if not dates.is_monotonic_increasing:
-                raise ValueError("datetimes must be sorted in increasing order.")
+                msg_0 = "datetimes must be sorted in increasing order."
+                raise ValueError(msg_0)
             if dates[0] > self.data["datetime"].min():
-                raise ValueError(
+                msg = (
                     f"First datetime in 'datetimes' ({dates[0]}) must be <= "
                     f"earliest observation time ({self.data.datetime.min()})"
+                )
+                raise ValueError(
+                    msg
                 )
             if dates[-1] < self.data["datetime"].max():
                 tmax = self.data["datetime"].max() + pd.Timedelta(seconds=1)
@@ -571,7 +586,8 @@ class CG6Data(ScintrexData):
 
         """
         if "loop" not in self.data.columns:
-            raise ValueError("Loop identifiers must be set before exporting to gsolve")
+            msg = "Loop identifiers must be set before exporting to gsolve"
+            raise ValueError(msg)
         df = self.data.copy()
 
         # corrgrav includes
@@ -604,8 +620,9 @@ class CG6Data(ScintrexData):
             include_non_standard_fields = [str(f) for f in include_non_standard_fields]
             missing = [f for f in include_non_standard_fields if f not in df.columns]
             if missing:
+                msg = f"Requested non-standard fields not found in data: {missing}"
                 raise KeyError(
-                    f"Requested non-standard fields not found in data: {missing}"
+                    msg
                 )
 
             to_drop = set(df.columns) - set(
@@ -658,8 +675,9 @@ class CG6Data(ScintrexData):
 
         """
         if coords_source not in ("user", "gps"):
+            msg = f"coords_source must be 'user' or 'gps', not {coords_source}."
             raise ValueError(
-                f"coords_source must be 'user' or 'gps', not {coords_source}."
+                msg
             )
 
         coord_cols = [f"{c}{coords_source}" for c in ("lat", "lon", "elev")]
@@ -717,8 +735,9 @@ class CG6Data(ScintrexData):
         _drift_rate = float(drift_rate)
 
         if not isinstance(_drift_zero_time, pd.Timestamp):
+            msg = "drift_zero_time could not be converted to a valid Timestamp."
             raise ValueError(
-                "drift_zero_time could not be converted to a valid Timestamp."
+                msg
             )
 
         _drift_corr = (

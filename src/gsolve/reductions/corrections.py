@@ -97,7 +97,8 @@ def normal_gravity_at_stn_elevation(
     """
     height_ellipsoidal = to_1d_ndarray_or_float(height_ellipsoidal)
     if np.any(height_ellipsoidal < 0):
-        raise ValueError("heights must be >= 0.0: ")
+        msg = "heights must be >= 0.0: "
+        raise ValueError(msg)
 
     if isinstance(ellipsoid, boule.Ellipsoid):
         e = ellipsoid
@@ -106,7 +107,8 @@ def normal_gravity_at_stn_elevation(
     elif ellipsoid == "GRS80":
         e = boule.GRS80
     else:
-        raise ValueError(f"Unknown ellipsoid '{ellipsoid}': must be 'WGS84' or 'GRS80'")
+        msg = f"Unknown ellipsoid '{ellipsoid}': must be 'WGS84' or 'GRS80'"
+        raise ValueError(msg)
 
     return e.normal_gravity(
         coordinates=(longitude, latitude, height_ellipsoidal), si_units=si_units
@@ -166,8 +168,9 @@ def normal_gravity_at_ellipsoid(
         a = 6378160
         b = 6356774.5161
     else:
+        msg = f"Unknown ellipsoid '{ellipsoid}': must be one of {valid_ellipsoids}"
         raise ValueError(
-            f"Unknown ellipsoid '{ellipsoid}': must be one of {valid_ellipsoids}"
+            msg
         )
 
     lat = np.deg2rad(latitude)
@@ -461,8 +464,9 @@ def bouguer_slab_curvature_corrected(
         if isinstance(_er, boule.Ellipsoid):
             Ro = float(_er.mean_radius)
         else:
+            msg = f"Unknown ellipsoid '{ellipsoid_or_radius}': must be 'WGS84' or 'GRS80'"
             raise ValueError(
-                f"Unknown ellipsoid '{ellipsoid_or_radius}': must be 'WGS84' or 'GRS80'"
+                msg
             )
 
     elif isinstance(ellipsoid_or_radius, boule.Ellipsoid):
@@ -627,10 +631,12 @@ class GravityCorrections(GSolveTable):
 
         sids = np.atleast_1d(site_id)
         if len(sids.shape) != 1:
-            raise ValueError(f"site_id must be a 1D array, not {len(sids.shape)}D")
+            msg = f"site_id must be a 1D array, not {len(sids.shape)}D"
+            raise ValueError(msg)
 
         if sids.shape[0] == 0:
-            raise ValueError("site_id must not be empty")
+            msg_0 = "site_id must not be empty"
+            raise ValueError(msg_0)
 
         self.data = pd.DataFrame(index=pd.Index(sids, name="site_id"), data=None)
 
@@ -638,7 +644,8 @@ class GravityCorrections(GSolveTable):
             if k in self._known_fields:
                 self.set_column(k, v)
             else:
-                raise ValueError(f"Unknown correction type '{k}'")
+                msg = f"Unknown correction type '{k}'"
+                raise ValueError(msg)
 
     def __repr__(self) -> str:
         cols = ",".join(self.data.columns.to_list())
@@ -679,9 +686,12 @@ class GravityCorrectionProvider:
             for k, v in kwargs:
                 setattr(self.params, k, v)
         else:
-            raise TypeError(
+            msg = (
                 "params must be None or a GravityCorrectionParameters object, "
                 f"not '{type(params)}'"
+            )
+            raise TypeError(
+                msg
             )
 
     def __repr__(self) -> str:
@@ -750,9 +760,12 @@ class GravityCorrectionProvider:
         elif isinstance(sites, pd.DataFrame):
             sites_df = sites
         else:
-            raise TypeError(
+            msg = (
                 "argument 'sites' must be a Dataframe or GravitySites object, not "
                 f"'{type(sites)}'"
+            )
+            raise TypeError(
+                msg
             )
 
         lon = sites_df[_cols["longitude"]].to_numpy()
@@ -770,7 +783,8 @@ class GravityCorrectionProvider:
                 c for c in _corrs if c not in self.available_corrections()
             ]
             if has_bad_corrections:
-                raise ValueError(f"Unrecognised corrections: {has_bad_corrections}")
+                msg = f"Unrecognised corrections: {has_bad_corrections}"
+                raise ValueError(msg)
         else:
             _corrs = self.params.bouguer_correction_fields()
 

@@ -173,9 +173,12 @@ class GSolveResults:
 
         if self.params.calculate_calibration_factor:
             if calibration_factor is None:
-                raise ValueError(
+                msg = (
                     "calibration factor was not calculated but "
                     "calculate_calibration_factor is True."
+                )
+                raise ValueError(
+                    msg
                 )
             # store the calculated calibration factor in the params object
             self.params.calculated_calibration_factor = calibration_factor
@@ -269,7 +272,8 @@ class GSolveResults:
                 unit_label = "mGal"
                 precision = ".04f"
         else:
-            raise ValueError(f"unrecgnised unit '{unit}'. Must be 'mGal' or 'uGal'")
+            msg = f"unrecgnised unit '{unit}'. Must be 'mGal' or 'uGal'"
+            raise ValueError(msg)
 
         df_loops: list[str] = [str(l) for l in df["loop"].unique()]
         # if len(df_loops) == 1:
@@ -292,7 +296,8 @@ class GSolveResults:
 
         for l in loops:
             if l not in df_loops:
-                raise ValueError(f"loop '{loop}' not found in observation residuals.")
+                msg = f"loop '{loop}' not found in observation residuals."
+                raise ValueError(msg)
 
         df = df.loc[df["loop"].isin(loops)]
         fig = _plt.figure()
@@ -404,7 +409,8 @@ class GSolveResults:
                 unit_label = "mGal"
                 precision = ".04f"
         if unit_label is None:
-            raise ValueError(f"unrecgnised unit '{unit}'. Must be 'mGal' or 'uGal'")
+            msg = f"unrecgnised unit '{unit}'. Must be 'mGal' or 'uGal'"
+            raise ValueError(msg)
 
         x = df[x_col].to_numpy()
         y = df[y_col].to_numpy()

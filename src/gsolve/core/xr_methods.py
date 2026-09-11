@@ -89,7 +89,8 @@ def load_dem(
     try:
         ds = xr.open_dataset(dem_file, **kwargs)
     except Exception as e:
-        raise RuntimeError(f"Failed to read DEM file '{dem_file}': {e}") from e
+        msg = f"Failed to read DEM file '{dem_file}': {e}"
+        raise RuntimeError(msg) from e
 
     return prepare_dem(
         dem=ds,
@@ -140,22 +141,27 @@ def prepare_dem(
     if isinstance(dem, xr.Dataset):
         if input_var_name is None:
             if len(dem) != 1:
-                raise ValueError(
+                msg = (
                     "Cannot convert multi-variable DataSet to a single variable"
                     "DataArray object. Use 'var_name' to specify the variable to "
                     f"convert. Variables in dem: {list(dem.data_vars)}"
                 )
+                raise ValueError(
+                    msg
+                )
             input_var_name = str(list(dem.data_vars.keys())[0])
         dem = dem[input_var_name]
     if not isinstance(dem, xr.DataArray):
+        msg = f"dem must be an xarray Dataset or DataArray, not {type(dem).__name__}"
         raise TypeError(
-            f"dem must be an xarray Dataset or DataArray, not {type(dem).__name__}"
+            msg
         )
 
     dem = dem.squeeze()
     if dem.ndim != 2:
+        msg = f"Dem must be a 2D array. Object is {dem.ndim}D with shape {dem.shape}"
         raise ValueError(
-            f"Dem must be a 2D array. Object is {dem.ndim}D with shape {dem.shape}"
+            msg
         )
 
     # Drop singleton coordinate variables that are not dimensions (e.g. 'band', 'spatial_ref')
@@ -169,9 +175,12 @@ def prepare_dem(
                 if csize == 1 or csize not in dem.shape:
                     dem = dem.drop_vars([coord_name])
             except Exception as e:
-                raise RuntimeError(
+                msg = (
                     f"prepare_dem(): dropping unused coordinate '{coord_name}' "
                     f"failed with error: {e}"
+                )
+                raise RuntimeError(
+                    msg
                 ) from e
 
     # set dimension names
@@ -190,13 +199,15 @@ def prepare_dem(
         try:
             dem = dem.fillna(fill_nan)
         except Exception as e:
-            raise RuntimeError(f"prepare_dem(): fillna failed with error: {e}") from e
+            msg = f"prepare_dem(): fillna failed with error: {e}"
+            raise RuntimeError(msg) from e
 
     if round_dp is not None:
         try:
             dem = dem.round(round_dp)
         except Exception as e:
-            raise RuntimeError(f"prepare_dem(): round failed with error: {e}") from e
+            msg = f"prepare_dem(): round failed with error: {e}"
+            raise RuntimeError(msg) from e
 
     return dem
 

@@ -96,8 +96,9 @@ class GSolveReport:
         self._tcorr_added_from_anomalies: bool = False
 
         if sites is None or results is None or observations is None:
+            msg = "'observations', 'sites' and 'results' arguments must be provided."
             raise ValueError(
-                "'observations', 'sites' and 'results' arguments must be provided."
+                msg
             )
 
         if isinstance(observations, GravitySurvey):
@@ -198,7 +199,8 @@ class GSolveReport:
 
         i_n_obs_used = df.columns.get_loc("n_obs_used")
         if not isinstance(i_n_obs_used, int):
-            raise ValueError("unexpected non-integer column index")
+            msg = "unexpected non-integer column index"
+            raise ValueError(msg)
         df.insert(i_n_obs_used, "n_obs_input", n_obs_input)
 
         # add a csv string of loops each site is included in
@@ -238,7 +240,8 @@ class GSolveReport:
         # add flag for if site has a gsolve solution
         i_included_in_solution = df.columns.get_loc("included_in_solution")
         if not isinstance(i_included_in_solution, int):
-            raise ValueError("unexpected non-integer column index")
+            msg = "unexpected non-integer column index"
+            raise ValueError(msg)
         df.insert(
             loc=i_included_in_solution + 1,
             column="has_site_solution",
@@ -264,7 +267,8 @@ class GSolveReport:
         ].value_counts()
         i_n_obs_input = df.columns.get_loc("n_obs_input")
         if not isinstance(i_n_obs_input, int):
-            raise ValueError("unexpected non-integer column index")
+            msg = "unexpected non-integer column index"
+            raise ValueError(msg)
         df.insert(i_n_obs_input + 1, "n_obs_used", 0)
         df.loc[n_obs_used.index, "n_obs_used"] = n_obs_used
 
@@ -338,8 +342,9 @@ class GSolveReport:
         filename = Path(filename)
         if filename.exists():
             if if_workbook_exists == "error":
+                msg = f"file {filename} already exists, and arg {if_workbook_exists=}"
                 raise ValueError(
-                    f"file {filename} already exists, and arg {if_workbook_exists=}"
+                    msg
                 )
 
             if if_workbook_exists == "append" and if_sheet_exists == "error":
@@ -347,10 +352,13 @@ class GSolveReport:
                     ws for ws in sheets_to_write if ws in get_excel_worksheets(filename)
                 ]
                 if existing_worksheets:
-                    raise ValueError(
+                    msg = (
                         f"worksheets '{sheets_to_write}' already exist in {filename}. "
                         "Use 'if_workbook_exists' and 'if_sheet_exists' parameters "
                         "to specify behaviour."
+                    )
+                    raise ValueError(
+                        msg
                     )
 
         # observations

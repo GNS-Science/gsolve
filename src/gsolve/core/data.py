@@ -24,8 +24,7 @@ from collections.abc import Callable, Sequence
 from copy import deepcopy
 from typing import Any, ClassVar, Self
 
-import numpy.typing as _npt
-import pandas as _pd
+import pandas as pd
 from pandas.api.types import is_bool_dtype, is_string_dtype
 
 from gsolve.core._typing import (
@@ -88,7 +87,7 @@ _COMMON_FIELDS: list[DataFieldSpecification] = [
     DataFieldSpecification(
         name="datetime",
         dtype="datetime",
-        default=_pd.NaT,
+        default=pd.NaT,
         required=True,
         converter=to_naive_utc_datetime,
     ),
@@ -108,7 +107,7 @@ class GSolveTable:
         Dictionary of known fields with specifications.
     _default_excel_sheet_name : str
         Default sheet name for Excel I/O operations.
-    data : _pd.DataFrame
+    data : pd.DataFrame
         The primary data storage object.
 
 
@@ -118,15 +117,14 @@ class GSolveTable:
     _default_excel_sheet_name: ClassVar[str | tuple[str, ...]] = ""
 
     def __init__(self) -> None:
-        self.data: _pd.DataFrame
+        self.data: pd.DataFrame
 
     def __repr__(self) -> str:
         rval = []
         if hasattr(self, "data"):
             rval.append(f"data:shape={self.data.shape}")
-        if hasattr(self, "params"):
-            if isinstance(self.params, GSolveParameters):
-                rval.append(self.params.__param_str__())
+        if hasattr(self, "params") and isinstance(self.params, GSolveParameters):
+            rval.append(self.params.__param_str__())
 
         rval = ", ".join(rval)
 
@@ -135,7 +133,7 @@ class GSolveTable:
     def __bool__(self) -> bool:
         return (
             hasattr(self, "data")
-            and isinstance(self.data, _pd.DataFrame)
+            and isinstance(self.data, pd.DataFrame)
             and not self.data.empty
         )
 
@@ -148,12 +146,12 @@ class GSolveTable:
 
     def copy(self) -> Self:
         """Return a deep copy of object."""  # ruff: ignore[docstring-missing-returns]
-        return self.__copy__()
+        return deepcopy(self)
 
     @classmethod
     def known_fields(cls) -> list[str]:
         """Return a list of known fields in the object."""  # ruff: ignore[docstring-missing-returns]
-        fields = [str(k) for k in getattr(cls, "_known_fields", {}).keys()]
+        fields = [str(k) for k in getattr(cls, "_known_fields", {})]
         return fields
 
     @classmethod
@@ -202,22 +200,21 @@ class GSolveTable:
                 break
 
         if dtype == "datetime":
-            _data = to_naive_utc_datetime(data)  # ty:ignore[no-matching-overload] # pyrefly:ignore
+            data_ = to_naive_utc_datetime(data)  # ty:ignore[no-matching-overload] # pyrefly:ignore
             dtype = None
         elif dtype == "timedelta":
-            _data = _pd.to_timedelta(data)  # ty:ignore[no-matching-overload] # pyrefly:ignore
+            data_ = pd.to_timedelta(data)  # ty:ignore[no-matching-overload] # pyrefly:ignore
             dtype = None
         elif data is None:
             if default is not None:
-                _data = default
+                data_ = default
             else:
-                raise ValueError(
-                    f"data is None, but no default value provided or defined for column '{label}'"
-                )
+                msg = f"data is None, but no default value provided or defined for column '{label}'"
+                raise ValueError(msg)
         else:
-            _data = data
+            data_ = data
 
-        self.data[label] = _pd.Series(data=_data, index=self.data.index, dtype=dtype)
+        self.data[label] = pd.Series(data=data_, index=self.data.index, dtype=dtype)
 
     def _data_ok(self, warn: bool = True) -> bool:
         """Test whether data are complete according to specifications in ``obj._known_fields``."""  # ruff: ignore[docstring-missing-returns]
@@ -237,7 +234,7 @@ class GSolveTable:
     @classmethod
     def from_dataframe(
         cls,
-        df: _pd.DataFrame,
+        df: pd.DataFrame,
         use_index: bool = True,
         ignore_unknown_fields: bool = False,
         parse_split_datetime: bool = False,
@@ -248,7 +245,7 @@ class GSolveTable:
 
         Parameters
         ----------
-        df : _pd.DataFrame
+        df : pd.DataFrame
             Data to be loaded.
         use_index : bool, default True
             Load dataframe index as a data column. Drop index if False.
@@ -274,10 +271,7 @@ class GSolveTable:
         pandas.read_excel : For available ``kwargs`` .
         pandas.DataFrame.rename : For full details of ``mapper`` argument.
         """
-        if use_index:
-            df = df.reset_index()
-        else:
-            df = df.copy()
+        df = df.reset_index() if use_index else df.copy()
 
         if mapper is not None:
             df = df.rename(columns=mapper)
@@ -294,7 +288,8 @@ class GSolveTable:
 
         missing_fields = [c for c in cls.required_fields() if c not in df.columns]
         if missing_fields:
-            raise ValueError(f"DataFrame missing required columns {missing_fields}")
+            msg = f"DataFrame missing required columns {missing_fields}"
+            raise ValueError(msg)
 
         if ignore_unknown_fields:
             df = df.loc[:, df.columns.intersection(cls.known_fields())]
@@ -343,7 +338,7 @@ class GSolveTable:
         pandas.DataFrame.rename : For full details of ``mapper`` argument.
         """
         return cls.from_dataframe(
-            _pd.read_csv(csv_file, **kwargs),
+            pd.read_csv(csv_file, **kwargs),
             use_index=False,
             ignore_unknown_fields=ignore_unknown_fields,
             parse_split_datetime=parse_split_datetime,
@@ -394,19 +389,20 @@ class GSolveTable:
         pandas.read_excel : For available ``kwargs`` .
         pandas.DataFrame.rename : For full details of ``mapper`` argument.
         """
-        _sheet_name: str | int | list[str | int]
+        sheet_name_: str | int | list[str | int]
         if sheet_name is None:
             try:
-                _sheet_name = cls._default_excel_sheet_name
+                sheet_name_ = cls._default_excel_sheet_name
             except AttributeError:
-                raise ValueError(
+                msg = (
                     f"sheet_name is None, but {type(cls).__name__} class "
                     "does not define a default sheet name."
                 )
+                raise ValueError(msg) from None
         else:
-            _sheet_name = sheet_name
+            sheet_name_ = sheet_name
 
-        df = read_excel_worksheet(excel_file, sheet_name=_sheet_name, **kwargs)
+        df = read_excel_worksheet(excel_file, sheet_name=sheet_name_, **kwargs)
         return cls.from_dataframe(
             df,
             use_index=False,
@@ -500,7 +496,7 @@ class GSolveParameters:
 
     def copy(self) -> Self:
         """Return a deep copy of object."""  # ruff: ignore[docstring-missing-returns]
-        return self.__copy__()
+        return deepcopy(self)
 
     def to_dict(self) -> dict:
         """Return parameters as a dict."""  # ruff: ignore[docstring-missing-returns]
@@ -511,7 +507,7 @@ class GSolveParameters:
         series_name: str | None = None,
         index_name: str | None = None,
         index_prefix: str | None = None,
-    ) -> _pd.Series:
+    ) -> pd.Series:
         """Return parameters as a Series with parameter names as the index.
 
         Parameters
@@ -529,9 +525,9 @@ class GSolveParameters:
         Series
 
         """
-        ds = _pd.Series(data=self.to_dict(), name=series_name).rename_axis(index_name)
+        ds = pd.Series(data=self.to_dict(), name=series_name).rename_axis(index_name)
         if index_prefix:
-            ds.index = ds.index = _pd.MultiIndex.from_arrays(
+            ds.index = ds.index = pd.MultiIndex.from_arrays(
                 arrays=([index_prefix] * ds.shape[0], ds.index),
             )
             if index_name is not None:
@@ -542,7 +538,7 @@ class GSolveParameters:
     @classmethod
     def from_series(
         cls,
-        ds: _pd.Series,
+        ds: pd.Series,
         skip_missing: bool = False,
         skip_unknown_parameters: bool = False,
     ) -> Self:
@@ -550,7 +546,7 @@ class GSolveParameters:
 
         Parameters
         ----------
-        ds : _pd.Series
+        ds : pd.Series
             The input Series is parsed in a dict-like manner with indicies as parameter
             names and series data as values.
         skip_missing: bool, default False:
@@ -569,20 +565,23 @@ class GSolveParameters:
         """
         _ds = ds.copy()
         if _ds.index.nlevels > 1:
-            raise ValueError("MultiIndex series not supported.")
+            msg = "MultiIndex series not supported."
+            raise ValueError(msg)
         args: dict[str, Any] = {
             str(k): v for k, v in ds.items() if k in cls.__dataclass_fields__
         }
         missing_args = [k for k in cls.__dataclass_fields__ if k not in args]
 
         if not skip_missing and missing_args:
+            msg = f"skip_missing=False: missing required parameters: {missing_args}"
             raise TypeError(
-                f"skip_missing=False: missing required parameters: {missing_args}"
+                msg
             )
         extra_args = [k for k in _ds.index if k not in cls.__dataclass_fields__]
         if extra_args and not skip_unknown_parameters:
+            msg = f"series contains unknown parameters: {_ds.index[extra_args].to_list()}"
             raise TypeError(
-                f"series contains unknown parameters: {_ds.index[extra_args].to_list()}"
+                msg
             )
 
         return cls(**args)
@@ -643,9 +642,12 @@ class GSolveParameters:
         if sheet_name is None:
             sheet_name = getattr(self, "_default_excel_sheet_name", None)
             if sheet_name is None:
-                raise ValueError(
+                msg = (
                     "sheet_name is None and object has no "
                     "_default_excel_sheet_name attribute."
+                )
+                raise ValueError(
+                    msg
                 )
 
         write_excel_worksheet(
@@ -687,18 +689,21 @@ class GSolveParameters:
 
 
 def _concat_gsolvetable_dataframes_with_fill(
-    df1: _pd.DataFrame,
-    df2: _pd.DataFrame,
+    df1: pd.DataFrame,
+    df2: pd.DataFrame,
     fill_str: str | None = "",
     fill_bool: bool | None = None,
     known_fields: dict[str, Any] | None = None,
     **kwargs,
-) -> _pd.DataFrame:
+) -> pd.DataFrame:
 
     if kwargs.get("axis", 0) != 0:
-        raise ValueError(
+        msg = (
             f"incompatible kwarg axis={kwargs['axis']}, "
             "function operates in vstack (axis=0) mode only."
+        )
+        raise ValueError(
+            msg
         )
     kwargs["axis"] = 0
 
@@ -706,8 +711,9 @@ def _concat_gsolvetable_dataframes_with_fill(
     if known_fields is not None:
         use_known_fields = True
         if not all([hasattr(f, "default") for f in known_fields.values()]):
+            msg = f"if specified, known_fields must be a dict of DataFieldSpecification objects"
             raise TypeError(
-                f"if specified, known_fields must be a dict of DataFieldSpecification objects"
+                msg
             )
 
     do_str_fill = fill_str is not None
@@ -718,7 +724,7 @@ def _concat_gsolvetable_dataframes_with_fill(
     if do_bool_fill:
         fill_bool = bool(fill_bool)
 
-    combined_df = _pd.concat([df1, df2], **kwargs)
+    combined_df = pd.concat([df1, df2], **kwargs)
     if not use_known_fields and not do_str_fill and not do_bool_fill:
         return combined_df
 

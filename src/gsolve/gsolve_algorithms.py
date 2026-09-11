@@ -77,7 +77,8 @@ def call_gsolve_lstsq(
     # index in obs where ties are located
     m_ties = ref_sites.index.intersection(obs["site_id"].to_list())
     if m_ties.empty:
-        raise ValueError("no tie sites")
+        msg = "no tie sites"
+        raise ValueError(msg)
     ref_sites = ref_sites.loc[m_ties]
 
     # set up g_solver_lstsq input arguments - do this sgemented so that can report
@@ -95,7 +96,8 @@ def call_gsolve_lstsq(
             "obs_g_not_detided": None,
         }
     except KeyError as e:
-        raise KeyError(f"obs dataframe missing required column {e}") from e
+        msg = f"obs dataframe missing required column {e}"
+        raise KeyError(msg) from e
 
     try:
         kwargs["ties_site_id"] = ref_sites.index.to_numpy()
@@ -103,7 +105,8 @@ def call_gsolve_lstsq(
             ref_sites.loc[:, "reference_gravity"].astype(float).to_numpy()
         )
     except KeyError as e:
-        raise KeyError(f"ref_sites dataframe missing required column {e}") from e
+        msg = f"ref_sites dataframe missing required column {e}"
+        raise KeyError(msg) from e
 
     results = g_solver_lstsq(**kwargs)
 
@@ -161,7 +164,8 @@ def call_gsolve_calibration(
     # index in obs where ties are located
     m_ties = ref_sites.index.intersection(obs["site_id"].to_list())
     if m_ties.empty:
-        raise ValueError("no tie sites")
+        msg = "no tie sites"
+        raise ValueError(msg)
     ref_sites = ref_sites.loc[m_ties]
 
     # set up g_solver_lstsq input arguments
@@ -178,7 +182,8 @@ def call_gsolve_calibration(
             "obs_g_not_detided": obs["meter_reading_mgal"].to_numpy(),
         }
     except KeyError as e:
-        raise KeyError(f"obs dataframe missing required column {e}") from e
+        msg = f"obs dataframe missing required column {e}"
+        raise KeyError(msg) from e
 
     try:
         kwargs["ties_site_id"] = ref_sites.index.to_numpy()
@@ -186,7 +191,8 @@ def call_gsolve_calibration(
             ref_sites.loc[:, "reference_gravity"].astype(float).to_numpy()
         )
     except KeyError as e:
-        raise KeyError(f"c dataframe missing required column {e}") from e
+        msg = f"c dataframe missing required column {e}"
+        raise KeyError(msg) from e
 
     results = g_solver_lstsq(**kwargs)
 
@@ -279,13 +285,17 @@ def g_solver_lstsq(
     """
     if method not in _GSOLVE_SOLVER_METHODS:
         valid_methods = tuple(_GSOLVE_SOLVER_METHODS.keys())
-        raise ValueError(f"invalid method '{method}', must be one of {valid_methods}")
+        msg = f"invalid method '{method}', must be one of {valid_methods}"
+        raise ValueError(msg)
 
     percentile_clipping = float(percentile_clipping)
     if percentile_clipping < 0.0 or percentile_clipping > 100.0:
-        raise ValueError(
+        msg = (
             f"invalid percentile value {percentile_clipping}, "
             "must be between 0 and 100 inclusive"
+        )
+        raise ValueError(
+            msg
         )
 
     n_obs = _np.size(obs_g)
@@ -341,9 +351,12 @@ def g_solver_lstsq(
         # Calibration factor
         if calculate_calibration_factor:
             if obs_g_not_detided is None:
-                raise ValueError(
+                msg_0 = (
                     "obs_g_not_detided must be provided when "
                     "calculate_calibration_factor is True"
+                )
+                raise ValueError(
+                    msg_0
                 )
             A[i, n_sites + (2 * n_loops)] = float(obs_g_not_detided[i])
 
