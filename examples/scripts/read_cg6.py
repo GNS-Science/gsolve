@@ -72,7 +72,7 @@ survey = GravitySurvey(obs, sites)
 
 # solve for gravity
 results = survey.solve_lstsq(
-    method=1, use_loops=True, calculate_calibration_factor=False, percentile_clipping=99
+    method=1, use_loops=True, percentile_clipping=99
 )
 
 # results.site_solution contains the adjusted gravity per station
