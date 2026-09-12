@@ -568,7 +568,7 @@ class GravitySites(GSolveTable):
         xcol: str = "easting",
         ycol: str = "northing",
         method: str = "nearest",
-    ) -> pd.Series | None:
+    ) -> _pd.Series | None:
         """Get elevations at site locations from an DEM/xarray grid.
 
         Parameters

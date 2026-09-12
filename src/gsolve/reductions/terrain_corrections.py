@@ -18,9 +18,7 @@
 """Functions and classes for computing gravity terrain corrections."""
 
 import dataclasses
-import operator
 import pathlib
-import sys
 import warnings
 from collections.abc import Iterable, Sequence
 from types import MappingProxyType
@@ -31,6 +29,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import xarray as xr
+from pandas.core.series import Series
 from tqdm import tqdm as _tqdm
 
 from gsolve.core._typing import (
@@ -65,8 +64,8 @@ __all__ = [
 ]
 
 
-def _is_dataarray(obj: Any) -> bool:
-    """Check if an object is an xarray DataArray."""
+def _is_dataarray(obj: Any) -> bool:  # ruff: ignore[any-type]
+    """Check if an object is an xarray DataArray."""  # ruff: ignore[docstring-missing-returns]
     return isinstance(obj, xr.DataArray)
 
 
@@ -262,7 +261,7 @@ def calculate_terrain_correction(
                 pt_topo_density = topo_density
 
             tcorr_topo[i] = tcorr_harmonica_topography(
-                point=(px, py, pz),
+                (px, py, pz),
                 topography=pt_topo_elev,
                 topography_density=pt_topo_density,
             )
@@ -280,7 +279,7 @@ def calculate_terrain_correction(
                 pt_bathy_density = bathy_density
 
             tcorr_bathy[i] = tcorr_harmonica_bathymetry(
-                point=(px, py, pz),
+                (px, py, pz),
                 bathymetry=pt_bathy_depth,
                 bathymetry_density=pt_bathy_density,
                 sea_level_elevation=sea_level_elevation,
@@ -1134,9 +1133,8 @@ class TerrainCorrectionData(GSolveTable):
                 "params is specified but terrain_corrections is None: "
                 "must specify both or neither"
             )
-            raise ValueError(msg)
         if params is None and terrain_corrections is not None:
-            msg = (
+            raise ValueError(
                 "terrain_corrections is specified but params is None: "
                 "must specify both or neither"
             )
@@ -1652,8 +1650,7 @@ class TerrainCorrectionData(GSolveTable):
         csv = "\n".join(csv)
         if fname is None:
             return csv
-        pathlib.Path(fname).write_text(csv)  # ruff: ignore[unspecified-encoding]
-        return None
+        pathlib.Path(fname).write_text(csv)
 
     @classmethod
     def from_csv(
@@ -1675,7 +1672,7 @@ class TerrainCorrectionData(GSolveTable):
         TerrainCorrectionOutput
 
         """
-        with pathlib.Path(fname).open() as f:  # ruff: ignore[unspecified-encoding]
+        with pathlib.Path(fname).open() as f:
             lines = f.readlines()
         params = [l.lstrip("#").strip().split(",") for l in lines if l.startswith("#")]
         if len(params) == 0:
@@ -1753,7 +1750,7 @@ class TerrainCorrectionData(GSolveTable):
             raise ValueError(err_msg)
 
         if if_missing == "drop":
-            warnings.warn(f"{err_msg}, dropping from output")
+            warnings.warn(f"{err_msg}, dropping from ouput")
             return tcorrs.loc[site_id_found, cols]
 
         warnings.warn(f"{err_msg}, filling with {fill_value}")

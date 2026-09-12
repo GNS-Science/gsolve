@@ -81,8 +81,9 @@ def get_true_sheet_name(
             return sheet_names[sheet_name]
         except IndexError as err:
             if raise_error:
-                msg = f"excel file {excel_file} has no sheet at index: {sheet_name}"
-                raise ValueError(msg) from err
+                raise ValueError(
+                    f"excel file {excel_file} has no sheet at index: {sheet_name}"
+                )
             return None
     else:
         sheet_names_lc = [
@@ -91,24 +92,21 @@ def get_true_sheet_name(
         if sheet_name.lower() in sheet_names_lc:
             return sheet_names[sheet_names_lc.index(sheet_name.lower())]
         if raise_error:
-            msg = f"excel file {excel_file} has no sheet named '{sheet_name}'"
-            raise ValueError(msg)
+            raise ValueError(
+                f"excel file {excel_file} has no sheet named '{sheet_name}'"
+            )
         return None
 
 
 def _parse_sheet_name_arg(
     sheet_name: str | int | Sequence[str | int],
 ) -> list[str | int]:
-    """Parse and validate sheet_name argument.
-
-    Returns
-    -------
-    list : str
-        Sheet names as a list
-    """
-    sheet_name_list: list[str | int] = (
-        list(sheet_name) if is_list_like(sheet_name) else [sheet_name]
-    )
+    """Parse and validate sheet_name argument."""  # ruff: ignore[docstring-missing-returns]
+    sheet_name_list: list[str | int]
+    if is_list_like(sheet_name):
+        sheet_name_list = [s for s in sheet_name]  # pyrefly:ignore[not-iterable]
+    else:
+        sheet_name_list = [sheet_name]  # pyrefly:ignore[bad-assignment]
 
     if not all(isinstance(s, (str, int)) for s in sheet_name_list):
         msg = (
@@ -242,8 +240,9 @@ def write_excel_worksheet(
     excel_file = Path(excel_file)
     if excel_file.exists():
         if if_workbook_exists == "error":
-            msg = f"file {excel_file} already exists, and arg {if_workbook_exists=}"
-            raise ValueError(msg)
+            raise ValueError(
+                f"file {excel_file} already exists, and arg {if_workbook_exists=}"
+            )
         if if_workbook_exists == "append":
             writer_kwargs["mode"] = "a"
 

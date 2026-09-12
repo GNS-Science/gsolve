@@ -77,8 +77,7 @@ def call_gsolve_lstsq(
     # index in obs where ties are located
     m_ties = ref_sites.index.intersection(obs["site_id"].to_list())
     if m_ties.empty:
-        msg = "no tie sites"
-        raise ValueError(msg)
+        raise ValueError("no tie sites")
     ref_sites = ref_sites.loc[m_ties]
 
     # set up g_solver_lstsq input arguments - do this segmented so that can report
@@ -164,8 +163,7 @@ def call_gsolve_calibration(
     # index in obs where ties are located
     m_ties = ref_sites.index.intersection(obs["site_id"].to_list())
     if m_ties.empty:
-        msg = "no tie sites"
-        raise ValueError(msg)
+        raise ValueError("no tie sites")
     ref_sites = ref_sites.loc[m_ties]
 
     # set up g_solver_lstsq input arguments

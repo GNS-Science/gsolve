@@ -18,6 +18,7 @@
 
 """Methods and classes for reading and applying ocean load corrections to gravity data."""
 
+import pathlib
 import warnings
 from pathlib import Path
 from typing import Any, Literal, Protocol, runtime_checkable
@@ -151,8 +152,8 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
         )
         self.metadata: dict[str, Any] = metadata
 
-    def identifier(self) -> str:
-        """Corrector identifier string."""
+    def identifier(self, **kwargs) -> str:
+        """Corrector identifier string."""  # ruff: ignore[docstring-missing-returns]
         return f"{type(self).__name__}()"
 
     def ocean_load_correction(
@@ -295,8 +296,8 @@ class OceanLoadTimeSeries(OceanLoadCorrectionProvider):
         md = ",".join([f"{v}={k}" for v, k in self.metadata.items()])
         return f"{cname}({md})"
 
-    def identifier(self) -> str:
-        """Corrector identifier string."""
+    def identifier(self, **kwargs) -> str:
+        """Corrector identifier string."""  # ruff: ignore[docstring-missing-returns]
         return f"{self.__class__.__name__}()"
 
     @property
@@ -377,17 +378,16 @@ class OceanLoadTimeSeries(OceanLoadCorrectionProvider):
 def _datetimes_to_np_datetime64(
     dt: DatetimeScalar | DatetimeArray, dtype: str = "datetime64"
 ) -> np.ndarray:
-    """Convert datetimes to numpy datetime64 array."""
-    dt = to_naive_utc_datetime(dt, allow_nat=False)
-    if isinstance(dt, pd.Timestamp):
-        return np.array([dt], dtype=dtype)
-    if isinstance(dt, (pd.DatetimeIndex, pd.Series)):
-        return np.atleast_1d(dt).astype(dtype)
-    msg = (
+    """Convert datetimes to numpy datetime64 array."""  # ruff: ignore[docstring-missing-returns]
+    _dt = to_naive_utc_datetime(dt, allow_nat=False)
+    if isinstance(_dt, pd.Timestamp):
+        return np.array([_dt], dtype=dtype)
+    if isinstance(_dt, (pd.DatetimeIndex, pd.Series)):
+        return np.atleast_1d(_dt).astype(dtype)
+    raise TypeError(
         "datetimes must be a pandas Timestamp, DatetimeIndex, or Series, not "
         f"{type(dt).__name__}."
     )
-    raise TypeError(msg)
 
 
 def _validate_timeseries_data(df: pd.DataFrame) -> None:
@@ -458,7 +458,7 @@ def qtp_to_corrector(
 
     if corr_type == "auto":
         # determine file type by reading first line
-        with Path(file_path).open("r", encoding="iso-8859-1") as f:
+        with pathlib.Path(file_path).open("r", encoding="iso-8859-1") as f:
             first_line = f.readline()
         if first_line.strip().startswith("Year DOY  Time"):
             corr_type = "timeseries"
@@ -722,7 +722,7 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
             "ocean_tide_model": "",
             "center_mass_correction": False,
         }
-        with Path(f).open() as fh:  # ruff: ignore[unspecified-encoding]
+        with pathlib.Path(f).open() as fh:
             model_txt = [l.strip() for l in fh if l.startswith("$$")]
             for l in model_txt:
                 if l.startswith("$$ Greens function:"):
