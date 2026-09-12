@@ -17,9 +17,8 @@
 # Copyright (c) 2025 Earth Sciences New Zealand.
 """Functions and classes for computing gravity terrain corrections."""
 
-from gsolve.core.utils import is_filepath_like
-from pandas.core.series import Series
 import dataclasses
+import pathlib
 import warnings
 from collections.abc import Iterable, Sequence
 from typing import Any, Literal, Self, get_args
@@ -29,6 +28,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import xarray as xr
+from pandas.core.series import Series
 from tqdm import tqdm as _tqdm
 
 from gsolve.core._typing import (
@@ -43,12 +43,12 @@ from gsolve.core._typing import (
 from gsolve.core.data import DataFieldSpecification, GSolveParameters, GSolveTable
 from gsolve.core.excel_io import read_excel_worksheet, write_excel_worksheet
 from gsolve.core.utils import (
-    is_list_like,
-    prepare_writable_df,
-    to_1d_ndarray,
     is_filepath_like,
     is_in_literal,
+    is_list_like,
     is_points3d_like,
+    prepare_writable_df,
+    to_1d_ndarray,
     to_points3d,
 )
 
@@ -56,15 +56,15 @@ from gsolve.core.utils import (
 from gsolve.core.xr_methods import *
 
 __all__ = [
-    "calculate_terrain_correction",
     "TerrainCorrectionData",
     "TerrainCorrectionParameters",
     "TerrainCorrector",
+    "calculate_terrain_correction",
 ]
 
 
-def _is_dataarray(obj: Any) -> bool:  # noqa: ANN401
-    """Check if an object is an xarray DataArray."""  # noqa: DOC201
+def _is_dataarray(obj: Any) -> bool:  # ruff: ignore[any-type]
+    """Check if an object is an xarray DataArray."""  # ruff: ignore[docstring-missing-returns]
     return isinstance(obj, xr.DataArray)
 
 
@@ -244,45 +244,43 @@ def calculate_terrain_correction(
         else:
             pt_land_sea_mask = land_sea_mask
 
-        if compute_topography:
-            if bool(pt_land_sea_mask.any()):
-                if use_distance_mask:
-                    pt_topo_elev: xr.DataArray = topo_elev.tcorr.clip_to_arr(
-                        pt_land_sea_mask, clip_other=False
-                    )
-                    pt_topo_density: xr.DataArray = topo_density.tcorr.clip_to_arr(
-                        pt_land_sea_mask, clip_other=False
-                    ).tcorr.apply_mask(distance_mask)
-
-                else:
-                    pt_topo_elev = topo_elev
-                    pt_topo_density = topo_density
-
-                tcorr_topo[i] = tcorr_harmonica_topography(
-                    (px, py, pz),
-                    topography=pt_topo_elev,
-                    topography_density=pt_topo_density,
+        if compute_topography and bool(pt_land_sea_mask.any()):
+            if use_distance_mask:
+                pt_topo_elev: xr.DataArray = topo_elev.tcorr.clip_to_arr(
+                    pt_land_sea_mask, clip_other=False
                 )
+                pt_topo_density: xr.DataArray = topo_density.tcorr.clip_to_arr(
+                    pt_land_sea_mask, clip_other=False
+                ).tcorr.apply_mask(distance_mask)
 
-        if compute_bathymetry:
-            if bool(pt_land_sea_mask.any()):
-                if use_distance_mask:
-                    pt_bathy_depth = bathy_dem.tcorr.clip_to_arr(
-                        pt_land_sea_mask, clip_other=False
-                    )
-                    pt_bathy_density: xr.DataArray = bathy_density.tcorr.clip_to_arr(
-                        pt_land_sea_mask, clip_other=False
-                    ).tcorr.apply_mask(distance_mask)
-                else:
-                    pt_bathy_depth = bathy_dem
-                    pt_bathy_density = bathy_density
+            else:
+                pt_topo_elev = topo_elev
+                pt_topo_density = topo_density
 
-                tcorr_bathy[i] = tcorr_harmonica_bathymetry(
-                    (px, py, pz),
-                    bathymetry=pt_bathy_depth,
-                    bathymetry_density=pt_bathy_density,
-                    sea_level_elevation=sea_level_elevation,
+            tcorr_topo[i] = tcorr_harmonica_topography(
+                (px, py, pz),
+                topography=pt_topo_elev,
+                topography_density=pt_topo_density,
+            )
+
+        if compute_bathymetry and bool(pt_land_sea_mask.any()):
+            if use_distance_mask:
+                pt_bathy_depth = bathy_dem.tcorr.clip_to_arr(
+                    pt_land_sea_mask, clip_other=False
                 )
+                pt_bathy_density: xr.DataArray = bathy_density.tcorr.clip_to_arr(
+                    pt_land_sea_mask, clip_other=False
+                ).tcorr.apply_mask(distance_mask)
+            else:
+                pt_bathy_depth = bathy_dem
+                pt_bathy_density = bathy_density
+
+            tcorr_bathy[i] = tcorr_harmonica_bathymetry(
+                (px, py, pz),
+                bathymetry=pt_bathy_depth,
+                bathymetry_density=pt_bathy_density,
+                sea_level_elevation=sea_level_elevation,
+            )
 
         progress_bar.update(1)
 
@@ -1067,7 +1065,7 @@ class TerrainCorrectionData(GSolveTable):
                 "params is specified but terrain_corrections is None: "
                 "must specify both or neither"
             )
-        elif params is None and terrain_corrections is not None:
+        if params is None and terrain_corrections is not None:
             raise ValueError(
                 "terrain_corrections is specified but params is None: "
                 "must specify both or neither"
@@ -1574,8 +1572,7 @@ class TerrainCorrectionData(GSolveTable):
         csv = "\n".join(csv)
         if fname is None:
             return csv
-        with open(fname, "w") as f:
-            f.write(csv)
+        pathlib.Path(fname).write_text(csv)
 
     @classmethod
     def from_csv(
@@ -1597,7 +1594,7 @@ class TerrainCorrectionData(GSolveTable):
         TerrainCorrectionOutput
 
         """
-        with open(fname, "r") as f:
+        with pathlib.Path(fname).open() as f:
             lines = f.readlines()
         params = [l.lstrip("#").strip().split(",") for l in lines if l.startswith("#")]
         if len(params) == 0:
@@ -1674,7 +1671,7 @@ class TerrainCorrectionData(GSolveTable):
         if if_missing == "raise":
             raise ValueError(err_msg)
 
-        elif if_missing == "drop":
+        if if_missing == "drop":
             warnings.warn(f"{err_msg}, dropping from ouput")
             return tcorrs.loc[site_id_found, cols]
 

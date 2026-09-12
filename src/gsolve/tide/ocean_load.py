@@ -18,6 +18,7 @@
 
 """Methods and classes for reading and applying ocean load corrections to gravity data."""
 
+import pathlib
 import warnings
 from typing import Any, Literal, Protocol, runtime_checkable
 
@@ -62,10 +63,10 @@ def _read_csv_with_fallback(file_path: FilePath, **kwargs) -> pd.DataFrame:
 
 
 __all__ = [
-    "OceanLoadTimeSeries",
     "OceanLoadAtSiteTime",
-    "qtp_to_corrector",
+    "OceanLoadTimeSeries",
     "generate_qtp_input",
+    "qtp_to_corrector",
 ]
 
 
@@ -152,7 +153,7 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
         self.metadata: dict[str, Any] = metadata
 
     def identifier(self, **kwargs) -> str:
-        """Corrector identifier string."""  # noqa: DOC201
+        """Corrector identifier string."""  # ruff: ignore[docstring-missing-returns]
         return f"{type(self).__name__}()"
 
     def ocean_load_correction(
@@ -219,8 +220,7 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
             )
             if if_not_matched == "error":
                 raise ValueError(msg)
-            else:
-                warnings.warn(msg, UserWarning)
+            warnings.warn(msg, UserWarning)
 
         if any(present_mask):
             rval.loc[present_mask] = self.data.loc[
@@ -303,7 +303,7 @@ class OceanLoadTimeSeries(OceanLoadCorrectionProvider):
         return f"{cname}({md})"
 
     def identifier(self, **kwargs) -> str:
-        """Corrector identifier string."""  # noqa: DOC201
+        """Corrector identifier string."""  # ruff: ignore[docstring-missing-returns]
         return f"{self.__class__.__name__}()"
 
     @property
@@ -384,17 +384,16 @@ class OceanLoadTimeSeries(OceanLoadCorrectionProvider):
 def _datetimes_to_np_datetime64(
     dt: DatetimeScalar | DatetimeArray, dtype: str = "datetime64"
 ) -> np.ndarray:
-    """Convert datetimes to numpy datetime64 array."""  # noqa: DOC201
+    """Convert datetimes to numpy datetime64 array."""  # ruff: ignore[docstring-missing-returns]
     _dt = to_naive_utc_datetime(dt, allow_nat=False)
     if isinstance(_dt, pd.Timestamp):
         return np.array([_dt], dtype=dtype)
     if isinstance(_dt, (pd.DatetimeIndex, pd.Series)):
         return np.atleast_1d(_dt).astype(dtype)
-    else:
-        raise TypeError(
-            "datetimes must be a pandas Timestamp, DatetimeIndex, or Series, not "
-            f"{type(dt).__name__}."
-        )
+    raise TypeError(
+        "datetimes must be a pandas Timestamp, DatetimeIndex, or Series, not "
+        f"{type(dt).__name__}."
+    )
 
 
 def _validate_timeseries_data(df: pd.DataFrame) -> None:
@@ -461,7 +460,7 @@ def qtp_to_corrector(
 
     if corr_type == "auto":
         # determine file type by reading first line
-        with open(file_path, "r", encoding="iso-8859-1") as f:
+        with pathlib.Path(file_path).open("r", encoding="iso-8859-1") as f:
             first_line = f.readline()
         if first_line.strip().startswith("Year DOY  Time"):
             corr_type = "timeseries"
@@ -605,7 +604,7 @@ def generate_qtp_input(
     datetimes: DatetimeArray,
     latitude: FloatArray,
     longitude: FloatArray,
-    elevation: FloatArray | float | int | np.floating,
+    elevation: FloatArray | float | np.floating,
     output_file: FilePath,
 ) -> None:
     """
@@ -727,8 +726,8 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
             "ocean_tide_model": "",
             "center_mass_correction": False,
         }
-        with open(f) as fh:
-            model_txt = [l.strip() for l in fh.readlines() if l.startswith("$$")]
+        with pathlib.Path(f).open() as fh:
+            model_txt = [l.strip() for l in fh if l.startswith("$$")]
             for l in model_txt:
                 # print(l)
                 if l.startswith("$$ Greens function:"):
@@ -744,7 +743,7 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
 
     @property
     def stations(self) -> list[str]:
-        """Return the station identifiers for which this provider can provide corrections."""
+        """Station identifiers for which this provider can provide corrections."""
         return list(self.ocean_loading_model.keys())
 
     def ocean_load_correction(
@@ -769,9 +768,8 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
             )
             if if_not_matched == "error":
                 raise ValueError(msg)
-            else:
-                warnings.warn(msg, UserWarning)
-                uniq_site_id = [s for s in uniq_site_id if s not in bad_site_ids]
+            warnings.warn(msg, UserWarning)
+            uniq_site_id = [s for s in uniq_site_id if s not in bad_site_ids]
 
         # set up the computers for each station
         site_computers: dict[str, pyhardisp.HardispComputer] = {}

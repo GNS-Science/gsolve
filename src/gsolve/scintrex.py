@@ -18,6 +18,7 @@
 
 import abc
 import dataclasses
+import pathlib
 import warnings
 from collections.abc import Callable, Mapping, Sequence
 from copy import deepcopy
@@ -44,9 +45,9 @@ from gsolve.core.utils import (
 from gsolve.observations import GravityObservations
 from gsolve.sites import GravitySites
 
-__all__ = ["ScintrexData", "CG6Data"]
+__all__ = ["CG6Data", "ScintrexData"]
 
-_ScintrexMetadataDataTypes: TypeAlias = Union[str, float, int, bool, pd.Timestamp]
+_ScintrexMetadataDataTypes: TypeAlias = str | float | int | bool | pd.Timestamp
 
 
 class ScintrexData(abc.ABC):
@@ -67,11 +68,11 @@ class ScintrexData(abc.ABC):
         self._set_data(data, on_error)
 
     @abc.abstractmethod
-    def to_gsolve_observations(self) -> GravityObservations:  # noqa: D102
+    def to_gsolve_observations(self) -> GravityObservations:  # ruff: ignore[undocumented-public-method]
         pass
 
     @abc.abstractmethod
-    def set_loop(self) -> None:  # noqa: D102
+    def set_loop(self) -> None:  # ruff: ignore[undocumented-public-method]
         pass
 
     @abc.abstractmethod
@@ -97,18 +98,17 @@ class ScintrexData(abc.ABC):
 
     @property
     def meter_id(self) -> str:
-        """Return instrument identifier - the last for digits of full serial number."""
+        """Instrument identifier string - the last for digits of full serial number."""
         m = str(self.metadata.get("instrument_serial_number", None))
         if m is None:
             return ""
-        elif len(m) < 4:
+        if len(m) < 4:
             return m
-        else:
-            return m[-4:]
+        return m[-4:]
 
     @property
     def stations(self) -> list[str]:
-        """Return a list of unique station names in the data."""
+        """List of unique station names in the data."""
         if not self:
             return []
         return self.data["station"].unique().tolist()
@@ -117,8 +117,13 @@ class ScintrexData(abc.ABC):
         return deepcopy(self)
 
     def copy(self) -> Self:
-        """Return a deep copy of the object."""  # noqa: DOC201
-        return self.__copy__()
+        """Return a deep copy of the object.
+
+        Returns
+        -------
+        ScintrexData
+        """
+        return self.__copy__()  # ruff: ignore[unnecessary-dunder-call]
 
 
 class CG6Data(ScintrexData):
@@ -167,7 +172,7 @@ class CG6Data(ScintrexData):
     """
 
     _file_id_header: str = "cg-6_calibration"
-    _metadata_fields: MappingProxyType[str, Type] = MappingProxyType(
+    _metadata_fields: MappingProxyType[str, type] = MappingProxyType(
         {
             "survey_name": str,
             "instrument_serial_number": str,
@@ -187,7 +192,7 @@ class CG6Data(ScintrexData):
             "firmware_version": str,
         }
     )
-    _data_fields: MappingProxyType[str, Type] = MappingProxyType(
+    _data_fields: MappingProxyType[str, type] = MappingProxyType(
         {
             "station": str,
             "date": str,
@@ -215,7 +220,7 @@ class CG6Data(ScintrexData):
             "corrections[drift-temp-na-tide-tilt]": str,
         }
     )
-    _extra_data_fields: MappingProxyType[str, Type] = MappingProxyType(
+    _extra_data_fields: MappingProxyType[str, type] = MappingProxyType(
         {
             "datetime": pd.Timestamp,
             "meter_id": str,
@@ -324,7 +329,7 @@ class CG6Data(ScintrexData):
         self.data = df
 
     def _strip_corrections(self) -> pd.Series:
-        """Return corrgrav values with all corrections removed."""  # noqa: DOC201
+        """Return corrgrav values with all corrections removed."""  # ruff: ignore[docstring-missing-returns]
         return (
             self.data["corrgrav"]
             - (self.data["driftcorr"] * self.data["correction_drift"])
@@ -383,9 +388,9 @@ class CG6Data(ScintrexData):
             k, v, u = _split_header_key_val_unit(
                 line, normalize_key=True, extract_units=True
             )
-            if k == "" or k is None:
+            if not k or k is None:
                 continue
-            if v == "":
+            if not v:
                 if k == cls._file_id_header:
                     file_id_found = True
                 continue
@@ -452,9 +457,8 @@ class CG6Data(ScintrexData):
         output_column : str, default 'loop'
             Name of the output column.
         """
-        if loop_format:
-            if "LOOP" not in loop_format:
-                raise ValueError("format_str must contain 'LOOP'.")
+        if loop_format and "LOOP" not in loop_format:
+            raise ValueError("format_str must contain 'LOOP'.")
 
         # ensure only one method is used
         args = (field, array, datetimes, time_gap)
@@ -596,23 +600,18 @@ class CG6Data(ScintrexData):
         if not include_non_standard_fields:
             to_drop = set(df.columns) - set(GravityObservations.known_fields())
             df = df.drop(columns=to_drop)
-        else:
-            if isinstance(include_non_standard_fields, Sequence):
-                include_non_standard_fields = [
-                    str(f) for f in include_non_standard_fields
-                ]
-                missing = [
-                    f for f in include_non_standard_fields if f not in df.columns
-                ]
-                if missing:
-                    raise KeyError(
-                        f"Requested non-standard fields not found in data: {missing}"
-                    )
-
-                to_drop = set(df.columns) - set(
-                    GravityObservations.known_fields() + include_non_standard_fields
+        elif isinstance(include_non_standard_fields, Sequence):
+            include_non_standard_fields = [str(f) for f in include_non_standard_fields]
+            missing = [f for f in include_non_standard_fields if f not in df.columns]
+            if missing:
+                raise KeyError(
+                    f"Requested non-standard fields not found in data: {missing}"
                 )
-                df = df.drop(columns=to_drop)
+
+            to_drop = set(df.columns) - set(
+                GravityObservations.known_fields() + include_non_standard_fields
+            )
+            df = df.drop(columns=to_drop)
 
         return GravityObservations.from_dataframe(
             df, ignore_unknown_fields=not include_non_standard_fields
@@ -736,9 +735,9 @@ class CG6Data(ScintrexData):
 
 
 def _slurp_scintrex_text_file(filepath: FilePath) -> list[str]:
-    """Read a Scintrex text file, fix encoding and return lines as a list."""  # noqa: DOC201
-    with open(filepath, "r", encoding="utf-8-sig") as fh:
-        return [l.strip() for l in fh.readlines()]
+    """Read a Scintrex text file, fix encoding and return lines as a list."""  # ruff: ignore[docstring-missing-returns]
+    with pathlib.Path(filepath).open("r", encoding="utf-8-sig") as fh:
+        return [l.strip() for l in fh]
 
 
 def _split_header_key_val_unit(
@@ -746,7 +745,7 @@ def _split_header_key_val_unit(
     normalize_key: bool = True,
     extract_units: bool = True,
 ) -> tuple[str, str, str]:
-    """Split headers into key, value and units."""  # noqa: DOC201
+    """Split headers into key, value and units."""  # ruff: ignore[docstring-missing-returns]
     header = header.strip("/ ")
     if not header:
         return ("", "", "")
@@ -769,25 +768,26 @@ def _split_header_key_val_unit(
 
 def _scintrex_header_type_conversion(
     header_val: _ScintrexMetadataDataTypes,
-    data_type: Type | Callable | None = None,
-) -> _ScintrexMetadataDataTypes | None:  # noqa: ANN401
-    if header_val == "" or data_type is None:
+    data_type: type | Callable | None = None,
+) -> _ScintrexMetadataDataTypes | None:
+    if not header_val or data_type is None:
         return ""
-    elif data_type is pd.Timestamp:
+
+    if data_type is pd.Timestamp:
         rval = to_naive_utc_datetime(header_val)
         if pd.isna(rval):
-            raise ValueError(f"Could not convert '{header_val}' to a Timestamp.")
+            msg = f"Could not convert '{header_val}' to a Timestamp."
+            raise ValueError(msg)
 
     elif data_type is bool:
         if isinstance(header_val, str):
-            if header_val.lower() in ("true", "yes", "1", "enabled"):
+            if header_val.lower() in {"true", "yes", "1", "enabled"}:
                 rval = True
-            elif header_val.lower() in ("false", "no", "0", "disabled"):
+            elif header_val.lower() in {"false", "no", "0", "disabled"}:
                 rval = False
             else:
-                raise ValueError(
-                    f"Could not convert '{header_val}' to a boolean value."
-                )
+                msg = f"Could not convert '{header_val}' to a boolean value."
+                raise ValueError(msg)
         else:
             rval = bool(header_val)
     else:
@@ -797,7 +797,7 @@ def _scintrex_header_type_conversion(
 
 
 def _extract_unit_from_keyword(header: str) -> tuple[str, str]:
-    """Get header and unit form a header string."""  # noqa: DOC201
+    """Get header and unit form a header string."""  # ruff: ignore[docstring-missing-returns]
     if header.endswith(")"):
         sep = "("
     elif header.endswith("]"):

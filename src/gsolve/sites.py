@@ -51,7 +51,6 @@ from gsolve.core.utils import (
 )
 from gsolve.core.xr_methods import load_dem, prepare_dem
 
-
 __all__ = [
     "GravitySites",
     "ReferenceGravity",
@@ -275,8 +274,7 @@ class GravitySites(GSolveTable):
             cols = self.data.columns
         if active_only:
             return self.data.loc[self.data["gsolve_tie"], cols]
-        else:
-            return self.data.loc[self.data["reference_gravity"].notna(), cols]
+        return self.data.loc[self.data["reference_gravity"].notna(), cols]
 
     def activate_ties(self, site_id: str | _npt.ArrayLike | None = None) -> None:
         """Set one or more "tie" sites as active, i.e. to be used in gsolve.
@@ -561,7 +559,7 @@ class GravitySites(GSolveTable):
         xcol: str = "easting",
         ycol: str = "northing",
         method: str = "nearest",
-    ) -> None | _pd.Series:
+    ) -> _pd.Series | None:
         """Get elevations at site locations from an DEM/xarray grid.
 
         Parameters

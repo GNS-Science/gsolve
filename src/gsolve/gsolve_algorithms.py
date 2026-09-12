@@ -25,7 +25,7 @@ import pandas as _pd
 from gsolve.core._typing import GSolveSolverMethod, GSolveSolverReturn
 from gsolve.gsolve_outputs import GSolveResults
 
-__all__ = ["call_gsolve_lstsq", "call_gsolve_calibration", "GSolveSolverMethod"]
+__all__ = ["GSolveSolverMethod", "call_gsolve_calibration", "call_gsolve_lstsq"]
 
 _GSOLVE_SOLVER_METHODS: dict[int, str] = {
     1: "Unconstrained least squares",
@@ -78,8 +78,7 @@ def call_gsolve_lstsq(
     m_ties = ref_sites.index.intersection(obs["site_id"].to_list())
     if m_ties.empty:
         raise ValueError("no tie sites")
-    else:
-        ref_sites = ref_sites.loc[m_ties]
+    ref_sites = ref_sites.loc[m_ties]
 
     # set up g_solver_lstsq input arguments - do this sgemented so that can report
     # missing fields in a comfortable way.
@@ -163,8 +162,7 @@ def call_gsolve_calibration(
     m_ties = ref_sites.index.intersection(obs["site_id"].to_list())
     if m_ties.empty:
         raise ValueError("no tie sites")
-    else:
-        ref_sites = ref_sites.loc[m_ties]
+    ref_sites = ref_sites.loc[m_ties]
 
     # set up g_solver_lstsq input arguments
     try:
@@ -357,7 +355,7 @@ def g_solver_lstsq(
                     C[k, k] = 1
                     d[k] = ties_g[j]
                     break
-                elif method == 3:
+                if method == 3:
                     C[j, k] = 1
                     d[j] = ties_g[j]
 

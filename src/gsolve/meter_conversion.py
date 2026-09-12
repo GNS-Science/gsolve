@@ -18,9 +18,11 @@
 
 """Module for converting Lacoste-Romberg G and D meter readings to mGal."""
 
+import pathlib
 import warnings
+from collections.abc import Sequence
 from io import StringIO
-from typing import Any, Protocol, Sequence, TextIO, runtime_checkable
+from typing import Any, Protocol, TextIO, runtime_checkable
 
 import numpy as _np
 import numpy.typing as _npt
@@ -326,7 +328,7 @@ class LaCosteRombergDialConverter:
 
     @property
     def starttime(self) -> _pd.Timestamp | None:
-        """The date from which correction parameters are valid."""  # noqa: DOC501
+        """The date from which correction parameters are valid."""
         st = getattr(self, "_starttime", None)
         if st is not None and not isinstance(st, _pd.Timestamp):
             raise TypeError(
@@ -336,7 +338,7 @@ class LaCosteRombergDialConverter:
 
     @property
     def endtime(self) -> _pd.Timestamp | None:
-        """The date up to which correction parameters are valid."""  # noqa: DOC501
+        """The date up to which correction parameters are valid."""
         r = getattr(self, "_endtime", None)
         if r is not None and not isinstance(r, _pd.Timestamp):
             raise TypeError(
@@ -551,7 +553,7 @@ class LaCosteRombergDialConverter:
         if isinstance(fname, TextIO):
             data = fname.readlines()
         else:
-            with open(fname, encoding="utf-8-sig", mode="r") as fh:
+            with pathlib.Path(fname).open(encoding="utf-8-sig", mode="r") as fh:
                 data = fh.readlines()
         if not data:
             raise ValueError("empty file")
