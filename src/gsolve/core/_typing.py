@@ -74,8 +74,20 @@ type FilePath = str | PathLike
 type Renamer = Mapping[Any, Hashable] | Callable[[Any], Hashable]
 
 
-type DateTimeConvertibleTypes = (
-    str | int | float | datetime.timedelta | list | tuple | ArrayLike | Index | Series
+DateTimeConvertibleTypes: TypeAlias = (
+    str
+    | int
+    | float
+    | datetime.timedelta
+    | list
+    | tuple
+    | range
+    | ArrayLike
+    | Index
+    | Series
+)
+DatetimeScalar: TypeAlias = (
+    int | float | str | datetime.date | np.datetime64 | pd.Timestamp
 )
 type DatetimeScalar = int | float | str | datetime.date | np.datetime64 | pd.Timestamp
 

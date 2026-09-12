@@ -71,9 +71,7 @@ obs.calculate_tide_corrected_gravity()
 survey = GravitySurvey(obs, sites)
 
 # solve for gravity
-results = survey.solve_lstsq(
-    method=1, use_loops=True, percentile_clipping=99
-)
+results = survey.solve_lstsq(method=1, use_loops=True, percentile_clipping=99)
 
 # results.site_solution contains the adjusted gravity per station
 print(results.site_solution)

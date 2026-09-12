@@ -19,9 +19,10 @@
 """Module for converting Lacoste-Romberg G and D meter readings to mGal."""
 
 import pathlib
+import warnings
 from collections.abc import Sequence
 from io import StringIO
-from typing import Protocol, Self, TextIO, runtime_checkable
+from typing import Any, Protocol, TextIO, runtime_checkable
 
 import numpy as np
 import numpy.typing as npt
@@ -261,7 +262,7 @@ class LaCosteRombergDialConverter:
         self._endtime = et
 
     @property
-    def starttime(self) -> pd.Timestamp | None:
+    def starttime(self) -> _pd.Timestamp | None:
         """The date from which correction parameters are valid."""
         st = getattr(self, "_starttime", None)
         if st is not None and not isinstance(st, pd.Timestamp):
@@ -270,7 +271,7 @@ class LaCosteRombergDialConverter:
         return st
 
     @property
-    def endtime(self) -> pd.Timestamp | None:
+    def endtime(self) -> _pd.Timestamp | None:
         """The date up to which correction parameters are valid."""
         r = getattr(self, "_endtime", None)
         if r is not None and not isinstance(r, pd.Timestamp):

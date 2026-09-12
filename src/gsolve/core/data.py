@@ -18,13 +18,11 @@
 
 """Base class and function definitions for Gsolve data structures."""
 
-from dask.array import ma
-
 import dataclasses
 import warnings
 from collections.abc import Callable
 from copy import deepcopy
-from typing import Any, Self, ClassVar
+from typing import Any, ClassVar, Self
 
 import numpy as np
 import pandas as pd
@@ -405,7 +403,6 @@ class GSolveTable(_HasKnownFields, abc.ABC):
 
     def __init__(self) -> None:
         self.data: _pd.DataFrame
-        pass
 
     def __repr__(self) -> str:
         rval = []
@@ -429,22 +426,22 @@ class GSolveTable(_HasKnownFields, abc.ABC):
         return len(self.data) if self else 0
 
     def __copy__(self) -> Self:
-        """Ensure all copies are deep copies."""
+        """Ensure all copies are deep copies."""  # ruff: ignore[docstring-missing-returns]
         return deepcopy(self)
 
     def copy(self) -> Self:
-        """Return a deep copy of object."""
-        return deepcopy(self)
+        """Return a deep copy of object."""  # ruff: ignore[docstring-missing-returns]
+        return self.__copy__()
 
     @classmethod
     def known_fields(cls) -> list[str]:
-        """Return a list of known fields in the object."""
-        fields = [str(k) for k in getattr(cls, "_known_fields", {})]
+        """Return a list of known fields in the object."""  # ruff: ignore[docstring-missing-returns]
+        fields = [str(k) for k in getattr(cls, "_known_fields", {}).keys()]
         return fields
 
     @classmethod
     def required_fields(cls) -> list[str]:
-        """Return a list of required fields in the object."""
+        """Return a list of required fields in the object."""  # ruff: ignore[docstring-missing-returns]
         if cls.known_fields():
             return [k for k, v in cls._known_fields.items() if v.required]
         return []
@@ -452,8 +449,8 @@ class GSolveTable(_HasKnownFields, abc.ABC):
     def set_column(
         self,
         label: str,
-        data: Any | None = None,
-        default: Any | None = None,
+        data: Any | None = None,  # ruff: ignore[any-type]
+        default: Any | None = None,  # ruff: ignore[any-type]
         dtype: str | type | None = None,
     ) -> None:
         """
@@ -505,7 +502,7 @@ class GSolveTable(_HasKnownFields, abc.ABC):
         self.data[label] = pd.Series(data=data_, index=self.data.index, dtype=dtype)
 
     def _data_ok(self, warn: bool = True) -> bool:
-        """Test whether data are complete according to specifications in ``obj._known_fields``."""
+        """Test whether data are complete according to specifications in ``obj._known_fields``."""  # ruff: ignore[docstring-missing-returns]
         rval = True
         for f in self.required_fields():
             if f not in self.data.columns:
@@ -679,7 +676,7 @@ class GSolveTable(_HasKnownFields, abc.ABC):
         """
         if sheet_name is None:
             try:
-                sheet_name_ = cls._default_excel_sheet_name
+                _sheet_name = cls._default_excel_sheet_name
             except AttributeError:
                 msg = (
                     f"sheet_name is None, but {type(cls).__name__} class "
@@ -767,3 +764,271 @@ class GSolveTable(_HasKnownFields, abc.ABC):
     #             "'sheet_name' not defined and object has no valid "
     #             "_default_excel_sheet_name attribute"
     #         )
+
+
+@dataclasses.dataclass
+class GSolveParameters:
+    """Base class to store parameters related to GSolveTable derived classes."""
+
+    def __param_str__(self) -> str:
+        # Return a string representation of the parameters
+        return repr(self).partition("(")[2].rpartition(")")[0]
+
+    def __copy__(self) -> Self:
+        # Ensure all copies are deep copies.
+        return deepcopy(self)
+
+    def copy(self) -> Self:
+        """Return a deep copy of object."""  # ruff: ignore[docstring-missing-returns]
+        return self.__copy__()
+
+    def to_dict(self) -> dict:
+        """Return parameters as a dict."""  # ruff: ignore[docstring-missing-returns]
+        return dataclasses.asdict(self)
+
+    def to_series(
+        self,
+        series_name: str | None = None,
+        index_name: str | None = None,
+        index_prefix: str | None = None,
+    ) -> _pd.Series:
+        """Return parameters as a Series with parameter names as the index.
+
+        Parameters
+        ----------
+        series_name : str | None, default is None
+            The series data field name.
+        index_name : str | None, default is None
+            The series index name.
+        index_prefix : str | None, optional
+            Create a multiinidex where level 0 is 'index_prefix` and level 1 are
+            the parameter names.
+
+        Returns
+        -------
+        Series
+
+        """
+        ds = _pd.Series(data=self.to_dict(), name=series_name).rename_axis(index_name)
+        if index_prefix:
+            ds.index = ds.index = _pd.MultiIndex.from_arrays(
+                arrays=([index_prefix] * ds.shape[0], ds.index),
+            )
+            if index_name is not None:
+                ds = ds.rename_axis(["", index_name])
+
+        return ds
+
+    @classmethod
+    def from_series(
+        cls,
+        ds: _pd.Series,
+        skip_missing: bool = False,
+        skip_unknown_parameters: bool = False,
+    ) -> Self:
+        """Generate a GsolveParameters object from a pandas.Series.
+
+        Parameters
+        ----------
+        ds : _pd.Series
+            The input Series is parsed in a dict-like manner with indicies as parameter
+            names and series data as values.
+        skip_missing: bool, default False:
+            How to handle cases where ``ds`` does not provide values for all parameters.
+            If False, raise a TypeError exception. If True and the missing parameters
+            have default values, create the object with default values. Parameters
+            without a default value must always be defined in the input series.
+        skip_unknown_parameters : bool, default False
+            If False, raise a TypeError if ``ds`` contains indices that do not match
+            known parameters. If True, silently ignore unknown parameters
+
+        Returns
+        -------
+        GSolveParameters
+
+        """
+        _ds = ds.copy()
+        if _ds.index.nlevels > 1:
+            raise ValueError("MultiIndex series not supported.")
+        args: dict[str, Any] = {
+            str(k): v for k, v in ds.items() if k in cls.__dataclass_fields__
+        }
+        missing_args = [k for k in cls.__dataclass_fields__ if k not in args]
+
+        if not skip_missing and missing_args:
+            raise TypeError(
+                f"skip_missing=False: missing required parameters: {missing_args}"
+            )
+        extra_args = [k for k in _ds.index if k not in cls.__dataclass_fields__]
+        if extra_args and not skip_unknown_parameters:
+            raise TypeError(
+                f"series contains unknown parameters: {_ds.index[extra_args].to_list()}"
+            )
+
+        return cls(**args)
+
+    @classmethod
+    def default_values(cls) -> dict:
+        """Return dict of default parameter values."""  # ruff: ignore[docstring-missing-returns]
+        return {
+            k: cls.__dataclass_fields__[k].default for k in cls.__dataclass_fields__
+        }
+
+    def non_default_values(self) -> dict:
+        """Return dict of non-default parameter values."""  # ruff: ignore[docstring-missing-returns]
+        defaults = self.default_values()
+        return {k: v for k, v in self.to_dict().items() if defaults.get(k, None) != v}
+
+    def to_excel(
+        self,
+        fname: FilePath,
+        sheet_name: str | None = None,
+        if_workbook_exists: IfWorkbookExists = "error",
+        if_sheet_exists: IfSheetExists = "error",
+        parameter_name_label: str = "parameter",
+        parameter_value_label: str = "value",
+        **kwargs,
+    ) -> None:
+        """Write parameters to an Excel worksheet.
+
+        Parameters
+        ----------
+        fname : str or PathLike
+            The path to the output Excel file.
+        sheet_name : str
+            The name of the excel worksheet to write terrain corrections.
+        if_workbook_exists : {'error', 'append', 'replace'}, default 'error'
+            Action to take if the workbook already exists. Options are:
+            'error', 'append', or 'replace'.
+        if_sheet_exists : {'error', 'replace', 'new'}, default 'error'
+            Action to take if the sheet already exists. Options are:
+            'error', 'replace', or 'new'.
+        parameters_label : str, default is 'parameter'
+            Set the header label for parameter names column in output worksheet.
+        values_label : str, default is 'value'
+            Set the header label for parameter names column in output worksheet.
+        kwargs : dict
+            Additional keyword arguments passed to ``pandas.DataFrame.to_excel``.
+
+        See Also
+        --------
+        write_excel_worksheet : Function to write a DataFrame to an Excel worksheet
+            with options for handling existing workbooks and sheets.
+        pandas.Dataframe.to_excel
+
+        """
+        params_ds = self.to_series(
+            index_name=parameter_name_label, series_name=parameter_value_label
+        )
+        if sheet_name is None:
+            sheet_name = getattr(self, "_default_excel_sheet_name", None)
+            if sheet_name is None:
+                raise ValueError(
+                    "sheet_name is None and object has no "
+                    "_default_excel_sheet_name attribute."
+                )
+
+        write_excel_worksheet(
+            prepare_writable_df(params_ds.to_frame(), normalize_column_names=True),
+            fname,
+            sheet_name=sheet_name,
+            if_workbook_exists=if_workbook_exists,
+            if_sheet_exists=if_sheet_exists,
+            **kwargs,
+        )
+
+    # Todo: remove this method
+    def summary(
+        self, include_name: bool = True, as_list: bool = True
+    ) -> list[str] | str:
+        """
+        Return parameters as strings in the form 'param: value'.
+
+        Parameters
+        ----------
+        include_name : bool, default True
+            Include the class name in the output.
+        as_list : bool, default True
+            Return the output as a list of strings. If False, return as a single string
+            with each parameter on a new line.
+
+        Returns
+        -------
+        list[str] | str
+            The parameters as a string or list of strings.
+        """
+        txt = []
+        if include_name:
+            txt.append(f"{type(self).__name__}")
+        txt.extend([f"{k}: {v}" for k, v in self.to_dict().items()])
+        if as_list:
+            return txt
+        return "\n".join(txt)
+
+
+def _concat_gsolvetable_dataframes_with_fill(
+    df1: _pd.DataFrame,
+    df2: _pd.DataFrame,
+    fill_str: str | None = "",
+    fill_bool: bool | None = None,
+    known_fields: dict[str, Any] | None = None,
+    **kwargs,
+) -> _pd.DataFrame:
+
+    if kwargs.get("axis", 0) != 0:
+        raise ValueError(
+            f"incompatible kwarg axis={kwargs['axis']}, "
+            "function operates in vstack (axis=0) mode only."
+        )
+    kwargs["axis"] = 0
+
+    use_known_fields = False
+    if known_fields is not None:
+        use_known_fields = True
+        if not all([hasattr(f, "default") for f in known_fields.values()]):
+            raise TypeError(
+                f"if specified, known_fields must be a dict of DataFieldSpecification objects"
+            )
+
+    do_str_fill = fill_str is not None
+    if do_str_fill:
+        fill_str = str(fill_str)
+
+    do_bool_fill = fill_bool is not None
+    if do_bool_fill:
+        fill_bool = bool(fill_bool)
+
+    combined_df = _pd.concat([df1, df2], **kwargs)
+    if not use_known_fields and not do_str_fill and not do_bool_fill:
+        return combined_df
+
+    in_df1_only = [c for c in df1.columns if c not in df2.columns]
+    idx = df2.index
+    for c in in_df1_only:
+        if use_known_fields and c in known_fields:
+            if known_fields[c].default is not None:
+                combined_df.loc[idx, c] = combined_df.loc[idx, c].fillna(
+                    known_fields[c].default
+                )
+                continue
+        if do_str_fill and is_string_dtype(df1[c]):
+            combined_df.loc[idx, c] = combined_df.loc[idx, c].fillna(fill_str)
+        elif do_bool_fill and is_bool_dtype(df1[c]):
+            combined_df.loc[idx, c] = combined_df.loc[idx, c].fillna(fill_bool)
+
+    in_df2_only = [c for c in df2.columns if c not in df1.columns]
+    idx = df1.index
+    for c in in_df2_only:
+        if use_known_fields and c in known_fields:
+            if known_fields[c].default is not None:
+                combined_df.loc[idx, c] = combined_df.loc[idx, c].fillna(
+                    known_fields[c].default
+                )
+                continue
+        if do_str_fill and is_string_dtype(df2[c]):
+            combined_df.loc[idx, c] = combined_df.loc[idx, c].fillna(fill_str)
+            continue
+        elif do_bool_fill and is_bool_dtype(df2[c]):
+            combined_df.loc[idx, c] = combined_df.loc[idx, c].fillna(fill_bool)
+
+    return combined_df

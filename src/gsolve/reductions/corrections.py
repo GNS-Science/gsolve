@@ -869,7 +869,7 @@ class GravityCorrectionProvider:
         return GravityCorrections(params=self.params, site_id=idx, **df_dict)
 
     def _configured_bouguer_corrections(self) -> Sequence[str]:
-        """Return bouguer correction method names required for the current parameters."""
+        """Return bouguer correction method names required for the current parameters."""  # ruff: ignore[docstring-missing-returns]
         corrections = ["normal_gravity_at_ellipsoid", "free_air_correction"]
         if self.params.use_atmospheric_correction:
             corrections.append("atmospheric_correction")

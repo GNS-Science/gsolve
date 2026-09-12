@@ -22,8 +22,10 @@ from __future__ import annotations
 
 import itertools
 import sys
+import warnings
 from collections.abc import Sequence
-from typing import Any, Literal, TypeAliasType, get_args, get_origin, overload
+from os import PathLike
+from typing import Any, Literal, Type, TypeAliasType, get_args, get_origin, overload
 
 import numpy as np
 import pandas as pd
@@ -67,14 +69,11 @@ __all__ = [
     "prepare_writable_df",
     "round_coords",
     "timestamp_to_columns",
-    "to_1d_ndarray",
-    "to_1d_ndarray_or_float",
     "to_naive_utc_datetime",
-    "to_points3d",
 ]
 
 
-def is_filepath_like(obj: Any) -> bool:
+def is_filepath_like(obj: Any) -> bool:  # ruff: ignore[any-type]
     """Test if object type is compatible with ``gsolve.core._typing.FilePath``.
 
     Returns
@@ -84,7 +83,7 @@ def is_filepath_like(obj: Any) -> bool:
     return isinstance(obj, FilePath.__value__)
 
 
-def is_in_literal(value: Any, literal_type: TypeAliasType) -> bool:
+def is_in_literal(value: Any, literal_type: TypeAliasType) -> bool:  # ruff: ignore[any-type]
     """Test if value is in a Literal type.
 
     Parameters
@@ -109,11 +108,10 @@ def is_in_literal(value: Any, literal_type: TypeAliasType) -> bool:
 
     if get_origin(literal_type.__value__) is Literal:
         return value in get_args(literal_type.__value__)
-    msg = f"{literal_type} is not a Literal type"
-    raise TypeError(msg)
+    raise TypeError(f"{literal_type} is not a Literal type")
 
 
-def is_datetime_array(v: Any) -> bool:
+def is_datetime_array(v: Any) -> bool:  # ruff: ignore[any-type]
     """Test if the input is a datetime-like array.
 
     Returns
@@ -123,7 +121,7 @@ def is_datetime_array(v: Any) -> bool:
     return isinstance(v, DatetimeArray.__value__)
 
 
-def is_points3d_like(v: Any) -> bool:
+def is_points3d_like(v: Any) -> bool:  # ruff: ignore[any-type]
     """Test if value is compatible with Points3D type.
 
     Note that is not possible to test the data type of contained arrays.
@@ -246,7 +244,7 @@ def to_naive_utc_datetime(
     if isinstance(t, (NaTType, NAType)):
         return _nat_check(pd.NaT)
 
-    if isinstance(t, (pd.Timestamp, pd.DatetimeIndex)):
+    if isinstance(t, pd.Timestamp) or isinstance(t, pd.DatetimeIndex):
         return _nat_check(t if t.tz is None else t.tz_convert("UTC").tz_localize(None))
     if isinstance(t, pd.Series):
         ds = t if t.dtype == "datetime64[ns]" else pd.to_datetime(t, **kwargs)
@@ -268,12 +266,11 @@ def to_naive_utc_datetime(
         return_scalar = True
     try:
         idx = pd.to_datetime(t, **kwargs)
-    except Exception as err:
-        msg = (
+    except Exception:
+        raise ValueError(
             f"unable to convert input '{t}' of type {type(t).__name__} "
             "to Timestamp or DateTimeIndex"
         )
-        raise ValueError(msg) from err
 
     rval = _nat_check(
         idx if idx.tz is None else idx.tz_convert("UTC").tz_localize(None)
@@ -335,29 +332,11 @@ def to_1d_ndarray(
     return a
 
 
-def to_1d_ndarray_or_float(
-    a: ArrayLike, dtype: DTypeLike = np.float64
-) -> NDArray[np.float64] | np.float64:
-    """Convert input to a 1D numpy array or a float.
-
-    If the input is a length-1 array, it will be converted to a float.
-
-    Parameters
-    ----------
-    a : array-like
-        The input to be converted to a 1D numpy array or a float.
-    dtype : data-type, optional
-        If specified, the resulting array will be cast to this data type.
-        If None, the default data type is np.float64.
-
-    Returns
-    -------
-    numpy.ndarray or float
-        A 1D numpy array or a float, depending on the size of the input.
-
-    """
-    a = to_1d_ndarray(a, dtype=dtype)
-    return a[0] if a.size == 1 else a
+def to_1d_ndarray_or_float(a: ArrayLike) -> NDArray[np.float64] | np.float64:
+    _a = to_1d_ndarray(a).astype(np.float64)
+    if _a.size == 1:
+        return _a[0]
+    return _a
 
 
 # Remove in future release
@@ -369,10 +348,10 @@ def check_duplicate_index(idx: pd.Index | pd.DataFrame | pd.Series) -> None:
         msg = f"idx must be a pandas Index, DataFrame, or Series, not {type(idx).__name__}"
         raise TypeError(msg)
 
-    if idx.duplicated().any():
-        idx_dupes = idx[idx.duplicated().tolist()]
-        msg = f"duplicate index values: {idx_dupes.unique().to_list()}"
-        raise ValueError(msg)
+    if _idx.duplicated().any():
+        idx_name = _idx.name or "index"
+        idx_dupes = _idx[_idx.duplicated().tolist()]
+        raise ValueError(f"duplicate index values: {idx_dupes.unique().to_list()}")
 
 
 @overload
@@ -408,8 +387,7 @@ def normalize_field_names(df: pd.DataFrame | pd.Series) -> pd.DataFrame | pd.Ser
         df = df.rename_axis(index=normalize_str)
         df.name = normalize_str(str(df.name))
         return df
-    msg = f"df must be a pandas DataFrame or Series, not {type(df).__name__}"
-    raise TypeError(msg)
+    raise TypeError(f"df must be a pandas DataFrame or Series, not {type(df).__name__}")
 
 
 @overload
@@ -785,7 +763,6 @@ def expand_datetime_column(
                 msg = (
                     f"overwrite=False and splitting would overwrite columns: {existing}"
                 )
-                raise ValueError(msg)
             df = df.drop(columns=existing)
 
         if not insert_after:

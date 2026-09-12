@@ -17,7 +17,7 @@
 # Copyright (c) 2025 Earth Sciences New Zealand.
 
 import abc
-import copy
+import dataclasses
 import pathlib
 import warnings
 from collections.abc import Callable, Mapping, Sequence
@@ -47,9 +47,7 @@ from gsolve.sites import GravitySites
 
 __all__ = ["CG6Data", "ScintrexData"]
 
-type _ScintrexMetadataDataTypes = str | float | int | bool | pd.Timestamp
-
-type _ScintrexOnErrorOptions = Literal["raise", "warn", "ignore"]
+_ScintrexMetadataDataTypes: TypeAlias = str | float | int | bool | pd.Timestamp
 
 
 class ScintrexData(abc.ABC):
@@ -125,7 +123,7 @@ class ScintrexData(abc.ABC):
         -------
         ScintrexData
         """
-        return copy.copy(self)
+        return self.__copy__()  # ruff: ignore[unnecessary-dunder-call]
 
 
 class CG6Data(ScintrexData):
@@ -338,7 +336,7 @@ class CG6Data(ScintrexData):
         self.data = df
 
     def _strip_corrections(self) -> pd.Series:
-        """Return corrgrav values with all corrections removed."""
+        """Return corrgrav values with all corrections removed."""  # ruff: ignore[docstring-missing-returns]
         return (
             self.data["corrgrav"]
             - (self.data["driftcorr"] * self.data["correction_drift"])
@@ -473,8 +471,7 @@ class CG6Data(ScintrexData):
             Name of the output column.
         """
         if loop_format and "LOOP" not in loop_format:
-            msg = "format_str must contain 'LOOP'."
-            raise ValueError(msg)
+            raise ValueError("format_str must contain 'LOOP'.")
 
         # ensure only one method is used
         args = (field, array, datetimes, time_gap)
@@ -620,8 +617,9 @@ class CG6Data(ScintrexData):
             include_non_standard_fields = [str(f) for f in include_non_standard_fields]
             missing = [f for f in include_non_standard_fields if f not in df.columns]
             if missing:
-                msg = f"Requested non-standard fields not found in data: {missing}"
-                raise KeyError(msg)
+                raise KeyError(
+                    f"Requested non-standard fields not found in data: {missing}"
+                )
 
             to_drop = set(df.columns) - set(
                 GravityObservations.known_fields() + include_non_standard_fields
@@ -752,7 +750,7 @@ class CG6Data(ScintrexData):
 
 
 def _slurp_scintrex_text_file(filepath: FilePath) -> list[str]:
-    """Read a Scintrex text file, fix encoding and return lines as a list."""
+    """Read a Scintrex text file, fix encoding and return lines as a list."""  # ruff: ignore[docstring-missing-returns]
     with pathlib.Path(filepath).open("r", encoding="utf-8-sig") as fh:
         return [l.strip() for l in fh]
 
@@ -762,7 +760,7 @@ def _split_header_key_val_unit(
     normalize_key: bool = True,
     extract_units: bool = True,
 ) -> tuple[str, str, str]:
-    """Split headers into key, value and units."""
+    """Split headers into key, value and units."""  # ruff: ignore[docstring-missing-returns]
     header = header.strip("/ ")
     if not header:
         return ("", "", "")
@@ -787,7 +785,7 @@ def _scintrex_header_type_conversion(
     header_val: _ScintrexMetadataDataTypes,
     data_type: type | Callable | None = None,
 ) -> _ScintrexMetadataDataTypes | None:
-    if header_val is None or data_type is None:
+    if not header_val or data_type is None:
         return ""
 
     if data_type is pd.Timestamp:
@@ -814,7 +812,7 @@ def _scintrex_header_type_conversion(
 
 
 def _extract_unit_from_keyword(header: str) -> tuple[str, str]:
-    """Get header and unit form a header string."""
+    """Get header and unit form a header string."""  # ruff: ignore[docstring-missing-returns]
     if header.endswith(")"):
         sep = "("
     elif header.endswith("]"):

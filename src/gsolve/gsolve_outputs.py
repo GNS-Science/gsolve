@@ -134,12 +134,7 @@ class GSolveResults:
 
     """
 
-    obs_solution: pd.DataFrame
-    site_solution: pd.DataFrame
-    loop_solution: pd.DataFrame
-    observations_input: pd.DataFrame
-    reference_sites_input: pd.DataFrame
-    params: GSolveSolutionParameters
+    """  # ruff: ignore[incorrect-section-order]
 
     def __init__(
         self,
@@ -281,7 +276,8 @@ class GSolveResults:
             loops = df_loops
             ax_title = f"{ax_title} each loop"
         elif is_list_like(loop):
-            loops: list[str] = [str(l) for l in loop]
+            loops: list[str] = [str(l) for l in loop]  # type: ignore[bad-assignment-type]
+            ax_title = f"{ax_title} loops {', '.join(loops)}"
         elif loop == "all":
             loops = ["all"]
             df["loop"] = "all"
@@ -388,7 +384,7 @@ class GSolveResults:
         x_col: str = "timedelta"
         y_col: str = "residual"
 
-        drift = float(self.loop_solution.loc[loop, "drift"])
+        drift = float(self.loop_solution.at[loop, "drift"])  # type: ignore[bad-argument-type]  # ruff: ignore[pandas-use-of-dot-at]
         m_loop = self.obs_solution["loop"].eq(loop)
         m_active = self.obs_solution["active"].eq(True)
 

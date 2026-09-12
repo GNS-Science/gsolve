@@ -1171,20 +1171,17 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
             msg = "No results returned from pygtide prediction."
             raise ValueError(msg)  # ruff: ignore[type-check-without-type-error]
 
-        normalized_cols = ["datetime", "signal", "tide", "pole_tide", "lod_tide"]
-        tides_df = tides_df.rename(
-            columns=dict(zip(tides_df.columns, normalized_cols, strict=True))
-        )
-        tides_df["datetime"] = to_naive_utc_datetime(tides_df["datetime"])
-        tides_df = tides_df.set_index("datetime")
-
-        # values in nm/s2, no conversion required
+        normalised_cols = ["datetime", "signal", "tide", "pole_tide", "lod_tide"]
+        df = df.rename(
+            columns={a: b for a, b in zip(df.columns, normalised_cols)}
+        ).set_index("datetime")
+        df = df.set_index(to_naive_utc_datetime(df.index))
+        if unit == "nm/s^2":
+            return df
         if unit == "ugal":
-            tides_df *= 1e-3
-        elif unit == "mgal":
-            tides_df *= 1e-4
-
-        return tides_df
+            return df * 1e-3
+        if unit == "mgal":
+            return df * 1e-4
 
     # TODO: site_id is not truly required, so remove and infer sites from lat/lon/elev
     def tidal_correction(
@@ -1247,7 +1244,6 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
                 "site_id is a required parameter for "
                 "EternaPredictTidalCorrection tidal_correction method."
             )
-            raise ValueError(msg)
         if isinstance(site_id, str):
             site_id = [site_id] * lat.size
         site_id = to_1d_ndarray(site_id, expected_size=lat.size, dtype=str)

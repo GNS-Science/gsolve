@@ -97,7 +97,7 @@ class GravityObservationsParameters(GSolveParameters):
     earthtide_correction_method: str = ""
     ocean_load_correction_method: str = ""
 
-    def __setattr__(self, name: str, value: Any) -> None:
+    def __setattr__(self, name: str, value: Any) -> None:  # ruff: ignore[any-type]
         if name == "timedelta_unit":
             value = pd.Timedelta(value)
         elif name == "fixed_time_datum":
@@ -479,8 +479,7 @@ class GravityObservations(GSolveTable):
             msg = f"{len(dupes)} duplicated obs_id's : {dupes.unique().to_list()}"
 
             if duplicated_obs_id == "error":
-                msg_0 = f"{msg}"
-                raise ValueError(msg_0)
+                raise ValueError(f"{msg}")
             if duplicated_obs_id == "keep":
                 _warnings.warn(f"keeping {msg}")
             elif duplicated_obs_id == "rename":
@@ -819,6 +818,10 @@ class GravityObservations(GSolveTable):
                 msg = "Multiple gravity meters found in data, must specify ``meter_id``"
                 raise ValueError(msg)
 
+        if self.data["meter_id"].nunique() > 1 and meter_id is None:  # ruff: ignore[pandas-nunique-constant-series-check]
+            raise ValueError(
+                "Multiple gravity meters found in data, must specify ``meter_id``"
+            )
         if meter_id is None:
             self.set_column(c_label, float(calibration_factor))
         else:
@@ -988,8 +991,7 @@ class GravityObservations(GSolveTable):
                 return [o]
             if isinstance(o, Iterable):
                 return [str(oi) for oi in o]
-            msg = f"invalid input of type '{type(o).__name__}'"
-            raise TypeError(msg)
+            raise TypeError(f"invalid input of type '{type(o).__name__}'")
 
         # parse all args first to check for errors before modifying data
         obs_id = _parse_inputs(obs_id)
@@ -1030,13 +1032,8 @@ class GravityObservations(GSolveTable):
         bool_to_int: bool = True,
         include_unknown_fields: bool | Sequence[str] = True,
         active_only: bool = False,
-    ) -> pd.DataFrame:
-        """Return a DataFrame suitable for writing to an excel or csv file.
-
-        Returns
-        -------
-        Dataframe
-        """
+    ) -> _pd.DataFrame:
+        """Return a DataFrame suitable for writing to an excel or csv file."""  # ruff: ignore[docstring-missing-returns]
         cols = [c for c in self.known_fields() if c in self.data.columns]
         if include_unknown_fields:
             if include_unknown_fields is True:
@@ -1146,7 +1143,7 @@ class GravityObservations(GSolveTable):
         y_column: str = "meter_reading_mgal",
         savefilename: FilePath | None = None,
         figsize: tuple[float, float] = (12, 8),
-        ax: plt.Axes | None = None,
+        ax=None,  # ruff: ignore[missing-type-function-argument]
         show: bool = True,
         **kwargs,
     ) -> tuple[plt.Figure, plt.Axes]:
@@ -1354,9 +1351,9 @@ class GravityObservations(GSolveTable):
             ticks=list(site_id_to_int.values()), labels=list(site_id_to_int.keys())
         )
 
-    def loop_summary(self) -> pd.DataFrame:
-        """Return a summary of the observations by loop."""
-        from gsolve.core._summary_functions import (  # ruff: ignore[import-outside-top-level]
+    def loop_summary(self) -> _pd.DataFrame:
+        """Return a summary of the observations by loop."""  # ruff: ignore[docstring-missing-returns]
+        from gsolve.core._summary_functions import (
             duration_hr,
             endtime_utc,
             n_sites,
@@ -1479,9 +1476,8 @@ class GravityObservations(GSolveTable):
 
         if "loop" in self.data.columns and "meter_id" in self.data.columns:
             for l in self.loop_ids:
-                # m = self.data.loc[self.data["loop"].eq(l)].to_numpy()
-                m = self.data.loc[self.data["loop"].eq(l), "meter_id"].to_numpy()
-                if not (m.shape[0] == 0 or (m[0] == m).all()):
+                m = self.data["loop"].eq(l)
+                if self.data.loc[m, "meter_id"].nunique() > 1:  # ruff: ignore[pandas-nunique-constant-series-check]
                     warner(f"Multiple gravity meters found in loop '{l}'")
 
         warner.final_msg()
