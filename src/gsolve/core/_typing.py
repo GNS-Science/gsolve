@@ -36,19 +36,19 @@ from pandas.api.typing import NaTType
 __all__ = [
     "AllowedTimestampResolution",
     "AllowedTimestampRoundingMethods",
-    "IfWorkbookExists",
-    "IfSheetExists",
-    "GSolveSolverMethod",
-    "GSolveSolverReturn",
-    "Renamer",
-    "DatetimeScalar",
+    "ArrayOrCoords",
+    "DatasetOrArray",
     "DatetimeArray",
+    "DatetimeScalar",
     "DatetimeScalarOrArray",
     "FilePath",
-    "DatasetOrArray",
-    "ArrayOrCoords",
+    "GSolveSolverMethod",
+    "GSolveSolverReturn",
+    "IfSheetExists",
+    "IfWorkbookExists",
     "Points2D",
     "Points3D",
+    "Renamer",
     "TCorrDistanceMaskType",
 ]
 
@@ -75,18 +75,18 @@ type FilePath = str | PathLike
 Renamer: TypeAlias = Mapping[Any, Hashable] | Callable[[Any], Hashable]
 
 
-DateTimeConvertibleTypes: TypeAlias = Union[
-    str,
-    int,
-    float,
-    datetime.timedelta,
-    list,
-    tuple,
-    range,
-    ArrayLike,
-    Index,
-    Series,
-]
+DateTimeConvertibleTypes: TypeAlias = (
+    str
+    | int
+    | float
+    | datetime.timedelta
+    | list
+    | tuple
+    | range
+    | ArrayLike
+    | Index
+    | Series
+)
 DatetimeScalar: TypeAlias = (
     int | float | str | datetime.date | np.datetime64 | pd.Timestamp
 )

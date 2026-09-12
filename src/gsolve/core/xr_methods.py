@@ -38,10 +38,10 @@ from gsolve.core.utils import GSolveDataWarning, round_coords
 from gsolve.core.xr_accessor import TCorrMethods as _TCorrMethods
 
 __all__ = [
-    "load_dem",
-    "prepare_dem",
     "check_dem",
     "create_empty_dataarray",
+    "load_dem",
+    "prepare_dem",
 ]
 
 
@@ -86,7 +86,6 @@ def load_dem(
     --------
     xarray.open_dataset : The function used to read the DEM file.
     """
-
     try:
         ds = xr.open_dataset(dem_file, **kwargs)
     except Exception as e:

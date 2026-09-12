@@ -18,13 +18,11 @@
 
 """Base class and function definitions for Gsolve data structures."""
 
-from dask.array import ma
-
 import dataclasses
 import warnings
 from collections.abc import Callable, Sequence
 from copy import deepcopy
-from typing import Any, Self, ClassVar
+from typing import Any, ClassVar, Self
 
 import numpy.typing as _npt
 import pandas as _pd
@@ -47,7 +45,7 @@ from gsolve.core.utils import (
     to_naive_utc_datetime,
 )
 
-__all__ = ["GSolveTable", "GSolveParameters", "DataFieldSpecification", "COMMON_FIELDS"]
+__all__ = ["COMMON_FIELDS", "DataFieldSpecification", "GSolveParameters", "GSolveTable"]
 
 ## constants
 TERRAIN_DENSITY: float = 2670.0
@@ -121,7 +119,6 @@ class GSolveTable:
 
     def __init__(self) -> None:
         self.data: _pd.DataFrame
-        pass
 
     def __repr__(self) -> str:
         rval = []
@@ -146,31 +143,31 @@ class GSolveTable:
         return len(self.data) if self else 0
 
     def __copy__(self) -> Self:
-        """Ensure all copies are deep copies."""  # noqa: DOC201
+        """Ensure all copies are deep copies."""  # ruff: ignore[docstring-missing-returns]
         return deepcopy(self)
 
     def copy(self) -> Self:
-        """Return a deep copy of object."""  # noqa: DOC201
+        """Return a deep copy of object."""  # ruff: ignore[docstring-missing-returns]
         return self.__copy__()
 
     @classmethod
     def known_fields(cls) -> list[str]:
-        """Return a list of known fields in the object."""  # noqa: DOC201
+        """Return a list of known fields in the object."""  # ruff: ignore[docstring-missing-returns]
         fields = [str(k) for k in getattr(cls, "_known_fields", {}).keys()]
         return fields
 
     @classmethod
     def required_fields(cls) -> list[str]:
-        """Return a list of required fields in the object."""  # noqa: DOC201
+        """Return a list of required fields in the object."""  # ruff: ignore[docstring-missing-returns]
         if cls.known_fields():
-            return [k for k, v in getattr(cls, "_known_fields").items() if v.required]
+            return [k for k, v in cls._known_fields.items() if v.required]
         return []
 
     def set_column(
         self,
         label: str,
-        data: Any | None = None,  # noqa: ANN401
-        default: Any | None = None,  # noqa: ANN401
+        data: Any | None = None,  # ruff: ignore[any-type]
+        default: Any | None = None,  # ruff: ignore[any-type]
         dtype: str | type | None = None,
     ) -> None:
         """
@@ -223,7 +220,7 @@ class GSolveTable:
         self.data[label] = _pd.Series(data=_data, index=self.data.index, dtype=dtype)
 
     def _data_ok(self, warn: bool = True) -> bool:
-        """Test whether data are complete according to specifications in ``obj._known_fields``."""  # noqa: DOC201
+        """Test whether data are complete according to specifications in ``obj._known_fields``."""  # ruff: ignore[docstring-missing-returns]
         rval = True
         for f in self.required_fields():
             if f not in self.data.columns:
@@ -400,7 +397,7 @@ class GSolveTable:
         _sheet_name: str | int | list[str | int]
         if sheet_name is None:
             try:
-                _sheet_name = getattr(cls, "_default_excel_sheet_name")
+                _sheet_name = cls._default_excel_sheet_name
             except AttributeError:
                 raise ValueError(
                     f"sheet_name is None, but {type(cls).__name__} class "
@@ -502,11 +499,11 @@ class GSolveParameters:
         return deepcopy(self)
 
     def copy(self) -> Self:
-        """Return a deep copy of object."""  # noqa: DOC201
+        """Return a deep copy of object."""  # ruff: ignore[docstring-missing-returns]
         return self.__copy__()
 
     def to_dict(self) -> dict:
-        """Return parameters as a dict."""  # noqa: DOC201
+        """Return parameters as a dict."""  # ruff: ignore[docstring-missing-returns]
         return dataclasses.asdict(self)
 
     def to_series(
@@ -578,11 +575,10 @@ class GSolveParameters:
         }
         missing_args = [k for k in cls.__dataclass_fields__ if k not in args]
 
-        if not skip_missing:
-            if missing_args:
-                raise TypeError(
-                    f"skip_missing=False: missing required parameters: {missing_args}"
-                )
+        if not skip_missing and missing_args:
+            raise TypeError(
+                f"skip_missing=False: missing required parameters: {missing_args}"
+            )
         extra_args = [k for k in _ds.index if k not in cls.__dataclass_fields__]
         if extra_args and not skip_unknown_parameters:
             raise TypeError(
@@ -593,13 +589,13 @@ class GSolveParameters:
 
     @classmethod
     def default_values(cls) -> dict:
-        """Return dict of default parameter values."""  # noqa: DOC201
+        """Return dict of default parameter values."""  # ruff: ignore[docstring-missing-returns]
         return {
             k: cls.__dataclass_fields__[k].default for k in cls.__dataclass_fields__
         }
 
     def non_default_values(self) -> dict:
-        """Return dict of non-default parameter values."""  # noqa: DOC201
+        """Return dict of non-default parameter values."""  # ruff: ignore[docstring-missing-returns]
         defaults = self.default_values()
         return {k: v for k, v in self.to_dict().items() if defaults.get(k, None) != v}
 

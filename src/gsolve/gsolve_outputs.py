@@ -31,7 +31,7 @@ from gsolve.core._typing import FilePath, GSolveSolverMethod, GSolveSolverReturn
 from gsolve.core.data import GSolveParameters
 from gsolve.core.utils import is_list_like, to_naive_utc_datetime
 
-__all__ = ["GSolveSolutionParameters", "GSolveResults"]
+__all__ = ["GSolveResults", "GSolveSolutionParameters"]
 
 _PlotGravityUnit: TypeAlias = Literal["uGal", "mGal", "mgal", "ugal"]
 
@@ -132,7 +132,7 @@ class GSolveResults:
     percentile_clipping: float
         The percentile clip applied.
 
-    """  # noqa: D420
+    """  # ruff: ignore[incorrect-section-order]
 
     def __init__(
         self,
@@ -227,7 +227,7 @@ class GSolveResults:
 
     def plot_residual_cdf(
         self,
-        loop: str | int | float | Sequence | None = None,
+        loop: str | float | Sequence | None = None,
         unit: _PlotGravityUnit = "mGal",
         filename: FilePath | None = None,
         show: bool = True,
@@ -282,14 +282,13 @@ class GSolveResults:
         elif is_list_like(loop):
             loops: list[str] = [str(l) for l in loop]  # type: ignore[bad-assignment-type]
             ax_title = f"{ax_title} loops {', '.join(loops)}"
+        elif loop == "all":
+            loops = ["all"]
+            df["loop"] = "all"
+            ax_title = f"{ax_title} all loops combined"
         else:
-            if loop == "all":
-                loops = ["all"]
-                df["loop"] = "all"
-                ax_title = f"{ax_title} all loops combined"
-            else:
-                loops = [str(loop)]
-                ax_title = f"{ax_title} loop {loop}"
+            loops = [str(loop)]
+            ax_title = f"{ax_title} loop {loop}"
 
         for l in loops:
             if l not in df_loops:
@@ -354,7 +353,7 @@ class GSolveResults:
 
     def plot_residual_drift(
         self,
-        loop: str | int | float,
+        loop: str | float,
         plot_drift: bool = True,
         unit: _PlotGravityUnit = "mGal",
         filename: FilePath | None = None,
@@ -388,7 +387,7 @@ class GSolveResults:
         x_col: str = "timedelta"
         y_col: str = "residual"
 
-        drift = float(self.loop_solution.at[loop, "drift"])  # type: ignore[bad-argument-type]  # noqa: PD008
+        drift = float(self.loop_solution.at[loop, "drift"])  # type: ignore[bad-argument-type]  # ruff: ignore[pandas-use-of-dot-at]
         m_loop = self.obs_solution["loop"].eq(loop)
         m_active = self.obs_solution["active"].eq(True)
 

@@ -47,12 +47,12 @@ class TCorrMethods:
 
     @property
     def ydim(self) -> str:
-        """y dimension name."""  # noqa: D403
+        """y dimension name."""  # ruff: ignore[first-word-uncapitalized]
         return str(self._obj.dims[0])
 
     @property
     def xdim(self) -> str:
-        """x dimension name."""  # noqa: D403
+        """x dimension name."""  # ruff: ignore[first-word-uncapitalized]
         return str(self._obj.dims[1])
 
     @property
@@ -83,7 +83,7 @@ class TCorrMethods:
 
     @property
     def bounds(self) -> np.ndarray:
-        """Return array extent as an ndarray of form (xmin, ymin, xmax, ymax).
+        """The array extent as an ndarray of form (xmin, ymin, xmax, ymax).
 
         Returns
         -------
@@ -173,11 +173,10 @@ class TCorrMethods:
         if i0 < 0 or i1 > self._obj.shape[0] or j0 < 0 or j1 > self._obj.shape[1]:
             if error_if_outside_bounds:
                 return None
-            else:
-                i0 = max(i0, 0)
-                i1 = min(i1, self._obj.shape[0])
-                j0 = max(j0, 0)
-                j1 = min(j1, self._obj.shape[1])
+            i0 = max(i0, 0)
+            i1 = min(i1, self._obj.shape[0])
+            j0 = max(j0, 0)
+            j1 = min(j1, self._obj.shape[1])
 
         return self._obj.isel(
             {self.ydim: slice(i0, i1), self.xdim: slice(j0, j1)}

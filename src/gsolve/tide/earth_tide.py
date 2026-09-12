@@ -29,7 +29,6 @@ from numpy import arccos, arcsin, arctan, cos, deg2rad, pi, sin, sqrt
 from numpy.typing import ArrayLike, NDArray
 from pandas.api.typing import NaTType
 
-
 from gsolve.core._typing import (
     DatetimeArray,
     DatetimeScalar,
@@ -48,9 +47,9 @@ from gsolve.core.utils import (
 
 __all__ = [
     "EarthTideCorrectionProvider",
-    "LongmanTidalCorrection",
     "EternaPredictTidalCorrection",
     "LongmanConstants",
+    "LongmanTidalCorrection",
     "gravimetric_factor",
 ]
 
@@ -59,7 +58,7 @@ __all__ = [
 class EarthTideCorrectionProvider(Protocol):
     """Protocol defining interface for classes that provide earth tide corrections."""
 
-    def tidal_correction(  # noqa: D102
+    def tidal_correction(  # ruff: ignore[undocumented-public-method]
         self,
         lat: FloatArray,
         lon: FloatArray,
@@ -69,7 +68,7 @@ class EarthTideCorrectionProvider(Protocol):
         **kwargs,
     ) -> NDArray[_np.float64]: ...
 
-    def identifier(self, **kwargs) -> str: ...  # noqa: D102
+    def identifier(self, **kwargs) -> str: ...  # ruff: ignore[undocumented-public-method]
 
 
 def gravimetric_factor(
@@ -318,7 +317,7 @@ class LongmanTidalCorrection(EarthTideCorrectionProvider):
 
         # eq. 9 (l) Longitude of moon in its orbit reckoned from its ascending
         # intersection with the equator
-        l = (  # noqa: E741
+        l = (
             sigma
             + 2 * e * sin(s - p)
             + 5.0 / 4 * e**2 * sin(2 * (s - p))
@@ -1152,9 +1151,9 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
         df = df.set_index(to_naive_utc_datetime(df.index))
         if unit == "nm/s^2":
             return df
-        elif unit == "ugal":
+        if unit == "ugal":
             return df * 1e-3
-        elif unit == "mgal":
+        if unit == "mgal":
             return df * 1e-4
 
     # TODO: site_id is not truly required, so remove and infer sites from lat/lon/elev
@@ -1224,7 +1223,7 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
                 "site_id is a required parameter for "
                 "EternaPredictTidalCorrection tidal_correction method."
             )
-        elif isinstance(site_id, str):
+        if isinstance(site_id, str):
             site_id = [site_id] * lat.size
         site_id = to_1d_ndarray(site_id, expected_size=lat.size).astype(str)
 

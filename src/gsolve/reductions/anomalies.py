@@ -41,8 +41,8 @@ from gsolve.sites import GravitySites
 __all__ = [
     "GravityAnomalies",
     "compute_complete_bouguer_anomaly",
-    "compute_simple_bouguer_anomaly",
     "compute_free_air_anomaly",
+    "compute_simple_bouguer_anomaly",
 ]
 
 

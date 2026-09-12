@@ -22,7 +22,7 @@ from gsolve.reports import GSolveReport
 from gsolve.tide.earth_tide import LongmanTidalCorrection
 
 
-def parse_args(*args: str) -> argparse.Namespace:
+def parse_args(*args: str) -> argparse.Namespace:  # ruff: ignore[undocumented-public-function]
     __app_name__ = "gsolve-cli"
     args_parser = argparse.ArgumentParser(
         prog=__app_name__,
@@ -135,7 +135,7 @@ def parse_args(*args: str) -> argparse.Namespace:
     return args_parser.parse_args()
 
 
-def processing(args: argparse.Namespace) -> None:
+def processing(args: argparse.Namespace) -> None:  # ruff: ignore[undocumented-public-function]
     # Read survey information
     survey = GravitySurvey.from_excel(fname=args.input_survey)
 
@@ -178,7 +178,7 @@ def processing(args: argparse.Namespace) -> None:
     report.to_excel(filename=output_report)
 
 
-def main() -> None:
+def main() -> None:  # ruff: ignore[undocumented-public-function]
     try:
         args = parse_args()
         processing(args)

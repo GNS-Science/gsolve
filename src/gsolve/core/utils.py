@@ -19,12 +19,12 @@
 """Utility functions used across the gsolve codebase."""
 
 from __future__ import annotations
-import warnings
 
 import sys
+import warnings
 from collections.abc import Sequence
-from typing import Any, Literal, overload, get_args, get_origin, Type, TypeAliasType
 from os import PathLike
+from typing import Any, Literal, Type, TypeAliasType, get_args, get_origin, overload
 
 import numpy as np
 import pandas as pd
@@ -43,39 +43,39 @@ from gsolve.core._typing import (
     AllowedTimestampRoundingMethods,
     DatetimeArray,
     DatetimeScalar,
-    StringArray,
-    TimedeltaScalar,
     FilePath,
     Points3D,
+    StringArray,
+    TimedeltaScalar,
 )
 
 
 __all__ = [
-    "is_list_like",
+    "DEFAULT_TIMESTAMP_COLUMNS",
+    "GSolveDataWarning",
+    "check_duplicate_index",
+    "columns_to_timestamp",
+    "expand_datetime_column",
+    "generate_loop_intervals",
+    "generate_loop_names",
+    "identify_loop_blocks",
+    "is_datetime_array",
     "is_dict_like",
     "is_filepath_like",
     "is_in_literal",
-    "is_datetime_array",
-    "to_naive_utc_datetime",
-    "check_duplicate_index",
+    "is_list_like",
+    "loops_from_gaps",
+    "merge_datetime_columns",
     "normalize_field_names",
     "normalize_str",
-    "DEFAULT_TIMESTAMP_COLUMNS",
-    "merge_datetime_columns",
-    "columns_to_timestamp",
-    "timestamp_to_columns",
-    "expand_datetime_column",
     "prepare_writable_df",
-    "GSolveDataWarning",
-    "generate_loop_intervals",
-    "identify_loop_blocks",
-    "loops_from_gaps",
-    "generate_loop_names",
     "round_coords",
+    "timestamp_to_columns",
+    "to_naive_utc_datetime",
 ]
 
 
-def is_filepath_like(obj: Any) -> bool:  # noqa: ANN401
+def is_filepath_like(obj: Any) -> bool:  # ruff: ignore[any-type]
     """Test if object type is compatible with ``gsolve.core._typing.FilePath``.
 
     Returns
@@ -85,7 +85,7 @@ def is_filepath_like(obj: Any) -> bool:  # noqa: ANN401
     return isinstance(obj, FilePath.__value__)
 
 
-def is_in_literal(value: Any, literal_type: TypeAliasType) -> bool:  # noqa: ANN401
+def is_in_literal(value: Any, literal_type: TypeAliasType) -> bool:  # ruff: ignore[any-type]
     """Test if value is in a Literal type.
 
     Parameters
@@ -109,11 +109,10 @@ def is_in_literal(value: Any, literal_type: TypeAliasType) -> bool:  # noqa: ANN
 
     if get_origin(literal_type.__value__) is Literal:
         return value in get_args(literal_type.__value__)
-    else:
-        raise TypeError(f"{literal_type} is not a Literal type")
+    raise TypeError(f"{literal_type} is not a Literal type")
 
 
-def is_datetime_array(v: Any) -> bool:  # noqa: ANN401
+def is_datetime_array(v: Any) -> bool:  # ruff: ignore[any-type]
     """Test if the input is a datetime-like array.
 
     Returns
@@ -123,7 +122,7 @@ def is_datetime_array(v: Any) -> bool:  # noqa: ANN401
     return isinstance(v, DatetimeArray.__value__)
 
 
-def is_points3d_like(v: Any) -> bool:  # noqa: ANN401
+def is_points3d_like(v: Any) -> bool:  # ruff: ignore[any-type]
     """Test if value is compatible with Points3D type.
 
     Note that is not possible to test the data type of contained arrays.
@@ -149,7 +148,7 @@ def is_points3d_like(v: Any) -> bool:  # noqa: ANN401
 
 def to_points3d(
     v: Points3D,
-) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:  # noqa: ANN401
+) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """Convert Points3d-like object to a bona-fide Points3D object.
 
     Parameters
@@ -256,42 +255,38 @@ def to_naive_utc_datetime(
     if isinstance(t, (NaTType, NAType)):
         return _nat_check(pd.NaT)
 
-    elif isinstance(t, pd.Timestamp):
+    if isinstance(t, pd.Timestamp) or isinstance(t, pd.DatetimeIndex):
         return _nat_check(t if t.tz is None else t.tz_convert("UTC").tz_localize(None))
-
-    elif isinstance(t, pd.DatetimeIndex):
-        return _nat_check(t if t.tz is None else t.tz_convert("UTC").tz_localize(None))
-    elif isinstance(t, pd.Series):
+    if isinstance(t, pd.Series):
         ds = t if t.dtype == "datetime64[ns]" else pd.to_datetime(t, **kwargs)
         return _nat_check(
             ds if ds.dt.tz is None else ds.dt.tz_convert("UTC").dt.tz_localize(None)
         )
 
     # arrays
-    elif is_datetime_array(t) or is_list_like(t):
+    if is_datetime_array(t) or is_list_like(t):
         idx = pd.DatetimeIndex(pd.to_datetime(t, **kwargs))
         return _nat_check(
             idx if idx.tz is None else idx.tz_convert("UTC").tz_localize(None)
         )
 
-    else:
-        return_scalar = False
+    return_scalar = False
 
-        if not is_list_like(t):
-            t = [t]
-            return_scalar = True
-        try:
-            idx = pd.to_datetime(t, **kwargs)
-        except Exception:
-            raise ValueError(
-                f"unable to convert input '{t}' of type {type(t).__name__} "
-                "to Timestamp or DateTimeIndex"
-            )
-
-        rval = _nat_check(
-            idx if idx.tz is None else idx.tz_convert("UTC").tz_localize(None)
+    if not is_list_like(t):
+        t = [t]
+        return_scalar = True
+    try:
+        idx = pd.to_datetime(t, **kwargs)
+    except Exception:
+        raise ValueError(
+            f"unable to convert input '{t}' of type {type(t).__name__} "
+            "to Timestamp or DateTimeIndex"
         )
-        rval = rval[0] if return_scalar else rval
+
+    rval = _nat_check(
+        idx if idx.tz is None else idx.tz_convert("UTC").tz_localize(None)
+    )
+    rval = rval[0] if return_scalar else rval
 
     return rval
 
@@ -326,8 +321,7 @@ def to_1d_ndarray_or_float(a: ArrayLike) -> NDArray[np.float64] | np.float64:
     _a = to_1d_ndarray(a).astype(np.float64)
     if _a.size == 1:
         return _a[0]
-    else:
-        return _a
+    return _a
 
 
 # Remove in future release
@@ -343,7 +337,7 @@ def check_duplicate_index(idx: pd.Index | pd.DataFrame | pd.Series) -> None:
         )
 
     if _idx.duplicated().any():
-        idx_name = _idx.name if _idx.name else "index"
+        idx_name = _idx.name or "index"
         idx_dupes = _idx[_idx.duplicated().tolist()]
         raise ValueError(f"duplicate index values: {idx_dupes.unique().to_list()}")
 
@@ -377,25 +371,22 @@ def normalize_field_names(df: pd.DataFrame | pd.Series) -> pd.DataFrame | pd.Ser
         return df.rename(columns=normalize_str).rename_axis(
             columns=normalize_str, index=normalize_str
         )
-    elif isinstance(df, pd.Series):
+    if isinstance(df, pd.Series):
         df = df.rename_axis(index=normalize_str)
         df.name = normalize_str(str(df.name))
         return df
-    else:
-        raise TypeError(
-            f"df must be a pandas DataFrame or Series, not {type(df).__name__}"
-        )
+    raise TypeError(f"df must be a pandas DataFrame or Series, not {type(df).__name__}")
 
 
 @overload
-def normalize_str(s: str | int | float | bool) -> str: ...
+def normalize_str(s: str | float | bool) -> str: ...
 
 
 @overload
 def normalize_str(s: None) -> None: ...
 
 
-def normalize_str(s: str | int | float | bool | None) -> str | None:
+def normalize_str(s: str | float | bool | None) -> str | None:
     """Convert ``s`` to str and format it to snake_case.
 
     Parameters
@@ -711,7 +702,7 @@ def expand_datetime_column(
     if not candidate_columns:
         return df.copy()
 
-    if column_name == "":
+    if not column_name:
         cols_to_split = candidate_columns
     elif isinstance(column_name, str):
         # if column_name not in candidate_columns:
@@ -756,8 +747,7 @@ def expand_datetime_column(
                 raise ValueError(
                     f"overwrite=False and splitting would overwrite columns: {existing}"
                 )
-            else:
-                df = df.drop(columns=existing)
+            df = df.drop(columns=existing)
 
         if not insert_after:
             df = pd.concat([df, ts_df], axis=1)
@@ -832,7 +822,7 @@ def prepare_writable_df(
     if normalize_column_names:
         df = normalize_field_names(df)
     if bool_to_int:
-        df = df.astype({c: int for c in df.select_dtypes(include=bool)})
+        df = df.astype(dict.fromkeys(df.select_dtypes(include=bool), int))
     return df
 
 
@@ -979,8 +969,7 @@ def identify_loop_blocks(
         return pd.IntervalIndex.from_tuples(
             list(zip(gap_bounds[:-1], gap_bounds[1:])), closed="left"
         )
-    else:
-        return pd.DatetimeIndex(gap_bounds)
+    return pd.DatetimeIndex(gap_bounds)
 
 
 def loops_from_gaps(

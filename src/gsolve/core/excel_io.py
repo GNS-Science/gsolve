@@ -84,26 +84,24 @@ def get_true_sheet_name(
                 raise ValueError(
                     f"excel file {excel_file} has no sheet at index: {sheet_name}"
                 )
-            else:
-                return None
+            return None
     else:
         sheet_names_lc = [
             s.lower() for s in get_excel_worksheets(excel_file) if isinstance(s, str)
         ]
         if sheet_name.lower() in sheet_names_lc:
             return sheet_names[sheet_names_lc.index(sheet_name.lower())]
-        elif raise_error:
+        if raise_error:
             raise ValueError(
                 f"excel file {excel_file} has no sheet named '{sheet_name}'"
             )
-        else:
-            return None
+        return None
 
 
 def _parse_sheet_name_arg(
     sheet_name: str | int | Sequence[str | int],
 ) -> list[str | int]:
-    """Parse and validate sheet_name argument."""  # noqa: DOC201
+    """Parse and validate sheet_name argument."""  # ruff: ignore[docstring-missing-returns]
     sheet_name_list: list[str | int]
     if is_list_like(sheet_name):
         sheet_name_list = [s for s in sheet_name]  # pyrefly:ignore[not-iterable]
@@ -237,7 +235,7 @@ def write_excel_worksheet(
             raise ValueError(
                 f"file {excel_file} already exists, and arg {if_workbook_exists=}"
             )
-        elif if_workbook_exists == "append":
+        if if_workbook_exists == "append":
             writer_kwargs["mode"] = "a"
 
     if writer_kwargs["mode"] == "w":

@@ -17,7 +17,6 @@
 # Copyright (c) 2025 Earth Sciences New Zealand.
 
 from copy import deepcopy
-
 from pathlib import Path
 from typing import Any, Self
 
@@ -123,11 +122,11 @@ class GSolveReport:
         self._set_terrain_correction_data(terrain_corrections=terrain_corrections)
 
     def copy(self) -> Self:
-        """Return a deep copy."""  # noqa: DOC201
+        """Return a deep copy."""  # ruff: ignore[docstring-missing-returns]
         return self.__copy__()
 
     def __copy__(self) -> Self:
-        """Return a deep copy."""  # noqa: DOC201
+        """Return a deep copy."""  # ruff: ignore[docstring-missing-returns]
         return deepcopy(self)
 
     def _set_params(
@@ -308,7 +307,7 @@ class GSolveReport:
         filename: FilePath,
         if_workbook_exists: IfWorkbookExists = "error",
         if_sheet_exists: IfSheetExists = "error",
-        **kwargs: Any,  # noqa: ANN401
+        **kwargs: Any,  # ruff: ignore[any-type]
     ) -> None:
         """
         Save the report data to an Excel file.
@@ -409,10 +408,10 @@ class GSolveReport:
 
         # This is a kludge - should create method on parameter objects to
         # to normalise parameter outputs for writing to excel.
-        def _format_value(x: Any) -> str | float | int | bool:  # noqa: ANN401
+        def _format_value(x: Any) -> str | float | int | bool:  # ruff: ignore[any-type]
             if isinstance(x, _pd.Timedelta):
                 return x.total_seconds()
-            elif isinstance(x, Path):
+            if isinstance(x, Path):
                 return str(x)
             return x
 
