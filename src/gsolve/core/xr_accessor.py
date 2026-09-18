@@ -151,9 +151,7 @@ class TCorrMethods:
                     "GravitySites object missing required point columns: "
                     f"{self.xdim}, {self.ydim}"
                 )
-                raise TypeError(
-                    msg
-                )
+                raise TypeError(msg)
             x = points.data[self.xdim].to_numpy()
             y = points.data[self.ydim].to_numpy()
 
@@ -400,7 +398,7 @@ class TCorrMethods:
             self._obj.ndim != other.ndim
             or self.xdim != other.tcorr.xdim
             or self.ydim != other.tcorr.ydim
-            or any(a != b for a, b in zip(self._obj.shape, other.shape))
+            or any(a != b for a, b in zip(self._obj.shape, other.shape, strict=True))
         ):
             return False
         return bool(
@@ -437,11 +435,9 @@ class TCorrMethods:
         np.ndarray
             A boolean array of same dimensions as the calling DataArray.
         """
-        if mask_type not in ("radial", "rectangular"):
+        if mask_type not in {"radial", "rectangular"}:
             msg = f"mask_type must be 'radial' or 'rectangular', not '{mask_type}'"
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
         if max_dist is not None and max_dist <= min_dist:
             msg = f"invalid {max_dist=}, must be > {min_dist=}"
             raise ValueError(msg)
@@ -454,9 +450,14 @@ class TCorrMethods:
                 float((self.xc.max() - self.xc.min()) / 2 + self.xc.min()),
                 float((self.yc.max() - self.yc.min()) / 2 + self.yc.min()),
             )
+
         px, py = point  # px is x, py is y
         mask = np.ones(self._obj.shape, dtype=bool)
-        if min_dist == 0.0 and max_dist is None:
+
+        # If min_dist less than 1/2 cell and no max_dist, then
+        # - there will be no masking
+        # - nothing more to do here
+        if min_dist <= 0.5 * self.dx and max_dist is None:
             return mask
 
         min_dist_incr = max(min_dist - 0.5 * self.dx, 0.0) ** 2

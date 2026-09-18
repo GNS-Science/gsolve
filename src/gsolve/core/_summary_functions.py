@@ -18,40 +18,40 @@
 
 """Funtions used in generating summary statistics for various GSolve classes."""
 
-import pandas as _pd
+import pandas as pd
 
 
-def stdev_ugal(x: _pd.Series) -> float:
+def stdev_ugal(x: pd.Series) -> float:
     return round(x.std() * 1000, 2)
 
 
-def range_ugal(x: _pd.Series) -> float:
+def range_ugal(x: pd.Series) -> float:
     return round((x.max() - x.min()) * 1000, 2)
 
 
-def n(x: _pd.Series) -> int:
+def n(x: pd.Series) -> int:
     return x.size
 
 
-def n_inactive(x: _pd.Series) -> int:
+def n_inactive(x: pd.Series) -> int:
     return x.eq(False).sum()
 
 
-def n_sites(x: _pd.Series) -> int:
+def n_sites(x: pd.Series) -> int:
     return x.nunique()
 
 
-def starttime_utc(x: _pd.Series) -> _pd.Timestamp:
+def starttime_utc(x: pd.Series) -> pd.Timestamp:
     return x.min()
 
 
-def endtime_utc(x: _pd.Series) -> _pd.Timestamp:
+def endtime_utc(x: pd.Series) -> pd.Timestamp:
     return x.max()
 
 
-def duration_hr(x: _pd.Series) -> float:
+def duration_hr(x: pd.Series) -> float:
     return round((x.max() - x.min()).total_seconds() / 3600, 2)
 
 
-def in_loops(x: _pd.Series) -> str:
+def in_loops(x: pd.Series) -> str:
     return ",".join(sorted(x.unique()))

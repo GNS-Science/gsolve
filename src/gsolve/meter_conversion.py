@@ -19,18 +19,17 @@
 """Module for converting Lacoste-Romberg G and D meter readings to mGal."""
 
 import pathlib
-import warnings
 from collections.abc import Sequence
 from io import StringIO
-from typing import Any, Protocol, TextIO, runtime_checkable
+from typing import Protocol, Self, TextIO, runtime_checkable
 
-import numpy as _np
-import numpy.typing as _npt
-import pandas as _pd
+import numpy as np
+import numpy.typing as npt
+import pandas as pd
 from pandas.api.typing import NaTType
 
 from gsolve.core._typing import DatetimeArray, DatetimeScalar, FilePath
-from gsolve.core.utils import is_list_like, to_naive_utc_datetime
+from gsolve.core.utils import to_naive_utc_datetime
 
 __all__ = ["LaCosteRombergDialConverter"]
 
@@ -39,81 +38,12 @@ __all__ = ["LaCosteRombergDialConverter"]
 class MeterReadingConverter(Protocol):
     def convert_readings(
         self,
-        readings: _npt.ArrayLike,
+        readings: npt.ArrayLike,
         meter_id: str | Sequence[str] | None = None,
         date_time: DatetimeScalar | DatetimeArray | None = None,
-    ) -> _npt.NDArray[_np.float64]: ...
+    ) -> npt.NDArray[np.float64]: ...
 
     def converter_id(self) -> str: ...
-
-
-# class MeterReadingConverterABC(abc.ABC):
-#     """Base class for Lacoste Romberg meter reading converters"""
-
-#     @abc.abstractmethod
-#     def convert_readings(
-#         self,
-#         readings: Sequence[float],
-#         meter_id: str | Sequence[Any] | None = None,
-#         date_time: DatetimeScalar | DatetimeArray | None = None,
-#     ) -> _npt.NDArray[_np.float64]:
-#         pass
-
-#     @abc.abstractmethod
-#     def converter_id(self) -> str:
-#         pass
-
-#     @property
-#     def meter_id(self) -> str:
-#         return getattr(self, "_meter_id")
-
-#     @meter_id.setter
-#     def meter_id(self, val: str) -> None:
-#         if val is None or not str(val).strip():
-#             raise ValueError("meter_id must be specified.")
-#         self._meter_id = str(val).strip()
-
-#     @property
-#     def starttime(self) -> _pd.Timestamp:
-#         """The date from which correction parameters are valid."""
-#         st = getattr(self, "_starttime", None)
-#         return st if isinstance(st, _pd.Timestamp) else _pd.Timestamp.min
-
-#     @starttime.setter
-#     def starttime(self, t: DatetimeScalar | None | NaTType) -> None:
-#         if _pd.isna(t) or t is None:
-#             _t = None
-#         else:
-#             _t = to_naive_utc_datetime(t)
-#         if not isinstance(_t, _pd.Timestamp):
-#             _t = None
-
-#         if _t is not None and self.endtime is not None and _t >= self.endtime:
-#             raise ValueError(f"starttime ({t}) must be < endtime ({self.endtime})")
-#         self._starttime = _t
-
-#     @property
-#     def endtime(self) -> _pd.Timestamp | None:
-#         """The date up to which correction parameters are valid."""
-#         t = getattr(self, "_endtime", None)
-#         return t if isinstance(t, _pd.Timestamp) else _pd.Timestamp.max
-
-#     @endtime.setter
-#     def endtime(self, t: DatetimeScalar | NaTType) -> None:
-#         if isinstance(t, NaTType) or t is None:
-#             _t = _pd.Timestamp.max
-#         else:
-#             _t = to_naive_utc_datetime(t)
-#         if not isinstance(_t, _pd.Timestamp):
-#             _t = _pd.Timestamp.max
-#         if _t < self.starttime:
-#             raise ValueError(f"endtime ({t}) must be > starttime ({self.starttime})")
-#         self._endtime = _t
-
-#     @property
-#     def valid_date_range(self) -> _pd.Interval:
-#         # TODO: consider whether to make this a closed interval, or half-open with end exclusive
-#         return _pd.Interval(self.starttime, self.endtime, closed="left")
 
 
 class LaCosteRombergDialConverter:
@@ -164,72 +94,73 @@ class LaCosteRombergDialConverter:
 
     def __init__(
         self,
+        *,
         meter_id: str,
-        counter_reading: _npt.ArrayLike,
-        value_mgal: _npt.ArrayLike,
-        interval_factor: _npt.ArrayLike | None = None,
+        counter_reading: npt.ArrayLike,
+        value_mgal: npt.ArrayLike,
+        interval_factor: npt.ArrayLike | None = None,
         starttime: DatetimeScalar | NaTType | None = None,
         endtime: DatetimeScalar | NaTType | None = None,
     ) -> None:
-        self.table: _pd.DataFrame
+        self.table: pd.DataFrame
         self.meter_id: str = meter_id
-        self._starttime: _pd.Timestamp | None
-        self._endtime: _pd.Timestamp | None
+        self._starttime: pd.Timestamp | None
+        self._endtime: pd.Timestamp | None
 
         self.set_datetime_range(starttime, endtime)
 
-        _c_reading = _np.atleast_1d(_np.array(counter_reading, dtype=_np.float64))
-        _value_mgal = _np.atleast_1d(_np.array(value_mgal, dtype=_np.float64))
+        c_reading = np.atleast_1d(np.array(counter_reading, dtype=np.float64))
+        value_mgal = np.atleast_1d(np.array(value_mgal, dtype=np.float64))
 
-        if _c_reading.ndim != 1 or _c_reading.size == 0:
+        if c_reading.ndim != 1 or c_reading.size == 0:
             msg = "counter_reading must be a non-empty 1-dimensional array."
             raise ValueError(msg)
-        if _np.isnan(_c_reading).any():
+        if np.isnan(c_reading).any():
             msg = "counter_reading contains NaN."
             raise ValueError(msg)
-        if _value_mgal.ndim != 1 or _value_mgal.size == 0:
+        if value_mgal.ndim != 1 or value_mgal.size == 0:
             msg = "value_mgal must be a non-empty 1-dimensional array."
             raise ValueError(msg)
-        if _np.isnan(_value_mgal).any():
+        if np.isnan(value_mgal).any():
             msg = "value_mgal contains NaN."
             raise ValueError(msg)
 
-        if _c_reading.size != _value_mgal.size:
+        if c_reading.size != value_mgal.size:
             msg = "counter_reading and value_mgal arrays must be the same shape."
             raise ValueError(msg)
 
-        nrows: int = _c_reading.size
+        nrows: int = c_reading.size
 
         if interval_factor is not None:
-            _interval_factor = _np.atleast_1d(interval_factor).astype(float)
-            if _interval_factor.ndim != 1 or _interval_factor.size == 0:
+            interval_factor = np.atleast_1d(interval_factor).astype(float)
+            if interval_factor.ndim != 1 or interval_factor.size == 0:
                 msg = "if specified, interval_factor must be a non-empty 1-dimensional array."
                 raise ValueError(msg)
 
-            if _interval_factor.size == nrows:
-                _interval_factor[-1] = _np.nan
-            elif _interval_factor.size == nrows - 1:
-                _interval_factor = _np.append(_interval_factor, _np.nan)
+            if interval_factor.size == nrows:
+                interval_factor[-1] = np.nan
+            elif interval_factor.size == nrows - 1:
+                interval_factor = np.append(interval_factor, np.nan)
             else:
                 msg = (
-                    f"invalid interval_factor: array size {_interval_factor.size} is not "
+                    f"invalid interval_factor: array size {interval_factor.size} is not "
                     f"the same as or 1 less than counter_reading ({nrows})."
                 )
                 raise ValueError(msg)
-            if _np.isnan(_interval_factor[:-1]).any():
+            if np.isnan(interval_factor[:-1]).any():
                 msg_0 = "interval_factor is specified, but contains NaN values."
                 raise ValueError(msg_0)
             recalc_value_mgal = True
         else:
-            _interval_factor = _np.full_like(_c_reading, _np.nan)
+            interval_factor = np.full_like(c_reading, np.nan)
             recalc_value_mgal = False
 
-        self.table = _pd.DataFrame(
+        self.table = pd.DataFrame(
             data={
-                "counter_reading": _c_reading,
-                "value_mgal": _value_mgal,
-                "interval_factor": _interval_factor,
-                "value_mgal_from_ifactor": _np.nan,
+                "counter_reading": c_reading,
+                "value_mgal": value_mgal,
+                "interval_factor": interval_factor,
+                "value_mgal_from_ifactor": np.nan,
             },
             dtype=float,
         ).set_index("counter_reading")
@@ -253,8 +184,8 @@ class LaCosteRombergDialConverter:
             mgal_ifac = self.table["value_mgal_from_ifactor"].to_numpy(copy=True)
 
             mgal_ifac[0] = self.table["value_mgal"].iloc[0]
-            mgal_ifac[1:] = _np.diff(counter_reading) * ifac[:-1]
-            self.table["value_mgal_from_ifactor"] = _np.cumsum(mgal_ifac)
+            mgal_ifac[1:] = np.diff(counter_reading) * ifac[:-1]
+            self.table["value_mgal_from_ifactor"] = np.cumsum(mgal_ifac)
 
     @property
     def meter_id(self) -> str:
@@ -270,8 +201,8 @@ class LaCosteRombergDialConverter:
 
     def set_datetime_range(
         self,
-        starttime: DatetimeScalar | None | NaTType,
-        endtime: DatetimeScalar | None | NaTType,
+        starttime: DatetimeScalar | NaTType | None,
+        endtime: DatetimeScalar | NaTType | None,
     ) -> None:
         """Set the start and end times defining the converter's valid date range.
 
@@ -298,26 +229,26 @@ class LaCosteRombergDialConverter:
         TypeError
             If starttime or endtime is not datetimelike, NaT or None.
         """
-        if starttime is _pd.NaT or starttime is None:
+        if starttime is pd.NaT or starttime is None:
             st = None
         elif isinstance(starttime, DatetimeScalar):
             try:
                 st = to_naive_utc_datetime(starttime, allow_nat=False)
             except ValueError as e:
                 msg = f"Error setting starttime: {e}"
-                raise ValueError(msg)
+                raise ValueError(msg) from None
         else:
             msg = f"invalid starttime type {type(starttime)}. Should be datetimelike or None."
             raise TypeError(msg)
 
-        if endtime is _pd.NaT or endtime is None:
+        if endtime is pd.NaT or endtime is None:
             et = None
         elif isinstance(endtime, DatetimeScalar):
             try:
                 et = to_naive_utc_datetime(endtime, allow_nat=False)
             except ValueError as e:
                 msg = f"Error setting endtime: {e}"
-                raise ValueError(msg)
+                raise ValueError(msg) from None
         else:
             msg = (
                 f"invalid endtime type {type(endtime)}. Should be datetimelike or None."
@@ -332,29 +263,29 @@ class LaCosteRombergDialConverter:
         self._endtime = et
 
     @property
-    def starttime(self) -> _pd.Timestamp | None:
+    def starttime(self) -> pd.Timestamp | None:
         """The date from which correction parameters are valid."""
         st = getattr(self, "_starttime", None)
-        if st is not None and not isinstance(st, _pd.Timestamp):
+        if st is not None and not isinstance(st, pd.Timestamp):
             msg = f"invalid starttime type {type(st)}. Should be pandas.Timestamp or None."
             raise TypeError(msg)
         return st
 
     @property
-    def endtime(self) -> _pd.Timestamp | None:
+    def endtime(self) -> pd.Timestamp | None:
         """The date up to which correction parameters are valid."""
         r = getattr(self, "_endtime", None)
-        if r is not None and not isinstance(r, _pd.Timestamp):
+        if r is not None and not isinstance(r, pd.Timestamp):
             msg = f"invalid endtime type {type(r)}. Should be pandas.Timestamp or None."
             raise TypeError(msg)
         return r
 
     def convert_readings(
         self,
-        readings: _npt.ArrayLike,
-        meter_id: _npt.ArrayLike | None = None,
+        readings: npt.ArrayLike,
+        meter_id: npt.ArrayLike | None = None,
         date_time: DatetimeScalar | DatetimeArray | None = None,
-    ) -> _npt.NDArray[_np.float64]:
+    ) -> npt.NDArray[np.float64]:
         """Convert meter readings to milligal.
 
         Parameters
@@ -384,13 +315,11 @@ class LaCosteRombergDialConverter:
             If ``meter_id`` is not a string or array of strings, or if ``date_time``
             is not datetimelike or array of datetimelike.
         """
-        interval_bounds: _npt.NDArray[_np.float64] = self.table.index.to_numpy(
-            _np.float64
-        )
+        interval_bounds: npt.NDArray[np.float64] = self.table.index.to_numpy(np.float64)
 
-        _readings = _np.atleast_1d(readings).astype(float)
-        if (_readings < interval_bounds.min()).any() | (
-            _readings > interval_bounds.max()
+        readings = np.atleast_1d(readings).astype(float)
+        if (readings < interval_bounds.min()).any() | (
+            readings > interval_bounds.max()
         ).any():
             msg = (
                 "1 or more readings are outside range of convertible values: "
@@ -399,63 +328,63 @@ class LaCosteRombergDialConverter:
             raise ValueError(msg)
 
         if meter_id is not None:
-            _m_meter_id = _np.atleast_1d(meter_id).astype(str) == self.meter_id
+            m_meter_id = np.atleast_1d(meter_id).astype(str) == self.meter_id
 
-            if _m_meter_id.size == 0:
+            if m_meter_id.size == 0:
                 msg_0 = "invalid meter_id arg: empty array."
                 raise ValueError(msg_0)
-            if _m_meter_id.ndim != 1:
+            if m_meter_id.ndim != 1:
                 msg_0 = "invalid meter_id arg: must be a scalar or 1-dimensional array."
                 raise ValueError(msg_0)
 
-            if _m_meter_id.size == 1 and _readings.size > 1:
-                _m_meter_id = _np.full(_readings.shape, _m_meter_id[0])
-            elif _m_meter_id.size != _readings.size:
+            if m_meter_id.size == 1 and readings.size > 1:
+                m_meter_id = np.full(readings.shape, m_meter_id[0])
+            elif m_meter_id.size != readings.size:
                 msg_0 = "invalid meter_id arg: length must match readings array."
                 raise ValueError(msg_0)
         else:
-            _m_meter_id = _np.full(_readings.shape, True)
+            m_meter_id = np.full(readings.shape, True)
 
         if date_time is not None:
-            _dt = to_naive_utc_datetime(date_time)
-            if isinstance(_dt, _pd.Timestamp):
-                _date_time = _pd.DatetimeIndex([_dt] * _readings.size)
-            elif isinstance(_dt, (_pd.Series, _pd.DatetimeIndex)):
-                _date_time = _pd.DatetimeIndex(_dt)
+            dt = to_naive_utc_datetime(date_time)
+            if isinstance(dt, pd.Timestamp):
+                date_time = pd.DatetimeIndex([dt] * readings.size)
+            elif isinstance(dt, (pd.Series, pd.DatetimeIndex)):
+                date_time = pd.DatetimeIndex(dt)
             else:
                 msg_0 = (
                     "date_time could not be converted to a Timestamp or DatetimeIndex."
                 )
                 raise TypeError(msg_0)
 
-            if _date_time.size != _readings.size:
+            if date_time.size != readings.size:
                 msg_0 = "invalid date_time array: date_time values must be the same length as readings."
                 raise ValueError(msg_0)
-            if any(_date_time.isna()):
+            if any(date_time.isna()):
                 msg_0 = "date_time contains NaT values."
                 raise ValueError(msg_0)
 
-            _m_datetime = _np.full_like(_readings, True, dtype=bool)
+            m_datetime = np.full_like(readings, True, dtype=bool)
             if self.starttime is not None:
-                _m_datetime &= _date_time >= self.starttime.asm8
+                m_datetime &= date_time >= self.starttime.asm8
             if self.endtime is not None:
-                _m_datetime &= _date_time <= self.endtime.asm8
+                m_datetime &= date_time <= self.endtime.asm8
         else:
-            _m_datetime = _np.full_like(_readings, True, dtype=bool)
+            m_datetime = np.full_like(readings, True, dtype=bool)
 
-        interval_mgal: _npt.NDArray[_np.float64]
+        interval_mgal: npt.NDArray[np.float64]
         if self.table["value_mgal_from_ifactor"].notna().any():
-            interval_mgal = self.table["value_mgal_from_ifactor"].to_numpy(_np.float64)
+            interval_mgal = self.table["value_mgal_from_ifactor"].to_numpy(np.float64)
         else:
-            interval_mgal: _npt.NDArray[_np.float64] = self.table[
-                "value_mgal"
-            ].to_numpy(_np.float64)
-        converted: _npt.NDArray[_np.float64] = _np.interp(
-            _readings, interval_bounds, interval_mgal
+            interval_mgal: npt.NDArray[np.float64] = self.table["value_mgal"].to_numpy(
+                np.float64
+            )
+        converted: npt.NDArray[np.float64] = np.interp(
+            readings, interval_bounds, interval_mgal
         )
 
-        m = _np.logical_and(_m_meter_id, _m_datetime)
-        converted[~m] = _np.nan
+        m = np.logical_and(m_meter_id, m_datetime)
+        converted[~m] = np.nan
 
         return converted
 
@@ -486,10 +415,10 @@ class LaCosteRombergDialConverter:
     def from_dataframe(
         cls,
         meter_id: str,
-        table: _pd.DataFrame,
-        starttime: DatetimeScalar = _pd.Timestamp.min,
-        endtime: DatetimeScalar = _pd.Timestamp.max,
-    ) -> "LaCosteRombergDialConverter":
+        table: pd.DataFrame,
+        starttime: DatetimeScalar = pd.Timestamp.min,
+        endtime: DatetimeScalar = pd.Timestamp.max,
+    ) -> Self:
         """
         Generate a LaCosteRombergDialConverter object from a standard L&R G-meter table.
 
@@ -521,15 +450,9 @@ class LaCosteRombergDialConverter:
             starttime=starttime,
             endtime=endtime,
         )
-        # meter_id: str,
-        # counter_reading: _npt.ArrayLike,
-        # value_mgal: _npt.ArrayLike,
-        # interval_factor: float | None = None,
-        # starttime: DatetimeScalar | NaTType = _pd.Timestamp.min,
-        # endtime: DatetimeScalar | NaTType = _pd.Timestamp.max,
 
     @classmethod
-    def from_csv(cls, fname: FilePath, **kwargs) -> "LaCosteRombergDialConverter":
+    def from_csv(cls, fname: FilePath, **kwargs) -> Self:
         """
         Generate a LaCosteRombergDialConverter object from a csv file.
 
@@ -596,7 +519,7 @@ class LaCosteRombergDialConverter:
             data.pop(0)
 
         with StringIO("\n".join(data)) as buffer:
-            df = _pd.read_csv(
+            df = pd.read_csv(
                 buffer, dtype=float, names=cls._table_column_labels, **kwargs
             )
 

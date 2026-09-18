@@ -21,10 +21,12 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
+from types import MappingProxyType
 from typing import Literal, Self
-import numpy as _np
-import numpy.typing as _npt
-import pandas as _pd
+
+import numpy as np
+import numpy.typing as npt
+import pandas as pd
 
 from gsolve.core._typing import (
     DatasetOrArray,
@@ -45,7 +47,6 @@ from gsolve.core.utils import (
     GSolveDataWarning,
     is_filepath_like,
     is_list_like,
-    normalize_field_names,
     prepare_writable_df,
     to_1d_ndarray,
 )
@@ -130,44 +131,51 @@ class GravitySites(GSolveTable):
 
     """
 
-    _known_fields: dict[str, DataFieldSpecification] = {
-        "site_id": COMMON_FIELDS["site_id"],
-        "longitude": DataFieldSpecification("longitude", float, _np.nan, True),
-        "latitude": DataFieldSpecification("latitude", float, _np.nan, True),
-        "height_ellipsoidal": DataFieldSpecification(
-            "height_ellipsoidal",
-            float,
-            _np.nan,
-            True,
-            legacy_name="elevation",
-        ),
-        "reference_gravity": DataFieldSpecification(
-            "reference_gravity", float, _np.nan, False, legacy_name="gravity"
-        ),
-        "gsolve_tie": DataFieldSpecification("gsolve_tie", bool, False, False),
-        "easting": DataFieldSpecification("easting", float, _np.nan, False),
-        "northing": DataFieldSpecification("northing", float, _np.nan, False),
-        "height_orthometric": DataFieldSpecification("height_orthometric", float, 0.0),
-        "absolute_gravity": DataFieldSpecification(
-            "absolute_gravity", float, _np.nan, False
-        ),
-    }
+    _known_fields: MappingProxyType[str, DataFieldSpecification] = MappingProxyType(
+        {
+            "site_id": COMMON_FIELDS["site_id"],
+            "longitude": DataFieldSpecification("longitude", float, np.nan, True),
+            "latitude": DataFieldSpecification("latitude", float, np.nan, True),
+            "height_ellipsoidal": DataFieldSpecification(
+                "height_ellipsoidal",
+                float,
+                np.nan,
+                True,
+                legacy_name="elevation",
+            ),
+            "reference_gravity": DataFieldSpecification(
+                "reference_gravity", float, np.nan, False, legacy_name="gravity"
+            ),
+            "gsolve_tie": DataFieldSpecification("gsolve_tie", bool, False, False),
+            "easting": DataFieldSpecification("easting", float, np.nan, False),
+            "northing": DataFieldSpecification("northing", float, np.nan, False),
+            "height_orthometric": DataFieldSpecification(
+                "height_orthometric", float, 0.0
+            ),
+            "absolute_gravity": DataFieldSpecification(
+                "absolute_gravity", float, np.nan, False
+            ),
+        }
+    )
 
     _index_field: str = "site_id"
     _default_excel_sheet_name: str | tuple[str, ...] = ("sites", "Locations")
 
+    data: pd.DataFrame
+
     def __init__(
         self,
-        site_id: _npt.ArrayLike,
-        latitude: _npt.ArrayLike,
-        longitude: _npt.ArrayLike,
-        height_ellipsoidal: _npt.ArrayLike,
-        reference_gravity: _npt.ArrayLike | float | None = _np.nan,
-        gsolve_tie: _npt.ArrayLike | bool | None = False,
-        **kwargs: _npt.ArrayLike,
+        *,
+        site_id: npt.ArrayLike,
+        latitude: npt.ArrayLike,
+        longitude: npt.ArrayLike,
+        height_ellipsoidal: npt.ArrayLike,
+        reference_gravity: npt.ArrayLike | float | None = np.nan,
+        gsolve_tie: npt.ArrayLike | bool | None = False,
+        **kwargs: npt.ArrayLike,
     ) -> None:
 
-        idx = _pd.Index(
+        idx = pd.Index(
             data=to_1d_ndarray(site_id).astype(str),
             name=self._index_field,
             dtype=self._known_fields[self._index_field].dtype,
@@ -177,7 +185,7 @@ class GravitySites(GSolveTable):
             msg = f"site_id contains duplicated values: {duplicates}"
             raise ValueError(msg)
 
-        self.data = _pd.DataFrame(index=idx, data=None)
+        self.data = pd.DataFrame(index=idx, data=None)
         self.set_column("latitude", latitude)
         self.set_column("longitude", longitude)
         self.set_column("height_ellipsoidal", height_ellipsoidal)
@@ -253,7 +261,7 @@ class GravitySites(GSolveTable):
 
     def get_ties(
         self, active_only: bool = True, gravity_only: bool = True
-    ) -> _pd.DataFrame:
+    ) -> pd.DataFrame:
         """Return rows sites that will be used as gsolve ties.
 
         Parameters
@@ -269,15 +277,12 @@ class GravitySites(GSolveTable):
         DataFrame
 
         """
-        if gravity_only:
-            cols = ["reference_gravity"]
-        else:
-            cols = self.data.columns
+        cols = ["reference_gravity"] if gravity_only else self.data.columns
         if active_only:
             return self.data.loc[self.data["gsolve_tie"], cols]
         return self.data.loc[self.data["reference_gravity"].notna(), cols]
 
-    def activate_ties(self, site_id: str | _npt.ArrayLike | None = None) -> None:
+    def activate_ties(self, site_id: str | npt.ArrayLike | None = None) -> None:
         """Set one or more "tie" sites as active, i.e. to be used in gsolve.
 
         Parameters
@@ -288,26 +293,24 @@ class GravitySites(GSolveTable):
 
         """
         if site_id is None:
-            _site_id = self.get_ties(False).index.tolist()
+            site_id = self.get_ties(False).index.tolist()
         elif isinstance(site_id, str):
-            _site_id = [str(site_id)]
+            site_id = [str(site_id)]
         elif is_list_like(site_id) and isinstance(site_id, Iterable):
-            _site_id = [str(s) for s in site_id]
+            site_id = [str(s) for s in site_id]
         else:
             msg = "site_id must be None, a string, or an array-like of strings"
-            raise TypeError(
-                msg
-            )
+            raise TypeError(msg)
 
-        self._check_bad_site_ids(_site_id)
+        self._check_bad_site_ids(site_id)
 
-        m = self.data.index.isin(_site_id).tolist()
+        m = self.data.index.isin(site_id).tolist()
         if self.data.loc[m, "reference_gravity"].isna().any():
             msg = "Cannot activate sites without reference gravity."
             raise ValueError(msg)
         self.data.loc[m, "gsolve_tie"] = True
 
-    def deactivate_ties(self, site_id: str | _npt.ArrayLike | None = None) -> None:
+    def deactivate_ties(self, site_id: str | npt.ArrayLike | None = None) -> None:
         """Set one or more "tie" sites as inactive, i.e. not used in gsolve.
 
         Parameters
@@ -318,19 +321,19 @@ class GravitySites(GSolveTable):
 
         """
         if site_id is None:
-            _site_id = self.get_ties(False).index.tolist()
+            site_id = self.get_ties(False).index.tolist()
         elif isinstance(site_id, str):
-            _site_id = [str(site_id)]
+            site_id = [str(site_id)]
         else:
-            _site_id = to_1d_ndarray(site_id).astype(str).tolist()
+            site_id = to_1d_ndarray(site_id).astype(str).tolist()
 
-        self._check_bad_site_ids(_site_id)
-        m = self.data.index.isin(_site_id)
+        self._check_bad_site_ids(site_id)
+        m = self.data.index.isin(site_id)
         self.data.loc[m, "gsolve_tie"] = False
 
     def set_reference_gravity(
         self,
-        ref_sites: Self | _pd.DataFrame | dict,
+        ref_sites: ReferenceGravity | pd.DataFrame | dict,
         reset: bool = False,
     ) -> None:
         """Load reference gravity values into the sites table.
@@ -349,7 +352,7 @@ class GravitySites(GSolveTable):
             self.data.loc[:, ref_gravity_field] = ref_gravity_default
             self.data.loc[:, "gsolve_tie"] = self._known_fields["gsolve_tie"].default
 
-        if isinstance(ref_sites, _pd.DataFrame):
+        if isinstance(ref_sites, pd.DataFrame):
             ref_sites = ReferenceGravity.from_dataframe(ref_sites)
         elif isinstance(ref_sites, Mapping):
             ref_sites = ReferenceGravity.from_dict(ref_sites)
@@ -360,16 +363,16 @@ class GravitySites(GSolveTable):
         ]
         self.data.loc[has_ref_grav, "gsolve_tie"] = True
 
-    def _check_bad_site_ids(self, site_id: str | _npt.ArrayLike) -> None:
+    def _check_bad_site_ids(self, site_id: str | npt.ArrayLike) -> None:
         if isinstance(site_id, (str, bytes)):
-            _site_id = [str(site_id)]
+            site_id = [str(site_id)]
         elif is_list_like(site_id):
-            _site_id = [str(s) for s in site_id]  # type: ignore[not-iterable, ty:not-iterable]
+            site_id = [str(s) for s in site_id]  # type: ignore[not-iterable, ty:not-iterable]
         else:
             msg = "site_id must be a string or an array-like of strings"
             raise TypeError(msg)
 
-        bad_site_names = [s for s in _site_id if s not in self.data.index]
+        bad_site_names = [s for s in site_id if s not in self.data.index]
         if bad_site_names:
             msg = f"site_id(s) not in existing sites: {bad_site_names}"
             raise ValueError(msg)
@@ -425,7 +428,7 @@ class GravitySites(GSolveTable):
         normalize_column_names: bool = True,
         bool_to_int: bool = True,
         include_unknown_fields: bool = True,
-    ) -> _pd.DataFrame:
+    ) -> pd.DataFrame:
         """
         Return GravitySite data as a DataFrame suitable for writing to an excel or csv file.
 
@@ -495,6 +498,7 @@ class GravitySites(GSolveTable):
     def to_excel(
         self,
         excel_file: FilePath,
+        *,
         sheet_name: str | None = None,
         normalize_column_names: bool = True,
         bool_to_int: bool = True,
@@ -564,7 +568,7 @@ class GravitySites(GSolveTable):
         xcol: str = "easting",
         ycol: str = "northing",
         method: str = "nearest",
-    ) -> _pd.Series | None:
+    ) -> pd.Series | None:
         """Get elevations at site locations from an DEM/xarray grid.
 
         Parameters
@@ -589,16 +593,16 @@ class GravitySites(GSolveTable):
 
         """
         if is_filepath_like(dem):
-            _dem = load_dem(dem)
+            dem = load_dem(dem)
         elif isinstance(dem, DatasetOrArray):
-            _dem = prepare_dem(dem)
+            dem = prepare_dem(dem)
         else:
             msg = "dem must be file path or an xarray Dataset/DataArray"
             raise TypeError(msg)
 
         z = (
-            _dem.interp(
-                {_dem.dims[0]: self.data[ycol], _dem.dims[1]: self.data[xcol]},
+            dem.interp(
+                {dem.dims[0]: self.data[ycol], dem.dims[1]: self.data[xcol]},
                 method=method,  # type: ignore[invalid-argument-type, ty:invalid-argument-type]
             )
             .to_numpy()
@@ -606,8 +610,7 @@ class GravitySites(GSolveTable):
         )
         if output_col is not None:
             self.set_column(output_col, z)
-        else:
-            return _pd.Series(index=self.data.index, data=z)
+        return pd.Series(index=self.data.index, data=z)
 
     def get_points(self, xcol: str, ycol: str, zcol: str = "") -> Points3DTrue:
         """Get site point coordinates as numpy arrays.
@@ -627,17 +630,17 @@ class GravitySites(GSolveTable):
         (ndarray, ndarray, ndarray)
             The x, y, and z coordinates as numpy arrays.
         """
-        x = to_1d_ndarray(self.data.loc[:, xcol]).copy().astype(_np.float64)
-        y = to_1d_ndarray(self.data.loc[:, ycol]).copy().astype(_np.float64)
+        x = to_1d_ndarray(self.data.loc[:, xcol]).copy().astype(np.float64)
+        y = to_1d_ndarray(self.data.loc[:, ycol]).copy().astype(np.float64)
 
         if not zcol:
-            z = _np.full_like(x, fill_value=_np.nan)
+            z = np.full_like(x, fill_value=np.nan)
         else:
-            z = to_1d_ndarray(self.data.loc[:, zcol]).copy().astype(_np.float64)
+            z = to_1d_ndarray(self.data.loc[:, zcol]).copy().astype(np.float64)
 
         return x, y, z
 
-    def get_site_ids(self) -> _npt.NDArray[_np.str_]:
+    def get_site_ids(self) -> npt.NDArray[np.str_]:
         """Return site_id's as as numpy ndarray.
 
         Returns
@@ -675,23 +678,19 @@ class GravitySites(GSolveTable):
                 f"invalid type for other: "
                 f"expected {type(self).__name__}, got {type(other)}"
             )
-            raise TypeError(
-                msg
-            )
+            raise TypeError(msg)
 
         valid_duplicates_args = {"drop", "error"}
         if if_duplicate not in valid_duplicates_args:
             msg = f"duplicates must be one of {valid_duplicates_args}, not '{if_duplicate}'"
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         other_df = other.data
         is_duplicate = other_df.index.isin(self.data.index)
         if any(is_duplicate):
             msg = f"{is_duplicate.sum()} duplicate sites in 'other'"
             if is_duplicate.sum() <= 10:
-                msg = msg + f": {other_df.loc[is_duplicate].index.to_list()}"
+                msg += f": {other_df.loc[is_duplicate].index.to_list()}"
 
             if if_duplicate == "drop":
                 other_df = other_df.loc[~is_duplicate]
@@ -733,25 +732,27 @@ class ReferenceGravity(GSolveTable):
         be ignored by gsolve.
     """
 
-    _known_fields: dict[str, DataFieldSpecification] = {
-        "site_id": DataFieldSpecification("site_id", str, "", True),
-        "gravity": DataFieldSpecification("gravity", float, _np.nan, True),
-        "active": DataFieldSpecification("active", bool, True, False),
-    }
+    _known_fields: MappingProxyType[str, DataFieldSpecification] = MappingProxyType(
+        {
+            "site_id": DataFieldSpecification("site_id", str, "", True),
+            "gravity": DataFieldSpecification("gravity", float, np.nan, True),
+            "active": DataFieldSpecification("active", bool, True, False),
+        }
+    )
     _index_field: str = "site_id"
     _default_excel_sheet_name: str | tuple[str, ...] = ("reference_sites", "Tie_Data")
 
     def __init__(
         self,
-        site_id: _npt.ArrayLike,
-        gravity: _npt.ArrayLike,
-        active: _npt.ArrayLike | bool = True,
-        **kwargs: _npt.ArrayLike,
+        site_id: npt.ArrayLike,
+        gravity: npt.ArrayLike,
+        active: npt.ArrayLike | bool = True,
+        **kwargs: npt.ArrayLike,
     ) -> None:
-        _site_id = to_1d_ndarray(site_id).astype(str)
+        site_id = to_1d_ndarray(site_id).astype(str)
 
-        idx = _pd.Index(
-            data=_site_id,
+        idx = pd.Index(
+            data=site_id,
             name=self._index_field,
             dtype=self._known_fields[self._index_field].dtype,
         )
@@ -763,24 +764,19 @@ class ReferenceGravity(GSolveTable):
                 "creating ReferenceGravity object: "
                 f"site_id field contains duplicated values: {duplicates}"
             )
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         # catch empty site_id
-        if idx.isna().any() or (idx == "").any():  # type: ignore[unresolved-attribute, ty:unresolved-attribute]
-            m = idx.isna() | (idx == "")
-            empty = _pd.Series(m)
+        if (m := idx.isna() | (idx == "")).any():  # ruff: ignore[compare-to-empty-string]
+            empty = pd.Series(m)
             empty = empty.loc[m.tolist()].index.to_list()
             msg = (
                 "creating ReferenceGravity object: "
                 f"site_id field contains empty values at rows: {empty}"
             )
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
-        self.data = _pd.DataFrame(index=idx, data=None)
+        self.data = pd.DataFrame(index=idx, data=None)
         self.set_column("gravity", gravity)
         self.set_column("active", active)
 
@@ -790,9 +786,7 @@ class ReferenceGravity(GSolveTable):
                 "creating ReferenceGravity object: "
                 f"gravity field contains null values for sites: {nodata}"
             )
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         for k, v in kwargs.items():
             self.set_column(k, v)
@@ -802,7 +796,7 @@ class ReferenceGravity(GSolveTable):
         normalize_column_names: bool = True,
         include_unknown_fields: bool = True,
         bool_to_int: bool = True,
-    ) -> _pd.DataFrame:
+    ) -> pd.DataFrame:
         """
         Return GravitySite data as a DataFrame suitable for writing to an excel or csv file.
 
@@ -869,6 +863,7 @@ class ReferenceGravity(GSolveTable):
     def to_excel(
         self,
         excel_file: FilePath,
+        *,
         sheet_name: str | None = None,
         normalize_column_names: bool = True,
         bool_to_int: bool = True,
@@ -1004,23 +999,19 @@ class ReferenceGravity(GSolveTable):
                 f"invalid type for other: "
                 f"expected {type(self).__name__}, got {type(other)}"
             )
-            raise TypeError(
-                msg
-            )
+            raise TypeError(msg)
 
         valid_duplicates_args = {"drop", "error"}
         if if_duplicate not in valid_duplicates_args:
             msg = f"duplicates must be one of {valid_duplicates_args}, not '{if_duplicate}'"
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         other_df = other.data
         is_duplicate = other_df.index.isin(self.data.index)
         if any(is_duplicate):
             msg = f"{is_duplicate.sum()} duplicate sites in 'other'"
             if is_duplicate.sum() <= 10:
-                msg = msg + f": {other_df.loc[is_duplicate].index.to_list()}"
+                msg += f": {other_df.loc[is_duplicate].index.to_list()}"
 
             if if_duplicate == "drop":
                 other_df = other_df.loc[~is_duplicate]

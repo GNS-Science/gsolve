@@ -20,21 +20,20 @@
 
 from __future__ import annotations
 
+import itertools
 import sys
-import warnings
 from collections.abc import Sequence
-from os import PathLike
-from typing import Any, Literal, Type, TypeAliasType, get_args, get_origin, overload
+from typing import Any, Literal, TypeAliasType, get_args, get_origin, overload
 
 import numpy as np
 import pandas as pd
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import ArrayLike, DTypeLike, NDArray
 from pandas.api.types import (
+    is_bool_dtype,
     is_datetime64_any_dtype,
     is_dict_like,
     is_list_like,
     is_string_dtype,
-    is_bool_dtype,
 )
 from pandas.api.typing import NaTType, NAType
 
@@ -48,7 +47,6 @@ from gsolve.core._typing import (
     StringArray,
     TimedeltaScalar,
 )
-
 
 __all__ = [
     "DEFAULT_TIMESTAMP_COLUMNS",
@@ -142,10 +140,7 @@ def is_points3d_like(v: Any) -> bool:  # ruff: ignore[any-type]
         return False
     if len(v) != 3:
         return False
-    if not all([is_list_like(c) for c in v]):
-        return False
-
-    return True
+    return all(is_list_like(c) for c in v)
 
 
 def to_points3d(
@@ -166,9 +161,7 @@ def to_points3d(
     """
     if not is_points3d_like(v):
         msg = "object is not Points3D-like so cannot be converted to a true Points3D"
-        raise TypeError(
-            msg
-        )
+        raise TypeError(msg)
     x, y, z = v
     x = to_1d_ndarray(v[0]).astype(np.float64)
     y = to_1d_ndarray(v[1], expected_size=x.size).astype(np.float64)
@@ -247,10 +240,10 @@ def to_naive_utc_datetime(
         if not allow_nat:
             if isinstance(v, (pd.DatetimeIndex, pd.Series)):
                 if any(v.isna()):
-                    msg_0 = "input contains values that resolve to NaT and allow_nat=False"
-                    raise ValueError(
-                        msg_0
+                    msg_0 = (
+                        "input contains values that resolve to NaT and allow_nat=False"
                     )
+                    raise ValueError(msg_0)
             elif v is pd.NaT:
                 msg_0 = "input resolves to NaT and allow_nat=False"
                 raise ValueError(msg_0)
@@ -260,7 +253,7 @@ def to_naive_utc_datetime(
     if isinstance(t, (NaTType, NAType)):
         return _nat_check(pd.NaT)
 
-    if isinstance(t, pd.Timestamp) or isinstance(t, pd.DatetimeIndex):
+    if isinstance(t, (pd.Timestamp, pd.DatetimeIndex)):
         return _nat_check(t if t.tz is None else t.tz_convert("UTC").tz_localize(None))
     if isinstance(t, pd.Series):
         ds = t if t.dtype == "datetime64[ns]" else pd.to_datetime(t, **kwargs)
@@ -282,14 +275,12 @@ def to_naive_utc_datetime(
         return_scalar = True
     try:
         idx = pd.to_datetime(t, **kwargs)
-    except Exception:
+    except Exception as err:
         msg = (
             f"unable to convert input '{t}' of type {type(t).__name__} "
             "to Timestamp or DateTimeIndex"
         )
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg) from err
 
     rval = _nat_check(
         idx if idx.tz is None else idx.tz_convert("UTC").tz_localize(None)
@@ -303,54 +294,47 @@ def to_1d_ndarray(
     a: ArrayLike,
     expected_size: int | None = None,
     extend_len_1_array: bool = False,
+    dtype: DTypeLike | None = None,
 ) -> NDArray:
-    _a = np.atleast_1d(a)
-    if _a.ndim > 1:
-        _a = np.squeeze(_a)
-    if _a.ndim != 1:
+    a = np.atleast_1d(a)
+    if a.ndim > 1:
+        a = np.squeeze(a)
+    if a.ndim != 1:
         msg = f"input not convertible to 1d array"
         raise ValueError(msg)
 
-    if extend_len_1_array and _a.size == 1:
+    if extend_len_1_array and a.size == 1:
         if expected_size is not None:
-            _a = np.full(expected_size, _a[0])
+            a = np.full(expected_size, a[0])
         else:
             msg_0 = "expected_size must be specified if extend_len_1_array is True"
-            raise ValueError(
-                msg_0
-            )
-    if expected_size is not None and _a.size != expected_size:
-        msg = f"expected array of size {expected_size}, got size = {_a.size}"
-        raise ValueError(
-            msg
-        )
+            raise ValueError(msg_0)
+    if expected_size is not None and a.size != expected_size:
+        msg = f"expected array of size {expected_size}, got size = {a.size}"
+        raise ValueError(msg)
 
-    return _a
+    if dtype is not None:
+        a = a.astype(dtype=dtype)
+
+    return a
 
 
 def to_1d_ndarray_or_float(a: ArrayLike) -> NDArray[np.float64] | np.float64:
-    _a = to_1d_ndarray(a).astype(np.float64)
-    if _a.size == 1:
-        return _a[0]
-    return _a
+    a = to_1d_ndarray(a).astype(np.float64)
+    return a[0] if a.size == 1 else a
 
 
 # Remove in future release
 def check_duplicate_index(idx: pd.Index | pd.DataFrame | pd.Series) -> None:
     """Raise a ValueError if the index contains duplicate values."""
     if isinstance(idx, (pd.DataFrame, pd.Series)):
-        _idx = idx.index
-    elif isinstance(idx, pd.Index):
-        _idx = idx
-    else:
+        idx = idx.index
+    elif not isinstance(idx, pd.Index):
         msg = f"idx must be a pandas Index, DataFrame, or Series, not {type(idx).__name__}"
-        raise TypeError(
-            msg
-        )
+        raise TypeError(msg)
 
-    if _idx.duplicated().any():
-        idx_name = _idx.name or "index"
-        idx_dupes = _idx[_idx.duplicated().tolist()]
+    if idx.duplicated().any():
+        idx_dupes = idx[idx.duplicated().tolist()]
         msg = f"duplicate index values: {idx_dupes.unique().to_list()}"
         raise ValueError(msg)
 
@@ -531,9 +515,7 @@ def columns_to_timestamp(
     ts_columns = ts_columns or DEFAULT_TIMESTAMP_COLUMNS
     if not is_list_like(ts_columns):
         msg = f"ts_columns must be list-like, not {type(ts_columns).__name__}"
-        raise TypeError(
-            msg
-        )
+        raise TypeError(msg)
 
     n_ts_columns = len(ts_columns)
     if not 3 <= n_ts_columns <= len(DEFAULT_TIMESTAMP_COLUMNS):
@@ -541,9 +523,7 @@ def columns_to_timestamp(
             f"length of ts_columns is {n_ts_columns}, "
             "must be between 3 (=ymd) and 8 (=ymdHMSun)"
         )
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
     matched_columns = [c for c in ts_columns if c in df.columns]
     n_matched = len(matched_columns)
 
@@ -553,18 +533,14 @@ def columns_to_timestamp(
             f"found {n_matched} columns matching ts_columns, "
             f"must be >= 3 (ymd) and <= {n_ts_columns} the length of ts_columns"
         )
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
     if matched_columns != list(ts_columns[:n_matched]):
         msg = (
             f"expected columns {ts_columns[:n_matched]} "
             f"!= matched columns {matched_columns}"
         )
-        raise ValueError(
-            msg
-        )
-    rename_map = dict(zip(matched_columns, DEFAULT_TIMESTAMP_COLUMNS))
+        raise ValueError(msg)
+    rename_map = dict(zip(matched_columns, DEFAULT_TIMESTAMP_COLUMNS, strict=False))
     return pd.to_datetime(
         df.loc[:, matched_columns].rename(columns=rename_map), **kwargs
     )
@@ -618,20 +594,18 @@ def timestamp_to_columns(
     if resolution is not None:
         if resolution not in AVAIL_TRUNCATION_COLUMNS:
             msg = f"resolution '{resolution}' is not in {AVAIL_TRUNCATION_COLUMNS}"
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
-        _res = _TIMESTAMP_COLUMNS_TO_RESOLUTION[resolution]
+        res = _TIMESTAMP_COLUMNS_TO_RESOLUTION[resolution]
 
         if round_method == "floor":
-            ds = ds.dt.floor(_res)
+            ds = ds.dt.floor(res)
         elif round_method == "round":
-            ds = ds.dt.round(_res)
+            ds = ds.dt.round(res)
         elif round_method == "ceil":
-            ds = ds.dt.ceil(_res)
+            ds = ds.dt.ceil(res)
         else:
-            msg_0 = "unreconised rounding method '{round_method}'"
+            msg_0 = f"unreconised rounding method '{round_method}'"
             raise ValueError(msg_0)
 
     df = pd.DataFrame(
@@ -661,10 +635,11 @@ def timestamp_to_columns(
 
 def expand_datetime_column(
     df: pd.DataFrame,
+    *,
     column_name: str | Sequence[str] = "",
     resolution: AllowedTimestampResolution | None = "second",
     round_method: AllowedTimestampRoundingMethods = "round",
-    prefix: str | StringArray = "",
+    prefix: str | StringArray | None = "",
     insert_after: bool = True,
     drop: bool = False,
     overwrite: bool = False,
@@ -742,9 +717,7 @@ def expand_datetime_column(
         cols_to_split = list(column_name)
     else:
         msg = f"column_name must be a string or list-like, not {type(column_name).__name__}"
-        raise TypeError(
-            msg
-        )
+        raise TypeError(msg)
 
     cols_to_split = [str(c) for c in cols_to_split if str(c) in candidate_columns]
     if not cols_to_split:
@@ -752,12 +725,10 @@ def expand_datetime_column(
             f"the specified column_name(s) are either missing or or are "
             "not datetime-like columns"
         )
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
-    if prefix is None or prefix == "":
-        if len(cols_to_split) > 1:
+    if prefix is None or not prefix:
+        if len(cols_to_split) > 1:  # ruff: ignore[if-else-block-instead-of-if-exp]
             prefixes = [f"{n}_" for n in cols_to_split]
         else:
             prefixes = [""]
@@ -768,21 +739,19 @@ def expand_datetime_column(
                 f"inconsisitent 'column_name' and 'prefix' arg lengths: "
                 f"{len(cols_to_split)} != {len(prefixes)}"
             )
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
-    for col, pre in zip(cols_to_split, prefixes):
+    for col, pre in zip(cols_to_split, prefixes, strict=True):
         ts_df = timestamp_to_columns(
             df[col], resolution=resolution, round_method=round_method, prefix=pre
         )
         existing = ts_df.columns.intersection(df.columns).to_list()
         if existing:
             if not overwrite:
-                msg = f"overwrite=False and splitting would overwrite columns: {existing}"
-                raise ValueError(
-                    msg
+                msg = (
+                    f"overwrite=False and splitting would overwrite columns: {existing}"
                 )
+                raise ValueError(msg)
             df = df.drop(columns=existing)
 
         if not insert_after:
@@ -791,9 +760,7 @@ def expand_datetime_column(
             i_dt = df.columns.get_loc(col)
             if not isinstance(i_dt, int):
                 msg_0 = "unexpected error: could not locate resolution column in output dataframe"
-                raise TypeError(
-                    msg_0
-                )
+                raise TypeError(msg_0)
             i_dt += 1
             df = pd.concat([df.iloc[:, :i_dt], ts_df, df.iloc[:, i_dt:]], axis=1)
 
@@ -805,6 +772,7 @@ def expand_datetime_column(
 
 def prepare_writable_df(
     df: pd.DataFrame,
+    *,
     normalize_column_names: bool = True,
     expand_datetime: str | None = None,
     datetime_resolution: AllowedTimestampResolution | None = "second",
@@ -919,12 +887,12 @@ class GSolveDataWarning:
     def _display(self, msg: str) -> None:
         """Display a message if obj.show is True."""
         if self.show:
-            print(f"{self.prefix}: {msg}", file=sys.stderr)
+            print(f"{self.prefix}: {msg}", file=sys.stderr)  # ruff: ignore[print]
 
     def print_msgs(self) -> None:
         """Print all stored warning messages."""
         for msg in self.messages:
-            print(f"{self.prefix}: {msg}")
+            print(f"{self.prefix}: {msg}")  # ruff: ignore[print]
 
     def final_msg(self) -> None:
         """Print closing summary message."""
@@ -950,9 +918,7 @@ def generate_loop_intervals(
     db = to_naive_utc_datetime(datetime_bounds, allow_nat=False)
     if not isinstance(db, (pd.Series, pd.DatetimeIndex)) or len(db) < 2:
         msg = "datetimes must be an array-like object with at least two elements."
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
     db = pd.Series(db)
 
     if not db.is_monotonic_increasing:
@@ -960,7 +926,7 @@ def generate_loop_intervals(
         raise ValueError(msg)
 
     return pd.IntervalIndex.from_tuples(
-        list(zip(datetime_bounds[:-1], datetime_bounds[1:])), closed="left"
+        list(itertools.pairwise(datetime_bounds)), closed="left"
     )
 
 
@@ -990,9 +956,7 @@ def identify_loop_blocks(
     dt = to_naive_utc_datetime(datetimes, allow_nat=False)
     if not isinstance(dt, (pd.Series, pd.DatetimeIndex)) or len(dt) < 2:
         msg = "datetimes must be an array-like object with at least two elements."
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
     dt = pd.Series(dt)  # ensure we have a Series for diff() and indexing
     if not dt.is_monotonic_increasing:
         msg = "datetimes must be sorted in increasing order."
@@ -1004,11 +968,11 @@ def identify_loop_blocks(
 
     one_sec = pd.Timedelta("1s")
     gap_bounds: list[pd.Timestamp] = (
-        [dt.iloc[0] - one_sec] + dt.loc[gaps].to_list() + [dt.iloc[-1] + one_sec]
+        [dt.iloc[0] - one_sec] + dt.loc[gaps].to_list() + [dt.iloc[-1] + one_sec]  # ruff: ignore[collection-literal-concatenation]
     )
     if as_intervals:
         return pd.IntervalIndex.from_tuples(
-            list(zip(gap_bounds[:-1], gap_bounds[1:])), closed="left"
+            list(itertools.pairwise(gap_bounds)), closed="left"
         )
     return pd.DatetimeIndex(gap_bounds)
 
@@ -1048,9 +1012,7 @@ def loops_from_gaps(
     dt = to_naive_utc_datetime(datetimes, allow_nat=False)
     if not isinstance(dt, (pd.Series, pd.DatetimeIndex)) or len(dt) < 2:
         msg = "datetimes must be an array-like object with at least two elements."
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
     loop_intervals = identify_loop_blocks(dt, gap, as_intervals=True)
     loop_ids = generate_loop_names(
         len(loop_intervals), start=loop_start, step=loop_step, format_str=loop_format
@@ -1139,3 +1101,25 @@ def dms2rad(
     """
     deg = np.copysign(np.absolute(d) + np.divide(m, 60.0) + np.divide(s, 3600.0), d)
     return np.deg2rad(deg)
+
+
+def _convert_single_timestamp_arg(
+    t: DatetimeScalar, allow_nat: bool = False, err_prefix: str | None = None, **kwargs
+) -> pd.Timestamp:
+
+    msg = f"{err_prefix}: " if err_prefix is not None else ""
+
+    try:
+        t_ = to_naive_utc_datetime(t, allow_nat=allow_nat, **kwargs)
+    except Exception as e:
+        msg = f"{msg}{e}"
+        raise type(e)(msg) from e
+
+    if allow_nat and pd.isna(t_):
+        return t_
+
+    if not isinstance(t_, pd.Timestamp):
+        msg = f"{msg}not convertible to a TimeStamp"
+        raise TypeError(msg)
+
+    return t_

@@ -43,11 +43,11 @@ obs = cg6data.to_gsolve_observations()
 obs.set_calibration_factor(1.0)
 
 # plot the observed data for loop #2
-fig, ax = obs.plot_observed_data(
+_ = obs.plot_observed_data(
     2,
-    "datetime",
-    "meter_reading_mgal",
-    savefilename=str(obs_path) + "/cg6_observations.png",
+    x_column="datetime",
+    y_column="meter_reading_mgal",
+    savefilename=obs_path / "cg6_observations.png",
 )
 
 # GravitySites

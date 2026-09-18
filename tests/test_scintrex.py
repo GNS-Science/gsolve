@@ -129,18 +129,16 @@ def sample_data(
 def test_cg6data_initialization(sample_data: CG6Data) -> None:
     cg6copy = sample_data.copy()
     cg6init = CG6Data(
-        sample_data.data, sample_data.metadata, sample_data.metadata_units
+        data=sample_data.data,
+        metadata=sample_data.metadata,
+        metadata_units=sample_data.metadata_units,
     )
-    for cg6 in [cg6copy, cg6init]:
+    for cg6 in [cg6init, cg6copy]:
         pdt.assert_frame_equal(cg6.data, sample_data.data)
+        assert all(cg6.metadata[k] == sample_data.metadata[k] for k in cg6.metadata)
         assert all(
-            [cg6.metadata[k] == sample_data.metadata[k] for k in cg6.metadata.keys()]
-        )
-        assert all(
-            [
-                cg6.metadata_units[k] == sample_data.metadata_units[k]
-                for k in cg6.metadata_units.keys()
-            ]
+            cg6.metadata_units[k] == sample_data.metadata_units[k]
+            for k in cg6.metadata_units
         )
 
 
@@ -156,6 +154,7 @@ def test_cg6data_set_loop(cg6_file: pathlib.Path) -> None:
         cg6_with_loop.data["loop"],
         check_index=False,
         check_names=False,
+        check_dtype=False,
     )
 
     # set from field
@@ -165,6 +164,7 @@ def test_cg6data_set_loop(cg6_file: pathlib.Path) -> None:
         cg6.set_loop(field="xxxx")
     with pytest.raises(ValueError):
         cg6.set_loop(field="line", time_gap="1h")
+    with pytest.raises(ValueError):
         cg6.set_loop()
 
     # Case 1: set from array
@@ -177,7 +177,7 @@ def test_cg6data_set_loop(cg6_file: pathlib.Path) -> None:
 
     j_dt = cg6.data.columns.get_loc("datetime")
     i_mid = cg6.data.shape[0] // 2
-    times = [cg6.data.iat[0, j_dt], cg6.data.iat[i_mid, j_dt]]
+    times = [cg6.data.iloc[0, j_dt], cg6.data.iloc[i_mid, j_dt]]
 
     # 2.1: list of datetimes
 
@@ -187,24 +187,26 @@ def test_cg6data_set_loop(cg6_file: pathlib.Path) -> None:
 
     # 2.2 from a dict of datetimes
     cg6.set_loop(
-        datetimes=dict(zip(times, ["a", "b"])), loop_start=200, output_column="xloop"
+        datetimes=dict(zip(times, ["a", "b"], strict=True)),
+        loop_start=200,
+        output_column="xloop",
     )
-    assert cg6.data["xloop"].iat[0] == "a"
-    assert cg6.data["xloop"].iat[i_mid] == "b"
+    assert cg6.data["xloop"].iloc[0] == "a"
+    assert cg6.data["xloop"].iloc[i_mid] == "b"
 
     # 2.3 from a series
     cg6.set_loop(
         datetimes=pd.Series(index=to_naive_utc_datetime(times), data=["y", "z"])
     )
-    assert cg6.data["loop"].iat[0] == "y"
-    assert cg6.data["loop"].iat[i_mid] == "z"
+    assert cg6.data["loop"].iloc[0] == "y"
+    assert cg6.data["loop"].iloc[i_mid] == "z"
 
     # Case 3: set from time gap
     fstr = "a_{LOOP}"
     cg6.set_loop(
         time_gap="12h", loop_start=300, loop_format=fstr, output_column="zloop"
     )
-    assert cg6.data["zloop"].iat[0] == fstr.format(LOOP=300)
+    assert cg6.data["zloop"].iloc[0] == fstr.format(LOOP=300)
     assert cg6.data.loc[cg6.data["line"].eq(2), "zloop"].eq(fstr.format(LOOP=301)).all()
 
     # Case X: bad args
@@ -214,9 +216,11 @@ def test_cg6data_set_loop(cg6_file: pathlib.Path) -> None:
     with pytest.raises(ValueError):
         # not sorted increasing
         cg6.set_loop(datetimes=list(reversed(times)), loop_start=100)
+
+    times[0] = cg6.data.iloc[1, j_dt] + pd.Timedelta("1h")
+
     with pytest.raises(ValueError):
         # not sorted increasing
-        times[0] = cg6.data.iat[1, j_dt] + pd.Timedelta("1h")
         cg6.set_loop(datetimes=times)
     with pytest.raises(ValueError, match="LOOP"):
         # bad format string
@@ -264,7 +268,10 @@ def test_cg6data_to_gsolve_observations(sample_data: CG6Data) -> None:
     assert observations is not None
     assert "meter_reading" in observations.data.columns
     assert "meter_reading_mgal" in observations.data.columns
-    sample_data.data.drop(columns="loop", inplace=True)
+
+    bad_sample_data = sample_data.copy()
+    bad_sample_data.data = bad_sample_data.data.drop(columns="loop")
+
     with pytest.raises(ValueError):
         sample_data.to_gsolve_observations()
 

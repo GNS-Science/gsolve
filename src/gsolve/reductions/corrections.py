@@ -18,11 +18,12 @@
 
 """Classes and functions to compute normal gravity and gravity corrections."""
 
-from collections.abc import Sequence as Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import Literal
 
-import boule as boule
+import boule
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
@@ -150,13 +151,13 @@ def normal_gravity_at_ellipsoid(
     References
     ----------
     Heiskanen, W. A., & Moritz, H. (1967). Physical Geodesy. W. H. Freeman and Company
-    Moritz, H. (2000). Geodetic Reference System 1980. Journal of Geodesy, 74(1), 128–133.
+    Moritz, H. (2000). Geodetic Reference System 1980. Journal of Geodesy, 74(1), 128-133.
     https://doi.org/10.1007/s001900050278
 
     """
     valid_ellipsoids = ("GRS80", "GRS67", "WGS84")
 
-    if ellipsoid in ("GRS80", "WGS84"):
+    if ellipsoid in {"GRS80", "WGS84"}:
         gamma_e = 978032.67715  # normal gravity at equator
         gamma_p = 983218.63685  # normal gravity at pole
         a = 6378137  # semi major axis
@@ -169,9 +170,7 @@ def normal_gravity_at_ellipsoid(
         b = 6356774.5161
     else:
         msg = f"Unknown ellipsoid '{ellipsoid}': must be one of {valid_ellipsoids}"
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
     lat = np.deg2rad(latitude)
     normal_gravity = (
@@ -460,14 +459,14 @@ def bouguer_slab_curvature_corrected(
     )
     Ro: float
     if isinstance(ellipsoid_or_radius, str):
-        _er = getattr(boule, ellipsoid_or_radius, None)
-        if isinstance(_er, boule.Ellipsoid):
-            Ro = float(_er.mean_radius)
+        er = getattr(boule, ellipsoid_or_radius, None)
+        if isinstance(er, boule.Ellipsoid):
+            Ro = float(er.mean_radius)
         else:
-            msg = f"Unknown ellipsoid '{ellipsoid_or_radius}': must be 'WGS84' or 'GRS80'"
-            raise ValueError(
-                msg
+            msg = (
+                f"Unknown ellipsoid '{ellipsoid_or_radius}': must be 'WGS84' or 'GRS80'"
             )
+            raise ValueError(msg)
 
     elif isinstance(ellipsoid_or_radius, boule.Ellipsoid):
         Ro = float(ellipsoid_or_radius.mean_radius)
@@ -592,32 +591,40 @@ class GravityCorrections(GSolveTable):
         Parameters used to compute the gravity corrections.
     """
 
-    _known_fields = {
-        "site_id": DataFieldSpecification("site_id", str, required=True),
-        "longitude": DataFieldSpecification("longitude", float, required=False),
-        "latitude": DataFieldSpecification("latitude", float, required=False),
-        "height_ellipsoidal": DataFieldSpecification(
-            "height_ellipsoidal", float, required=False, legacy_name="height"
-        ),
-        "normal_gravity_at_stn_elevation": DataFieldSpecification(
-            "normal_gravity_at_stn_elevation", float, required=False, default=np.nan
-        ),
-        "normal_gravity_at_ellipsoid": DataFieldSpecification(
-            "normal_gravity_at_ellipsoid", float, required=False, default=np.nan
-        ),
-        "free_air_correction": DataFieldSpecification(
-            "free_air_correction", float, required=False, default=np.nan
-        ),
-        "bouguer_slab_correction": DataFieldSpecification(
-            "bouguer_slab_correction", float, required=False, default=np.nan
-        ),
-        "bouguer_slab_curvature_corrected": DataFieldSpecification(
-            "bouguer_slab_curvature_corrected", float, required=False, default=np.nan
-        ),
-        "atmospheric_correction": DataFieldSpecification(
-            "atmospheric_correction", float, required=False, default=np.nan
-        ),
-    }
+    _known_fields: MappingProxyType[str, DataFieldSpecification] = MappingProxyType(
+        {
+            "site_id": DataFieldSpecification("site_id", str, required=True),
+            "longitude": DataFieldSpecification("longitude", float, required=False),
+            "latitude": DataFieldSpecification("latitude", float, required=False),
+            "height_ellipsoidal": DataFieldSpecification(
+                "height_ellipsoidal", float, required=False, legacy_name="height"
+            ),
+            "normal_gravity_at_stn_elevation": DataFieldSpecification(
+                "normal_gravity_at_stn_elevation", float, required=False, default=np.nan
+            ),
+            "normal_gravity_at_ellipsoid": DataFieldSpecification(
+                "normal_gravity_at_ellipsoid", float, required=False, default=np.nan
+            ),
+            "free_air_correction": DataFieldSpecification(
+                "free_air_correction", float, required=False, default=np.nan
+            ),
+            "bouguer_slab_correction": DataFieldSpecification(
+                "bouguer_slab_correction", float, required=False, default=np.nan
+            ),
+            "bouguer_slab_curvature_corrected": DataFieldSpecification(
+                "bouguer_slab_curvature_corrected",
+                float,
+                required=False,
+                default=np.nan,
+            ),
+            "atmospheric_correction": DataFieldSpecification(
+                "atmospheric_correction", float, required=False, default=np.nan
+            ),
+        }
+    )
+
+    data: pd.DataFrame
+    params: GravityCorrectionParameters
 
     def __init__(
         self,
@@ -676,26 +683,24 @@ class GravityCorrectionProvider:
     """
 
     def __init__(
-        self, params: None | GravityCorrectionParameters = None, **kwargs
+        self, params: GravityCorrectionParameters | None = None, **kwargs
     ) -> None:
         self.params: GravityCorrectionParameters
         if params is None:
             self.params = GravityCorrectionParameters(**kwargs)
         elif isinstance(params, GravityCorrectionParameters):
             self.params = params
-            for k, v in kwargs:
+            for k, v in kwargs.items():
                 setattr(self.params, k, v)
         else:
             msg = (
                 "params must be None or a GravityCorrectionParameters object, "
                 f"not '{type(params)}'"
             )
-            raise TypeError(
-                msg
-            )
+            raise TypeError(msg)
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}({self.params.__param_str__()})"
+        return f"{type(self).__name__}({self.params._param_str()})"
 
     @classmethod
     def available_corrections(cls) -> tuple[str, ...]:
@@ -747,13 +752,13 @@ class GravityCorrectionProvider:
             Object containing computed gravity corrections and the correction parameters.
 
         """
-        _cols = {
+        cols = {
             "longitude": "longitude",
             "latitude": "latitude",
             "height_ellipsoidal": "height_ellipsoidal",
         }
         if column_names is not None:
-            _cols.update(column_names)
+            cols.update(column_names)
 
         if isinstance(sites, GravitySites):
             sites_df = sites.data
@@ -764,39 +769,37 @@ class GravityCorrectionProvider:
                 "argument 'sites' must be a Dataframe or GravitySites object, not "
                 f"'{type(sites)}'"
             )
-            raise TypeError(
-                msg
-            )
+            raise TypeError(msg)
 
-        lon = sites_df[_cols["longitude"]].to_numpy()
-        lat = sites_df[_cols["latitude"]].to_numpy()
-        ht = sites_df[_cols["height_ellipsoidal"]].to_numpy()
+        lon = sites_df[cols["longitude"]].to_numpy()
+        lat = sites_df[cols["latitude"]].to_numpy()
+        ht = sites_df[cols["height_ellipsoidal"]].to_numpy()
         idx = sites_df.index.copy()
-        _corrs: list[str]
+        corrs: list[str]
         if corrections is not None:
             if not is_list_like(corrections):
-                _corrs = [str(corrections)]
+                corrs = [str(corrections)]
             else:
-                _corrs = [str(c) for c in corrections]
+                corrs = [str(c) for c in corrections]
 
             has_bad_corrections = [
-                c for c in _corrs if c not in self.available_corrections()
+                c for c in corrs if c not in self.available_corrections()
             ]
             if has_bad_corrections:
                 msg = f"Unrecognised corrections: {has_bad_corrections}"
                 raise ValueError(msg)
         else:
-            _corrs = self.params.bouguer_correction_fields()
+            corrs = self.params.bouguer_correction_fields()
 
         df = pd.DataFrame(
             index=idx,
             data={"longitude": lon, "latitude": lat, "height_ellipsoidal": ht},
         )
-        for c in _corrs:
+        for c in corrs:
             df[c] = np.nan
 
         k = "normal_gravity_at_stn_elevation"
-        if k in _corrs:
+        if k in corrs:
             df[k] = normal_gravity_at_stn_elevation(
                 longitude=lon,
                 latitude=lat,
@@ -805,14 +808,14 @@ class GravityCorrectionProvider:
             )
 
         k = "normal_gravity_at_ellipsoid"
-        if k in _corrs:
+        if k in corrs:
             df[k] = normal_gravity_at_ellipsoid(
                 latitude=lat,
                 ellipsoid=self.params.ellipsoid,  # type: ignore[arg-type]
             )
 
         k = "free_air_correction"
-        if k in _corrs:
+        if k in corrs:
             df[k] = free_air_correction(
                 latitude=lat,
                 height_ellipsoidal=ht,
@@ -820,11 +823,11 @@ class GravityCorrectionProvider:
             )
 
         k = "atmospheric_correction"
-        if k in _corrs:
+        if k in corrs:
             df[k] = atmospheric_correction(ht)
 
         k = "bouguer_slab_correction"
-        if k in _corrs:
+        if k in corrs:
             df[k] = bouguer_slab_correction(
                 height_ellipsoidal=ht,
                 density_crust=self.params.density_crust,
@@ -832,7 +835,7 @@ class GravityCorrectionProvider:
             )
 
         k = "bouguer_slab_curvature_corrected"
-        if k in _corrs:
+        if k in corrs:
             df[k] = bouguer_slab_curvature_corrected(
                 height_ellipsoidal=ht,
                 density_crust=self.params.density_crust,
@@ -844,13 +847,13 @@ class GravityCorrectionProvider:
         if not include_coords:
             df = df.drop(
                 columns=[
-                    _cols["longitude"],
-                    _cols["latitude"],
-                    _cols["height_ellipsoidal"],
+                    cols["longitude"],
+                    cols["latitude"],
+                    cols["height_ellipsoidal"],
                 ]
             )
-        _df_dict = {str(k): v for k, v in df.to_dict("list").items()}
-        return GravityCorrections(params=self.params, site_id=idx, **_df_dict)
+        df_dict = {str(k): v for k, v in df.to_dict("list").items()}
+        return GravityCorrections(params=self.params, site_id=idx, **df_dict)
 
     def _configured_bouguer_corrections(self) -> Sequence[str]:
         """Return bouguer correction method names required for the current parameters."""  # ruff: ignore[docstring-missing-returns]

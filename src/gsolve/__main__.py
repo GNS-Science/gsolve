@@ -16,6 +16,7 @@
 
 # Copyright (c) 2025 Earth Sciences New Zealand.
 import argparse
+import sys
 
 from gsolve import GravitySurvey, LaCosteRombergDialConverter, ReferenceGravity
 from gsolve.reports import GSolveReport
@@ -183,7 +184,7 @@ def main() -> None:  # ruff: ignore[undocumented-public-function]
         args = parse_args()
         processing(args)
     except Exception as e:
-        print(e)
+        sys.stderr.write(e + "\n")
 
 
 if __name__ == "__main__":

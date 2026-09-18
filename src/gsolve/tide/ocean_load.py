@@ -135,9 +135,9 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
         **metadata,
     ) -> None:
         if isinstance(site_id, str):
-            _site_id = np.array([site_id] * len(date_time))
-        _site_id = np.atleast_1d(site_id).astype(str)
-        if _site_id.ndim != 1:
+            site_id = np.array([site_id] * len(date_time))
+        site_id = np.atleast_1d(site_id).astype(str)
+        if site_id.ndim != 1:
             msg = "site_id argument must be 1-dimensional."
             raise ValueError(msg)
 
@@ -193,7 +193,7 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
         else:
             site_id = np.atleast_1d(site_id).astype(str)
 
-        if len(_site_id) != len(dt):
+        if len(site_id) != len(dt):
             msg = "site_id and datetime arguments must have the same length."
             raise ValueError(msg)
 
@@ -407,14 +407,14 @@ def _validate_timeseries_data(df: pd.DataFrame) -> None:
         msg = f"data must be a pandas DataFrame, not {type(df).__name__}."
         raise TypeError(msg)
     if not isinstance(df.index, pd.DatetimeIndex):
-        msg_0 = "timeseries not indexed by datetime."
-        raise TypeError(msg_0)
+        msg = "timeseries not indexed by datetime."
+        raise TypeError(msg)
     if df.shape[0] < 2:
-        msg_0 = "timeseries must contain at least two rows."
-        raise ValueError(msg_0)
+        msg = "timeseries must contain at least two rows."
+        raise ValueError(msg)
     if not df.index.is_monotonic_increasing:
-        msg_0 = "timeseries not sorted in increasing order."
-        raise ValueError(msg_0)
+        msg = "timeseries not sorted in increasing order."
+        raise ValueError(msg)
 
     # warn if non-uniform sampling interval/rate
     sample_intervals = (df.index[1:] - df.index[:-1]).total_seconds()
@@ -482,11 +482,9 @@ def qtp_to_corrector(
             corrections=df["BergerLoadCorrection"].to_numpy().astype(float),
             **metadata,
         )
-    else:
-        msg = f"invalid corr_type '{corr_type}', must be one of {'auto', 'timeseries', 'site-datetime'}."
-        raise ValueError(msg)
 
-    return corr
+    msg = f"invalid corr_type '{corr_type}', must be one of {'auto', 'timeseries', 'site-datetime'}."
+    raise ValueError(msg)
 
 
 def read_qtp_timeseries(file_path: FilePath) -> pd.DataFrame:
@@ -596,7 +594,7 @@ def read_qtp_multistation(file_path: FilePath) -> pd.DataFrame:
     return df.set_index(["site_id", "datetime"]).sort_index()
 
 
-def generate_qtp_input(
+def generate_qtp_input(  # ruff: ignore[too-many-positional-arguments]
     site_id: SiteIDArray,
     datetimes: DatetimeArray,
     latitude: FloatArray,
@@ -636,9 +634,7 @@ def generate_qtp_input(
     else:
         elevation = np.atleast_1d(elevation).astype(float)
 
-    if not (
-        _site_id.size == _datetimes.size == _lat.size == _lon.size == _elevation.size
-    ):
+    if not (site_id.size == datetimes.size == lat.size == lon.size == elevation.size):
         msg = "site_id, datetimes, latitude, longitude, and elevation arguments must all have the same shape."
         raise ValueError(msg)
         raise ValueError(msg)

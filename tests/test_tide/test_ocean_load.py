@@ -22,8 +22,8 @@ import numpy.testing as nptest
 import pandas as pd
 import pytest
 
-from gsolve import GravityObservations
 import gsolve.tide.ocean_load as _ocean_load
+from gsolve import GravityObservations
 from gsolve.tide.ocean_load import HardispOceanLoadCorrector
 
 # @pytest.fixture

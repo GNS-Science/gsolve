@@ -23,6 +23,7 @@ from gsolve.reductions.terrain_corrections import (
     TerrainCorrectionData,
     TerrainCorrectionParameters,
     TerrainCorrector,
+    _is_dataarray,
     calculate_terrain_correction,
 )
 from gsolve.sites import GravitySites
@@ -32,7 +33,6 @@ tc_max_dist = 150.0
 tc_min_dist = 7.0
 
 
-@pytest.fixture
 def ripple_dem() -> xr.DataArray:
     x = np.linspace(-dem_max, dem_max, 401)
     y = np.linspace(-dem_max, dem_max, 401)
@@ -49,8 +49,7 @@ def ripple_dem() -> xr.DataArray:
     return da
 
 
-@pytest.fixture
-def sites(ripple_dem) -> GravitySites:
+def sites() -> GravitySites:
 
     rng = np.random.default_rng(seed=42)
     n_points = 10
@@ -66,12 +65,11 @@ def sites(ripple_dem) -> GravitySites:
         easting=x,
         northing=y,
     )
-    sites.sample_elevation(dem=ripple_dem, output_col="height_dem")
+    sites.sample_elevation(dem=ripple_dem(), output_col="height_dem")
     return sites
 
 
-@pytest.fixture
-def pre_calced_tcorr_data(tc_params) -> TerrainCorrectionData:
+def pre_calced_tcorr_data() -> TerrainCorrectionData:
     # Output from these test methods as at 09-04-2026
     # - These values are not certain to be correct
     # - Catch changes that alter the results
@@ -95,18 +93,17 @@ def pre_calced_tcorr_data(tc_params) -> TerrainCorrectionData:
     cols = data.pop(0)
     df = pd.DataFrame(data, columns=cols, index=idx).astype(float)
     df.index.name = idx_name
-    return TerrainCorrectionData.from_dataframe(df, params=tc_params)
+    return TerrainCorrectionData.from_dataframe(df, params=tc_params())
 
 
-@pytest.fixture
-def tc_params(ripple_dem) -> list[TerrainCorrectionParameters]:
+def tc_params() -> list[TerrainCorrectionParameters]:
     p1 = TerrainCorrectionParameters(
         name="tt",
         min_dist=tc_min_dist,
         max_dist=tc_max_dist,
         distance_mask_type="radial",
         compute_bathymetry=False,
-        dem_source=ripple_dem,
+        dem_source=ripple_dem(),
         site_height_field="height_dem",
     )
     p2 = TerrainCorrectionParameters(
@@ -115,7 +112,7 @@ def tc_params(ripple_dem) -> list[TerrainCorrectionParameters]:
         max_dist=tc_max_dist,
         distance_mask_type="radial",
         compute_topography=False,
-        dem_source=ripple_dem,
+        dem_source=ripple_dem(),
         site_height_field="height_dem",
     )
     p3 = TerrainCorrectionParameters(
@@ -123,17 +120,15 @@ def tc_params(ripple_dem) -> list[TerrainCorrectionParameters]:
         min_dist=tc_min_dist,
         max_dist=tc_max_dist,
         distance_mask_type="radial",
-        dem_source=ripple_dem,
+        dem_source=ripple_dem(),
         site_height_field="height_dem",
     )
     return [p1, p2, p3]
 
 
-def test_terrain_correction_consistency(
-    ripple_dem, sites, tc_params, pre_calced_tcorr_data
-):
-    tc = TerrainCorrector(params=tc_params)
-    results = tc.compute(sites, show_progress=False)
+def test_terrain_correction_consistency():
+    tc = TerrainCorrector(params=tc_params())
+    results = tc.compute(sites(), show_progress=False)
 
     to_close_dist = dem_max - tc_max_dist
     bad_points = results.data.easting.abs().gt(
@@ -146,11 +141,12 @@ def test_terrain_correction_consistency(
     assert results.data.loc[bad_points, tcorr_cols].isna().all(axis=None)
 
     # test that pre-calculated results are close to calculated results
+    pre_calced_tcorr_data_ = pre_calced_tcorr_data()
     for col in tcorr_cols:
-        assert col in pre_calced_tcorr_data.data.columns
+        assert col in pre_calced_tcorr_data_.data.columns
         assert np.allclose(
-            results.data[col].values,
-            pre_calced_tcorr_data.data[col].values,
+            results.data[col].to_numpy(),
+            pre_calced_tcorr_data_.data[col].to_numpy(),
             atol=1e-6,
             equal_nan=True,
         )

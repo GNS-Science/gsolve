@@ -138,9 +138,9 @@ obs.calculate_tide_corrected_gravity()
 # plot the observed data for loop #2
 fig, ax = obs.plot_observed_data(
     2,
-    "datetime",
-    "meter_reading_mgal",
-    savefilename=str(obs_path) + "/ Okataina_observations.png",
+    x_column="datetime",
+    y_column="meter_reading_mgal",
+    savefilename=obs_path / "Okataina_observations.png",
 )
 
 # %%
@@ -192,7 +192,7 @@ anomalies = GravityAnomalies(
     terrain_corrections=None,
 )
 # %%
-anomalies.data
+anomalies.data  # ruff: ignore[useless-expression]
 
 
 # %%

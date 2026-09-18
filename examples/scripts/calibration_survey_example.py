@@ -73,7 +73,7 @@ obs.apply_earth_tide_correction(sites, tide_corrector=longman)
 obs.calculate_tide_corrected_gravity()
 
 # plot the observed data for loop #2
-obs.plot_observed_data(1, "datetime", "meter_reading_mgal")
+obs.plot_observed_data(loop=1, x_column="datetime", y_column="meter_reading_mgal")
 
 # %%
 # create a survey object using observations and site objects

@@ -23,6 +23,8 @@ Created on Wed Feb 25 16:23:07 2026.
 
 import pathlib
 
+import numpy as np
+
 from gsolve import (
     GravityObservations,
     GravitySites,
@@ -33,8 +35,6 @@ from gsolve import (
 from gsolve.reports import GSolveReport
 from gsolve.tide.earth_tide import EternaPredictTidalCorrection
 from gsolve.tide.ocean_load import HardispOceanLoadCorrector
-
-import numpy as np
 
 # %%
 data_path = pathlib.Path(__file__).parent.parent
@@ -79,7 +79,7 @@ obs.apply_dial_to_mgal(g106converter)
 obs.set_calibration_factor(calibration_factor)
 
 # calculate the earth tide correction which requires location information from sites
-eterna = EternaPredictTidalCorrection(np.c_[0, 10, 1.154, 0])
+eterna = EternaPredictTidalCorrection(tidal_params=np.c_[0, 10, 1.154, 0])
 obs.apply_earth_tide_correction(sites, tide_corrector=eterna)
 
 # Ocean Load Corrections using pyhardisp

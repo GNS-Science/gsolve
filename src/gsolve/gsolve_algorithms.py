@@ -19,8 +19,8 @@
 
 from typing import Any, Literal, TypeAlias
 
-import numpy as _np
-import pandas as _pd
+import numpy as np
+import pandas as pd
 
 from gsolve.core._typing import GSolveSolverMethod, GSolveSolverReturn
 from gsolve.gsolve_outputs import GSolveResults
@@ -35,8 +35,8 @@ _GSOLVE_SOLVER_METHODS: dict[int, str] = {
 
 
 def call_gsolve_lstsq(
-    obs: _pd.DataFrame,
-    ref_sites: _pd.DataFrame,
+    obs: pd.DataFrame,
+    ref_sites: pd.DataFrame,
     method: GSolveSolverMethod,
     percentile_clipping: float = 100,
     use_loops: bool = True,
@@ -122,8 +122,8 @@ def call_gsolve_lstsq(
 
 
 def call_gsolve_calibration(
-    obs: _pd.DataFrame,
-    ref_sites: _pd.DataFrame,
+    obs: pd.DataFrame,
+    ref_sites: pd.DataFrame,
     method: GSolveSolverMethod,
     percentile_clipping: float = 100,
     use_loops: bool = True,
@@ -207,17 +207,17 @@ def call_gsolve_calibration(
     return results_obj
 
 
-def g_solver_lstsq(
-    obs_g: _np.ndarray,
-    obs_site_id: _np.ndarray,
-    obs_timedelta: _np.ndarray,
-    ties_site_id: _np.ndarray,
-    ties_g: _np.ndarray,
-    obs_loop: _np.ndarray,
+def g_solver_lstsq(  # ruff: ignore[too-many-positional-arguments]
+    obs_g: np.ndarray,
+    obs_site_id: np.ndarray,
+    obs_timedelta: np.ndarray,
+    ties_site_id: np.ndarray,
+    ties_g: np.ndarray,
+    obs_loop: np.ndarray,
     use_loops: bool,
     method: GSolveSolverMethod,
     calculate_calibration_factor: bool,
-    obs_g_not_detided: _np.ndarray | None = None,
+    obs_g_not_detided: np.ndarray | None = None,
     percentile_clipping: float = 100.0,
 ) -> GSolveSolverReturn:
     """Least squares solution for gravity drift.
@@ -294,21 +294,16 @@ def g_solver_lstsq(
             f"invalid percentile value {percentile_clipping}, "
             "must be between 0 and 100 inclusive"
         )
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
-    n_obs = _np.size(obs_g)
-    n_ties = _np.size(ties_site_id)
-    site_ids = _np.unique(obs_site_id)
-    n_sites = _np.size(site_ids)
+    n_obs = np.size(obs_g)
+    n_ties = np.size(ties_site_id)
+    site_ids = np.unique(obs_site_id)
+    n_sites = np.size(site_ids)
 
-    mask = _np.ones((n_obs,), dtype=bool)
+    mask = np.ones((n_obs,), dtype=bool)
 
-    if use_loops:
-        loop_ids = _np.unique(obs_loop)
-    else:
-        loop_ids = _np.asarray([1])
+    loop_ids = np.unique(obs_loop) if use_loops else np.asarray([1])
     n_loops = len(loop_ids)
 
     if calculate_calibration_factor:
@@ -316,16 +311,13 @@ def g_solver_lstsq(
     else:
         n_parameters = n_sites + (2 * n_loops)
 
-    if method == 1 or method == 2:
-        n_constraints = n_sites
-    else:  # method == 3
-        n_constraints = n_ties
+    n_constraints = n_sites if method in {1, 2} else n_ties
 
     # Predefine design and constraint matrices and right hand vectors
-    A = _np.zeros((n_obs, n_parameters))
-    b = _np.zeros((n_obs, 1))
-    C = _np.zeros((n_constraints, n_parameters))
-    d = _np.zeros((n_constraints, 1))
+    A = np.zeros((n_obs, n_parameters))
+    b = np.zeros((n_obs, 1))
+    C = np.zeros((n_constraints, n_parameters))
+    d = np.zeros((n_constraints, 1))
 
     # Gravity values
     for i in range(n_obs):
@@ -355,16 +347,14 @@ def g_solver_lstsq(
                     "obs_g_not_detided must be provided when "
                     "calculate_calibration_factor is True"
                 )
-                raise ValueError(
-                    msg_0
-                )
+                raise ValueError(msg_0)
             A[i, n_sites + (2 * n_loops)] = float(obs_g_not_detided[i])
 
     # Ties to absolute sites
     for k in range(n_sites):
         for j in range(n_ties):
             if site_ids[k] == ties_site_id[j]:
-                if method == 1 or method == 2:
+                if method in {1, 2}:
                     C[k, k] = 1
                     d[k] = ties_g[j]
                     break
@@ -374,32 +364,32 @@ def g_solver_lstsq(
 
     ###############################################################
     # Combine design and constraint matrices and right hand vectors
-    if method == 1 or method == 2:
-        E = _np.vstack((A, C))
-        f = _np.vstack((b, d))
+    if method in {1, 2}:
+        E = np.vstack((A, C))
+        f = np.vstack((b, d))
     else:  # method 3
-        E = _np.vstack(
+        E = np.vstack(
             (
-                _np.hstack((_np.dot(A.T, A), C.T)),
-                _np.hstack((C, _np.zeros(shape=(n_constraints, n_constraints)))),
+                np.hstack((np.dot(A.T, A), C.T)),
+                np.hstack((C, np.zeros(shape=(n_constraints, n_constraints)))),
             )
         )
-        f = _np.vstack((_np.dot(A.T, b), d))
+        f = np.vstack((np.dot(A.T, b), d))
 
     #####################################
     # Least-square solution of the system
 
     # Filter observations
-    if percentile_clipping != 100.0:
+    if percentile_clipping < 100.0:
         # Preliminary adjustment
-        solution, _, _, _ = _np.linalg.lstsq(E, f, rcond=None)
+        solution, _, _, _ = np.linalg.lstsq(E, f, rcond=None)
         # Preliminary residuals
-        residuals = b - _np.dot(A, solution[:n_parameters])
+        residuals = b - np.dot(A, solution[:n_parameters])
 
         # Define percentile clipping interval
         perc = (100.0 - percentile_clipping) / 2
-        ci_l = _np.percentile(residuals[:n_obs], perc)
-        ci_h = _np.percentile(residuals[:n_obs], 100.0 - perc)
+        ci_l = np.percentile(residuals[:n_obs], perc)
+        ci_h = np.percentile(residuals[:n_obs], 100.0 - perc)
 
         # Build mask of outliers
         mask = ((residuals[:n_obs] > ci_l) & (residuals[:n_obs] < ci_h)).flatten()
@@ -408,47 +398,47 @@ def g_solver_lstsq(
         A[:n_obs, :][~mask] = 0
         b[:n_obs, :][~mask] = 0
         # Redefine number of observations
-        n_obs = _np.sum(mask)
+        n_obs = np.sum(mask)
 
         ###############################################################
         # Re-combine design and constraint matrices and right hand vectors
-        if method == 1 or method == 2:
-            E = _np.vstack((A, C))
-            f = _np.vstack((b, d))
-        elif method == 3:
-            E = _np.vstack(
+        if method in {1, 2}:
+            E = np.vstack((A, C))
+            f = np.vstack((b, d))
+        else:
+            E = np.vstack(
                 (
-                    _np.hstack((_np.dot(A.T, A), C.T)),
-                    _np.hstack((C, _np.zeros(shape=(n_constraints, n_constraints)))),
+                    np.hstack((np.dot(A.T, A), C.T)),
+                    np.hstack((C, np.zeros(shape=(n_constraints, n_constraints)))),
                 )
             )
-            f = _np.vstack((_np.dot(A.T, b), d))
+            f = np.vstack((np.dot(A.T, b), d))
 
     # Main adjustment
-    solution, _, _, _ = _np.linalg.lstsq(E, f, rcond=None)
+    solution, _, _, _ = np.linalg.lstsq(E, f, rcond=None)
     # Compute residuals
-    residuals = b - _np.dot(A, solution[:n_parameters])
+    residuals = b - np.dot(A, solution[:n_parameters])
     # Compute the residual sum of squares
-    rss = _np.dot(residuals.T, residuals).squeeze()
+    rss = np.dot(residuals.T, residuals).squeeze()
 
     # Estimates standard errors of the parameters
     # Extracts diagonal elements of the inverted normal matrix
-    Pv = _np.linalg.pinv(_np.dot(E.T, E)).diagonal()
+    Pv = np.linalg.pinv(np.dot(E.T, E)).diagonal()
     # Computes squared unit weight
     sigma_0_squared = rss / (n_obs + n_ties - n_parameters)
     # Variance of the estimated parameters
     var = sigma_0_squared * Pv
     # Round to zero tiny negative variance
     tol = 10**-16
-    var[_np.abs(var) < tol] = 0
+    var[np.abs(var) < tol] = 0
 
     # Extract values from the solution vector
     gravity = solution[:n_sites]
     gravity_var = var[:n_sites]
 
-    indices = _np.arange(n_sites, n_sites + 2 * n_loops, 2)
-    baseline = _np.atleast_1d(solution[indices].squeeze())
-    drift = _np.atleast_1d(solution[indices + 1].squeeze())
+    indices = np.arange(n_sites, n_sites + 2 * n_loops, 2)
+    baseline = np.atleast_1d(solution[indices].squeeze())
+    drift = np.atleast_1d(solution[indices + 1].squeeze())
 
     if calculate_calibration_factor:
         calibration_factor = float((1 - solution[n_sites + 2 * n_loops]).item())

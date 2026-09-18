@@ -18,17 +18,21 @@
 """Functions and classes for computing gravity terrain corrections."""
 
 import dataclasses
+import operator
 import pathlib
+import sys
 import warnings
 from collections.abc import Iterable, Sequence
+from types import MappingProxyType
 from typing import Any, Literal, Self, get_args
 
 import harmonica as hm
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+import tqdm
 import xarray as xr
-from pandas.core.series import Series
+from numpy.f2py.auxfuncs import throw_error
 from tqdm import tqdm as _tqdm
 
 from gsolve.core._typing import (
@@ -69,6 +73,7 @@ def _is_dataarray(obj: Any) -> bool:  # ruff: ignore[any-type]
 
 
 def calculate_terrain_correction(
+    *,
     points: Points3D,
     dem: xr.DataArray,
     min_dist: float,
@@ -134,18 +139,14 @@ def calculate_terrain_correction(
                 "density_dataset must be an xarray.DataArray not "
                 f"'{type(density_dataset).__name__}'"
             )
-            raise TypeError(
-                msg
-            )
+            raise TypeError(msg)
 
         if not dem.tcorr.is_compatible(density_dataset):
             msg_0 = (
                 "Specified density_dataset is incompatible with dem. "
                 "Check that the DataArrays have the same shape and coordinates."
             )
-            raise ValueError(
-                msg_0
-            )
+            raise ValueError(msg_0)
 
     # format the points
     if len(points) != 3:
@@ -158,7 +159,7 @@ def calculate_terrain_correction(
         pts_z = to_1d_ndarray(points[2], expected_size=pts_x.size).astype(np.float64)
     except Exception as e:
         msg = f"Points must contain 1d x,y,z arrays of equal size: {e}"
-        raise ValueError(msg)
+        raise ValueError(msg) from None
 
     # check the correction distances
     use_distance_mask = True
@@ -167,9 +168,7 @@ def calculate_terrain_correction(
         raise ValueError(msg)
     if max_dist <= min_dist:
         msg = f"Incompatible distance args, {max_dist=} not greater than {min_dist=}"
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
     # get land sea mask
     land_sea_mask: xr.DataArray = dem.tcorr.get_land_sea_mask(sea_level_elevation)
@@ -268,7 +267,7 @@ def calculate_terrain_correction(
                 pt_topo_density = topo_density
 
             tcorr_topo[i] = tcorr_harmonica_topography(
-                (px, py, pz),
+                point=(px, py, pz),
                 topography=pt_topo_elev,
                 topography_density=pt_topo_density,
             )
@@ -286,7 +285,7 @@ def calculate_terrain_correction(
                 pt_bathy_density = bathy_density
 
             tcorr_bathy[i] = tcorr_harmonica_bathymetry(
-                (px, py, pz),
+                point=(px, py, pz),
                 bathymetry=pt_bathy_depth,
                 bathymetry_density=pt_bathy_density,
                 sea_level_elevation=sea_level_elevation,
@@ -300,6 +299,7 @@ def calculate_terrain_correction(
 
 
 def tcorr_harmonica_topography(
+    *,
     point: tuple[float, float, float],
     topography: xr.DataArray,
     topography_density: xr.DataArray,
@@ -362,6 +362,7 @@ def tcorr_harmonica_topography(
 
 
 def tcorr_harmonica_bathymetry(
+    *,
     point: tuple[float, float, float],
     bathymetry: xr.DataArray,
     bathymetry_density: xr.DataArray,
@@ -420,7 +421,6 @@ def tcorr_harmonica_bathymetry(
     )
 
 
-# @dataclasses.dataclass(frozen=True)
 @dataclasses.dataclass()
 class TerrainCorrectionParameters(GSolveParameters):
     """Class to store parameters for computing terrain corrections for a single "zone".
@@ -507,53 +507,59 @@ class TerrainCorrectionParameters(GSolveParameters):
     method: Literal["harmonica"] = "harmonica"
 
     def __post_init__(self) -> None:
-        self._normalize_fields()
-        self._sanity_check()
+        self._sanity_check(if_errors="warn")
 
-    def _normalize_fields(self) -> None:
-        if self.name is None:
-            msg = "'name' attribute must be a non-zero length string"
+    def __setattr__(self, name: str, value: Any) -> None:  # ruff: ignore[any-type]
+        fieldnames = []
+        if name not in (n.name for n in dataclasses.fields(self)):
+            msg = f"unrecopgnised field name {name}"
             raise ValueError(msg)
 
-        name = str(self.name)
-        if not name:
-            msg = "'name' attribute must be a non-zero length string"
-            raise ValueError(msg)
-        object.__setattr__(self, "name", name)
+        if name in {
+            "method",
+            "name",
+            "site_height_field",
+            "site_easting_field",
+            "site_northing_field",
+            "distance_mask_type",
+        }:
+            return super().__setattr__(name, str(value))
 
-        object.__setattr__(self, "min_dist", float(self.min_dist))
-        object.__setattr__(self, "max_dist", float(self.max_dist))
-        object.__setattr__(self, "terrain_density", float(self.terrain_density))
-        object.__setattr__(self, "water_density", float(self.water_density))
-        object.__setattr__(self, "sea_level_elevation", float(self.sea_level_elevation))
-        object.__setattr__(self, "distance_mask_type", str(self.distance_mask_type))
-        object.__setattr__(self, "site_height_field", str(self.site_height_field))
-        object.__setattr__(self, "site_easting_field", str(self.site_easting_field))
-        object.__setattr__(self, "site_northing_field", str(self.site_northing_field))
-        object.__setattr__(self, "compute_topography", bool(self.compute_topography))
-        object.__setattr__(self, "compute_bathymetry", bool(self.compute_bathymetry))
+        if name in {"compute_topography", "compute_bathymetry"}:
+            return super().__setattr__(name, bool(value))
 
-        for field_name in ("dem_source", "density_dataset_source"):
-            value = getattr(self, field_name)
-            if _is_dataarray(value):
-                continue
+        if name not in {"dem_source", "density_dataset_source"}:
+            return super().__setattr__(name, float(value))
+
+        if name in {"dem_source", "density_dataset_source"}:
+            if _is_dataarray(obj=value):
+                return super().__setattr__(name, value)
             if is_filepath_like(value):
-                object.__setattr__(self, field_name, str(value))
-                continue
+                return super().__setattr__(name, str(value))
+            if name == "density_dataset_source" and value is None:
+                return super().__setattr__(name, "")
 
-            if not value:
-                object.__setattr__(self, field_name, "")
-                continue
-            msg = (
-                f"{field_name} attribute must be a DataArray, str, or "
-                f"Path-like object, not a {type(value).__name__}"
-            )
-            raise TypeError(
-                msg
-            )
+            msg = f"invalid type for {name} field: {type(value).__name__}"
+            raise TypeError(msg)
 
-    def _sanity_check(self) -> None:
-        """Check that parameters are valid."""
+        return super().__setattr__(name, bool(value))
+
+    def _sanity_check(self, if_errors: Literal["warn", "error"] = "error") -> None:
+        """Check that all parameters are valid.
+
+        Parameters
+        ----------
+        if_errors : {"warn", "error"}, default "error"
+            How to handle anry validation errors. If ``'error'``, then raise
+            an exception. If ``'warn'``, issue a warning and continue checking.
+        """
+        throw_error: bool = if_errors == "error"
+        # error_count: int = 0
+
+        def warn_(m: str) -> None:
+            warnings.warn(m, category=UserWarning)
+            # error_count += 1
+
         if (
             np.isnan(self.min_dist)
             or np.isnan(self.max_dist)
@@ -561,43 +567,61 @@ class TerrainCorrectionParameters(GSolveParameters):
             or self.max_dist <= self.min_dist
         ):
             msg = (
-                "invalid 'min_dist' and 'max_dist' parameters. Must be real values where"
+                "invalid/incompatible 'min_dist' and 'max_dist'. Must be real values where"
                 "0.0 <= min_dist < max_dist: "
                 f"got min_dist={self.min_dist}, max_dist={self.max_dist}"
             )
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg) if throw_error else warn_(msg)
+
         # check distance msk type is valid
         if not is_in_literal(self.distance_mask_type, TCorrDistanceMaskType):
             msg = (
                 f"invalid 'distance_mask_type': {self.distance_mask_type}. "
                 f"Expected one of: {get_args(TCorrDistanceMaskType.__value__)}"
             )
-            raise ValueError(
-                msg
+            raise ValueError(msg) if throw_error else warn_(msg)
+
+        # check dem_source
+        if not _is_dataarray(self.dem_source) and not is_filepath_like(self.dem_source):
+            msg = (
+                f"invalid dem_source: must be an xarray.DataArray or file path"
+                f", not {type(self.dem_source).__name__}"
             )
+            raise TypeError(msg) if throw_error else warn_(msg)
 
         if _is_dataarray(self.dem_source):
             if not self.dem_source.tcorr.is_valid_dem:
-                msg_0 = "invalid dem_source DataArray: must be a 2D array of floats"
-                raise ValueError(
-                    msg_0
-                )
-        elif not self.dem_source:
-            msg_0 = "invalid dem_source: must be an xarray.DataArray or file path"
-            raise TypeError(
-                msg_0
+                msg = "invalid dem_source DataArray: must be a 2D array of floats"
+                raise ValueError(msg) if throw_error else warn_(msg)
+        elif is_filepath_like(self.dem_source):
+            if not self.dem_source:
+                msg = "invalid dem_source file-path like"
+                raise ValueError(msg) if throw_error else warn_(msg)
+        else:
+            msg = (
+                f"invalid dem_source: must be an xarray.DataArray or file-path like"
+                f", not {type(self.dem_source).__name__}"
             )
+            raise TypeError(msg) if throw_error else warn_(msg)
+
+        # check density_dataset_source
         if _is_dataarray(self.density_dataset_source):
             if not self.density_dataset_source.tcorr.is_valid_dem():
-                msg_0 = (
-                    "density_dataset_source is an xr.DataArray object but is not a valid DEM. "
-                    "Check that it has the correct dimensions and coordinates."
+                msg = (
+                    "invalid density_dataset_source DataArray: "
+                    "must be a 2D array of floats"
                 )
-                raise ValueError(
-                    msg_0
-                )
+                raise ValueError(msg) if throw_error else warn_(msg)
+        elif is_filepath_like(self.density_dataset_source):
+            if not self.density_dataset_source:
+                msg = ""
+        elif self.density_dataset_source is not None:
+            msg = (
+                "invalid density_dataset_source type: should be a file-path like, "
+                f"DataArray or None, not {type(self.density_dataset_source).__name__}"
+            )
+            raise TypeError(msg)
+            # if throw_error else warn_(msg)
 
     def to_series(
         self,
@@ -646,15 +670,11 @@ class TerrainCorrectionParameters(GSolveParameters):
             elif is_list_like(index_prefix):
                 if len(index_prefix) != 2:
                     msg = "if index_prefix is list-like, it must have length 2"
-                    raise ValueError(
-                        msg
-                    )
+                    raise ValueError(msg)
                 idx_val, idx_name = index_prefix
             else:
                 msg = "index_prefix must be a string or list-like of length 2"
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
 
             ds[idx_name] = idx_val
             ds = ds.set_index([idx_name, "parameter"])[series_name]
@@ -723,10 +743,8 @@ class TerrainCorrectionParameters(GSolveParameters):
             params.append(ds)
         else:
             msg = f"params dataframe must have 2 or 3 columns: found {df.shape[1]}"
-            raise ValueError(
-                msg
-            )
-        if not all([isinstance(ds, pd.Series) for ds in params]):
+            raise ValueError(msg)
+        if not all(isinstance(ds, pd.Series) for ds in params):
             msg_0 = "error converting dataframe to series"
             raise ValueError(msg_0)
         params = [cls.from_series(p) for p in params]
@@ -768,18 +786,14 @@ class TerrainCorrector:
         elif isinstance(params, Iterable):
             if not all(isinstance(p, TerrainCorrectionParameters) for p in params):
                 msg = "if params is a list-like, all items must be TerrainCorrectionParameters objects"
-                raise TypeError(
-                    msg
-                )
+                raise TypeError(msg)
             params = list(params)
         else:
             msg = (
                 "params arg must be a TerrainCorrectionParameters object or a list-like"
                 f" of TerrainCorrectionParameters objects, not '{type(params)}'"
             )
-            raise TypeError(
-                msg
-            )
+            raise TypeError(msg)
 
         for p in params:
             self.add_zone(params=p)
@@ -797,9 +811,7 @@ class TerrainCorrector:
                 "params must be a TerrainCorrectionParameters object, "
                 f"not {type(params)}"
             )
-            raise TypeError(
-                msg
-            )
+            raise TypeError(msg)
 
         self.params[params.name] = params
 
@@ -807,7 +819,7 @@ class TerrainCorrector:
     def zones(self) -> list[str]:
         """List of zone names sorted by min_dist."""
         zones = [(k, v.min_dist) for k, v in self.params.items()]
-        return [str(z[0]) for z in sorted(zones, key=lambda x: x[1])]
+        return [str(z[0]) for z in sorted(zones, key=operator.itemgetter(1))]
 
     def _has_constant_xy_coord_source(self) -> bool:
         """Return True if all params specify the same easting and northing source fields.
@@ -872,9 +884,7 @@ class TerrainCorrector:
                 "points must be a sequence of arrays of form (x, y, z) "
                 f"or a GravitySites object, not {type(points)}"
             )
-            raise TypeError(
-                msg
-            )
+            raise TypeError(msg)
         # Establish if we need to get points for each zone.
         # - If the points is a tuple, get 1 set of x,y,z now
         # - If the points is a GravitySites object, check if the site coordinate fields
@@ -931,12 +941,12 @@ class TerrainCorrector:
             params=None,
         )
 
-        full_warning_displayed = False
+        nan_error_desciption_displayed = False
 
         for zone in self.zones:
             pars = self.params[zone].copy()
             if show_progress:
-                print(f"\nCalculating terrain corrections for zone: {zone}")
+                sys.stderr.write(f"Calculating terrain corrections for zone: {zone}")
 
             # get points if necessary
             if get_xyz_per_zone:
@@ -948,9 +958,7 @@ class TerrainCorrector:
                     )
                 except Exception as e:
                     msg = f"Error extracting site coordinates from GravitySites object: {e}"
-                    raise ValueError(
-                        msg
-                    )
+                    raise ValueError(msg) from None
 
             # get the dem for this zone
             # maybe do not copy here
@@ -964,9 +972,7 @@ class TerrainCorrector:
                     f"DEM not specified or zone='{zone}': TerrainCorrectionParameter "
                     "object must provide source file or an xarray.DataArray object."
                 )
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
 
             # get the density model if defined
             if _is_dataarray(pars.density_dataset_source):
@@ -994,23 +1000,30 @@ class TerrainCorrector:
             )
 
             # print a summary if something went wrong
-            n_missing_tc = 0
+            n_missing_tc = [0]
             if pars.compute_topography:
-                n_missing_tc = np.sum(np.isnan(tc[0]))
-            elif pars.compute_bathymetry:
-                n_missing_tc = np.sum(np.isnan(tc[1]))
+                n_missing_tc.append(np.isnan(tc[0]).sum())
+            if pars.compute_bathymetry:
+                n_missing_tc.append(np.isnan(tc[1]).sum())
+
+            n_missing_tc = max(n_missing_tc)
+
             if n_missing_tc > 0:
                 indent = "    " if show_progress else ""
-                print(
-                    f"{indent}Warning: zone '{zone}': terrain corrections not calculated for "
-                    f"{n_missing_tc} of {len(x)} sites."
+                sys.stderr.write(
+                    f"{indent}Warning: zone '{zone}': terrain corrections "
+                    f"not calculated for {n_missing_tc} of {len(x)} sites."
                 )
-                if not full_warning_displayed:
-                    full_warning_displayed = True
-                    print(
-                        f"{indent}    This is probably due to:"
-                        f"\n{indent}    (1) insufficient DEM coverage and/or"
-                        f"\n{indent}    (2) errant or incomplete site coordinates and elevation."
+                if not nan_error_desciption_displayed:
+                    nan_error_desciption_displayed = True
+                    sys.stderr.write(
+                        f"{indent}    This is probably due to:",
+                    )
+                    sys.stderr.write(
+                        f"{indent}    (1) insufficient DEM coverage and/or\n"
+                    )
+                    sys.stderr.write(
+                        f"{indent}    (2) errant or incomplete site coordinates and elevation.\n"
                     )
 
             results.set_corrections(
@@ -1072,21 +1085,23 @@ class TerrainCorrectionData(GSolveTable):
         total terrain correction column last.
     """
 
-    _known_fields = {
-        "site_id": DataFieldSpecification(
-            "site_id", str, required=True, legacy_name="station"
-        ),
-        "easting": DataFieldSpecification("easting", float, required=False),
-        "northing": DataFieldSpecification("northing", float, required=False),
-        "latitude": DataFieldSpecification("latitude", float, required=False),
-        "longitude": DataFieldSpecification("longitude", float, required=False),
-        "height_ellipsoidal": DataFieldSpecification(
-            "height_ellipsoidal", float, required=False
-        ),
-        "height_orthometric": DataFieldSpecification(
-            "height_orthometric", float, required=False
-        ),
-    }
+    _known_fields: MappingProxyType[str, DataFieldSpecification] = MappingProxyType(
+        {
+            "site_id": DataFieldSpecification(
+                "site_id", str, required=True, legacy_name="station"
+            ),
+            "easting": DataFieldSpecification("easting", float, required=False),
+            "northing": DataFieldSpecification("northing", float, required=False),
+            "latitude": DataFieldSpecification("latitude", float, required=False),
+            "longitude": DataFieldSpecification("longitude", float, required=False),
+            "height_ellipsoidal": DataFieldSpecification(
+                "height_ellipsoidal", float, required=False
+            ),
+            "height_orthometric": DataFieldSpecification(
+                "height_orthometric", float, required=False
+            ),
+        }
+    )
     _index_field: str | None = "site_id"
     _default_excel_sheet_name = "terrain_corrections"
 
@@ -1110,17 +1125,13 @@ class TerrainCorrectionData(GSolveTable):
                 "params is specified but terrain_corrections is None: "
                 "must specify both or neither"
             )
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
         if params is None and terrain_corrections is not None:
             msg = (
                 "terrain_corrections is specified but params is None: "
                 "must specify both or neither"
             )
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         # initialise data frame with site_id's as index
         sids = to_1d_ndarray(site_id).astype(str)
@@ -1136,7 +1147,7 @@ class TerrainCorrectionData(GSolveTable):
         self.set_column("site_id", site_id)
         self.data = self.data.set_index("site_id")
 
-        for k, v in self._known_fields.items():
+        for k in self._known_fields:
             if k not in self.data.columns and k in kwargs:
                 self.set_column(k, data=kwargs.pop(k))
 
@@ -1148,63 +1159,51 @@ class TerrainCorrectionData(GSolveTable):
             return
 
         if isinstance(params, TerrainCorrectionParameters):
-            _params_list = [params]
+            params_list = [params]
         elif isinstance(params, (list, tuple)):
-            _params_list = list(params)
-            if not all(
-                isinstance(p, TerrainCorrectionParameters) for p in _params_list
-            ):
+            params_list = list(params)
+            if not all(isinstance(p, TerrainCorrectionParameters) for p in params_list):
                 msg_0 = (
                     "if params is a list or tuple, all items must be "
                     "TerrainCorrectionParameters objects"
                 )
-                raise TypeError(
-                    msg_0
-                )
+                raise TypeError(msg_0)
         else:
             msg = (
                 "params arg must be a TerrainCorrectionParameters object, None or a "
                 "list or tuple of TerrainCorrectionParameters objects, "
                 f"not '{type(params)}'"
             )
-            raise TypeError(
-                msg
-            )
+            raise TypeError(msg)
 
         if terrain_corrections is None:
-            _tc_list = [None] * len(_params_list)
+            tc_list = [None] * len(params_list)
         elif isinstance(terrain_corrections, FloatArray):
-            _tc_list = [terrain_corrections]
+            tc_list = [terrain_corrections]
         elif isinstance(terrain_corrections, (list, tuple)):
-            _tc_list = list(terrain_corrections)
-            if not all(isinstance(tc, FloatArray) for tc in _tc_list):
+            tc_list = list(terrain_corrections)
+            if not all(isinstance(tc, FloatArray) for tc in tc_list):
                 msg_0 = (
                     "if terrain_corrections is a list or tuple, all items must be "
                     "array-like (e.g. numpy arrays or pandas Series)"
                 )
-                raise TypeError(
-                    msg_0
-                )
+                raise TypeError(msg_0)
         else:
             msg = (
                 "terrain_corrections arg must be an array-like, None or a list or tuple "
                 f"of array-likes, not '{type(terrain_corrections)}'"
             )
-            raise TypeError(
-                msg
-            )
+            raise TypeError(msg)
 
-        if len(_params_list) != len(_tc_list):
+        if len(params_list) != len(tc_list):
             msg = (
                 "inconsistent params and terrain_corrections arg lengths: "
-                f"{len(_params_list)} params and {len(_tc_list)} "
+                f"{len(params_list)} params and {len(tc_list)} "
                 "terrain_corrections specified"
             )
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
-        for p, tc in zip(_params_list, _tc_list):
+        for p, tc in zip(params_list, tc_list, strict=True):
             self.set_corrections(p, tc)
 
     @classmethod
@@ -1258,17 +1257,13 @@ class TerrainCorrectionData(GSolveTable):
                 "params must be a TerrainCorrectionParameters object, "
                 f"not {type(params)}"
             )
-            raise TypeError(
-                msg
-            )
+            raise TypeError(msg)
         if bathymetry_corrections is None and topography_corrections is None:
             msg_0 = (
                 "Must specify at least one of topography_corrections or "
                 "bathymetry_corrections"
             )
-            raise ValueError(
-                msg_0
-            )
+            raise ValueError(msg_0)
 
         tcor_prefix = "tcorr"
 
@@ -1297,9 +1292,7 @@ class TerrainCorrectionData(GSolveTable):
                 )
             except ValueError as e:
                 msg = f"{corr_type} must be a 1d array of floats of the len as site_id: {e} "
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg) from None
             self.set_column(label=col_name, data=c, dtype=float)
 
         # now set the total column
@@ -1323,48 +1316,51 @@ class TerrainCorrectionData(GSolveTable):
 
             self.data = pd.concat([self.data, temp_df], axis=1)
 
-    def set_height_ellipsoidal(
-        self,
-        elevations: SitesLike | FloatArray,
-        input_height_field: str = "height_ellipsoidal",
-        output_height_field: str = "height_ellipsoidal",
-    ) -> None:
-        """Add ellipsoidal heights to terrain correction outputs.
+    # def set_height_ellipsoidal(
+    #     self,
+    #     elevations: SitesLike | FloatArray,
+    #     input_height_field: str = "height_ellipsoidal",
+    #     output_height_field: str = "height_ellipsoidal",
+    # ) -> None:
+    #     """Add ellipsoidal heights to terrain correction outputs.
 
-        Terrain correction calculations typically use elevations sampled
-        from the DEM being used. This method allows site elevations to be
-        included in terrain correction outputs. These can then be used to
-        QC results and identify errors introduced when sampling a DEM.
+    #     Terrain correction calculations typically use elevations sampled
+    #     from the DEM being used. This method allows site elevations to be
+    #     included in terrain correction outputs. These can then be used to
+    #     QC results and identify errors introduced when sampling a DEM.
 
-        Parameters
-        ----------
-        elevations : SitesLike or array-like object
-            The elevation/height data to add to ``obj.data``.
-        input_height_field : str, default is 'height_ellipsoidal'
-            Column containing height data if ``elevations`` is a SitesLike object.
-        output_height_field : str, default is 'height_ellipsoidal'
-            Write heights to column ``output_height_field`` in the objects data
-            attribute.
+    #     Parameters
+    #     ----------
+    #     elevations : SitesLike or array-like object
+    #         The elevation/height data to add to ``obj.data``.
+    #     input_height_field : str, default is 'height_ellipsoidal'
+    #         Column containing height data if ``elevations`` is a SitesLike object.
+    #     output_height_field : str, default is 'height_ellipsoidal'
+    #         Write heights to column ``output_height_field`` in the objects data
+    #         attribute.
 
-        Raises
-        ------
-        KeyError
-            If ``elevations`` is a SitesLike and ``elevations.data`` has no
-            column named ``input_height_field``.
-        ValueError
-            If size of ``elevations`` is incompatible with ``obj.data``
-        """
-        insertion_point = self.data.columns.get_loc["easting"] + 1
-        self.data.insert(insertion_point, output_height_field, np.nan)
+    #     Raises
+    #     ------
+    #     KeyError
+    #         If ``elevations`` is a SitesLike and ``elevations.data`` has no
+    #         column named ``input_height_field``.
+    #     ValueError
+    #         If size of ``elevations`` is incompatible with ``obj.data``
+    #     """
+    #     insertion_point = self.data.columns.get_loc["easting"] + 1
+    #     self.data.insert(insertion_point, output_height_field, np.nan)
 
-        if isinstance(elevations, SitesLike):
-            if not hasattr(elevations, "data"):
-                msg = "elevations arg is a SitesLike object but does not have a "
-                raise TypeError(
-                    msg
-                )
-            # z = elevations.data[input_height_field].astype(float).to_numpy()
-            # df = elevations.data[]
+    #     if isinstance(elevations, SitesLike):
+    #         if not hasattr(elevations, "data"):
+    #             msg = "elevations arg is a SitesLike object but does not have a "
+    #             raise TypeError(msg)
+
+    #         elevations = elevations.loc[self.data]
+    #     else:
+    #         elevations = to_1d_ndarray(
+    #             elevations, expected_size=self.data.shape[0], dtype=float
+    #         )
+    #         self.data[output_height_field] = elevations
 
     def __repr__(self) -> str:
         zones = ", ".join(
@@ -1421,9 +1417,7 @@ class TerrainCorrectionData(GSolveTable):
                 "params must be a Dataframe, Series or TerrainCorrectionParameters "
                 f"object, not {type(params)}"
             )
-            raise TypeError(
-                msg
-            )
+            raise TypeError(msg)
 
         consumed_columns = ["tcorr:total"]
 
@@ -1450,9 +1444,7 @@ class TerrainCorrectionData(GSolveTable):
                 kk = f"{k}:topo"
                 if kk not in df.columns:
                     msg = f"terrain correction data missing for zone '{k}': '{kk}'"
-                    raise KeyError(
-                        msg
-                    )
+                    raise KeyError(msg)
                 tc_args["topography_corrections"] = df[kk].to_numpy()
                 consumed_columns.append(kk)
 
@@ -1460,9 +1452,7 @@ class TerrainCorrectionData(GSolveTable):
                 kk = f"{k}:bath"
                 if kk not in df.columns:
                     msg = f"terrain correction data missing for zone '{k}': '{kk}'"
-                    raise KeyError(
-                        msg
-                    )
+                    raise KeyError(msg)
                 tc_args["bathymetry_corrections"] = df[kk].to_numpy()
                 consumed_columns.append(kk)
 
@@ -1478,24 +1468,21 @@ class TerrainCorrectionData(GSolveTable):
                 "terrain corrections parameters and values are inconsistent: "
                 f"no parameters for terrain_correction data {uncomsumed_columns}"
             )
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         return obj
 
-    def _params_to_dataframe(self, paths_to_str: bool = True) -> pd.DataFrame:
+    def _params_to_dataframe(self) -> pd.DataFrame:
         """Convert the parameters to a DataFrame.
 
-        Parameters
-        ----------
-        paths_to_str : bool, default True
+        Complex objects such are converted to their string representation.
+        E.g. a Path object will be returned as the file name.
 
         Returns
         -------
         pd.DataFrame
-            A pandas DataFrame containing the parameters for all zones, indexed by
-            zone and parameter name.
+            A pandas DataFrame containing the parameters for all zones,
+            multi-indexed by zone and parameter name.
         """
         return self._params_to_series().to_frame().reset_index()
 
@@ -1656,7 +1643,8 @@ class TerrainCorrectionData(GSolveTable):
         csv = "\n".join(csv)
         if fname is None:
             return csv
-        pathlib.Path(fname).write_text(csv)
+        pathlib.Path(fname).write_text(csv)  # ruff: ignore[unspecified-encoding]
+        return None
 
     @classmethod
     def from_csv(
@@ -1678,7 +1666,7 @@ class TerrainCorrectionData(GSolveTable):
         TerrainCorrectionOutput
 
         """
-        with pathlib.Path(fname).open() as f:
+        with pathlib.Path(fname).open() as f:  # ruff: ignore[unspecified-encoding]
             lines = f.readlines()
         params = [l.lstrip("#").strip().split(",") for l in lines if l.startswith("#")]
         if len(params) == 0:
@@ -1730,11 +1718,9 @@ class TerrainCorrectionData(GSolveTable):
             otherwise a DataFrame is returned.
 
         """
-        if if_missing not in ["drop", "raise", "fill"]:
+        if if_missing not in {"drop", "raise", "fill"}:
             msg = f"invalid if_missing arg '{if_missing}'"
-            raise ValueError(
-                msg
-            )  # fixed typo in message
+            raise ValueError(msg)  # fixed typo in message
 
         site_id_idx = pd.Index(np.atleast_1d(site_id).astype(str).tolist())
         tcorrs = self.data.reset_index().set_index("site_id")

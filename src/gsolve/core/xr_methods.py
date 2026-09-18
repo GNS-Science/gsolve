@@ -47,6 +47,7 @@ __all__ = [
 
 def load_dem(
     dem_file: FilePath,
+    *,
     input_var_name: str | None = None,
     output_var_name: str | None = "elevation",
     output_x_dim: str | None = "easting",
@@ -105,6 +106,7 @@ def load_dem(
 
 def prepare_dem(
     dem: DatasetOrArray,
+    *,
     input_var_name: str | None = None,
     output_var_name: str | None = None,
     x_dim: str | None = "easting",
@@ -146,23 +148,17 @@ def prepare_dem(
                     "DataArray object. Use 'var_name' to specify the variable to "
                     f"convert. Variables in dem: {list(dem.data_vars)}"
                 )
-                raise ValueError(
-                    msg
-                )
-            input_var_name = str(list(dem.data_vars.keys())[0])
+                raise ValueError(msg)
+            input_var_name = str(next(iter(dem.data_vars)))
         dem = dem[input_var_name]
     if not isinstance(dem, xr.DataArray):
         msg = f"dem must be an xarray Dataset or DataArray, not {type(dem).__name__}"
-        raise TypeError(
-            msg
-        )
+        raise TypeError(msg)
 
     dem = dem.squeeze()
     if dem.ndim != 2:
         msg = f"Dem must be a 2D array. Object is {dem.ndim}D with shape {dem.shape}"
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
     # Drop singleton coordinate variables that are not dimensions (e.g. 'band', 'spatial_ref')
     # These can cause xarray/rioxarray broadcasting/indexing issues during operations
@@ -179,9 +175,7 @@ def prepare_dem(
                     f"prepare_dem(): dropping unused coordinate '{coord_name}' "
                     f"failed with error: {e}"
                 )
-                raise RuntimeError(
-                    msg
-                ) from e
+                raise RuntimeError(msg) from e
 
     # set dimension names
     if y_dim and dem.tcorr.ydim != y_dim:
@@ -266,10 +260,9 @@ def create_empty_dataarray(
     -------
     xarray.DataArray
     """
-    da = xr.DataArray(
-        [],
-        dims=(y_dim,),
-        coords={y_dim: []},
+    return xr.DataArray(
+        data=np.empty((0, 0)),
+        dims=(y_dim, x_dim),
+        coords={y_dim: [], x_dim: []},
         name=var_name,
     )
-    return da

@@ -25,8 +25,8 @@ import pandas as pd
 import pytest
 
 from gsolve.gsolve_algorithms import (
-    call_gsolve_lstsq,
     call_gsolve_calibration,
+    call_gsolve_lstsq,
     g_solver_lstsq,
 )
 from gsolve.gsolve_outputs import GSolveResults
