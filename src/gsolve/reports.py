@@ -101,9 +101,7 @@ class GSolveReport:
 
         if sites is None or results is None or observations is None:
             msg = "'observations', 'sites' and 'results' arguments must be provided."
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         if isinstance(observations, GravitySurvey):
             observations = observations.observations
@@ -128,7 +126,7 @@ class GSolveReport:
 
     def copy(self) -> Self:
         """Return a deep copy."""  # ruff: ignore[docstring-missing-returns]
-        return self.__copy__()
+        return self.__copy__()  # ruff: ignore[unnecessary-dunder-call]
 
     def __copy__(self) -> Self:
         """Return a deep copy."""  # ruff: ignore[docstring-missing-returns]
@@ -315,7 +313,7 @@ class GSolveReport:
         filename: FilePath,
         if_workbook_exists: IfWorkbookExists = "error",
         if_sheet_exists: IfSheetExists = "error",
-        **kwargs: Any,  # ruff: ignore[any-type]
+        **kwargs: Any,
     ) -> None:
         """
         Save the report data to an Excel file.
@@ -347,9 +345,7 @@ class GSolveReport:
         if filename.exists():
             if if_workbook_exists == "error":
                 msg = f"file {filename} already exists, and arg {if_workbook_exists=}"
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
 
             if if_workbook_exists == "append" and if_sheet_exists == "error":
                 existing_worksheets = [
@@ -361,9 +357,7 @@ class GSolveReport:
                         "Use 'if_workbook_exists' and 'if_sheet_exists' parameters "
                         "to specify behaviour."
                     )
-                    raise ValueError(
-                        msg
-                    )
+                    raise ValueError(msg)
 
         # observations
         write_excel_worksheet(
@@ -421,7 +415,7 @@ class GSolveReport:
         # This is a kludge - should create method on parameter objects to
         # to normalise parameter outputs for writing to excel.
         def _format_value(x: Any) -> str | float | int | bool:  # ruff: ignore[any-type]
-            if isinstance(x, _pd.Timedelta):
+            if isinstance(x, pd.Timedelta):
                 return x.total_seconds()
             if isinstance(x, Path):
                 return str(x)
@@ -442,7 +436,7 @@ class GSolveReport:
 
         write_excel_worksheet(
             df=pd.concat(all_params),
-            excel_file=filename,
+            filename=filename,
             sheet_name="metadata",
             if_workbook_exists="append",
             if_sheet_exists=if_sheet_exists,

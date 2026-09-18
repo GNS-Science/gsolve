@@ -21,7 +21,7 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import ClassVar, Literal, cast
+from typing import Literal
 
 import boule
 import numpy as np
@@ -180,9 +180,7 @@ def normal_gravity_at_ellipsoid(
         b = 6356774.5161
     else:
         msg = f"Unknown ellipsoid '{ellipsoid}': must be one of {valid_ellipsoids}"
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
     lat = np.deg2rad(latitude)
     normal_gravity = (
@@ -475,11 +473,10 @@ def bouguer_slab_curvature_corrected(
         if isinstance(er, boule.Ellipsoid):
             Ro = float(er.mean_radius)
         else:
-            msg = f"Unknown ellipsoid '{ellipsoid_or_radius}': must be 'WGS84' or 'GRS80'"
-            raise ValueError(
-                msg
+            msg = (
+                f"Unknown ellipsoid '{ellipsoid_or_radius}': must be 'WGS84' or 'GRS80'"
             )
-            raise ValueError(msg)  # ruff: ignore[type-check-without-type-error]
+            raise ValueError(msg)
 
     elif isinstance(ellipsoid_or_radius, boule.Ellipsoid):
         Ro = float(ellipsoid_or_radius.mean_radius)
@@ -604,40 +601,37 @@ class GravityCorrections(GSolveTable):
         Parameters used to compute the gravity corrections.
     """
 
-    _known_fields: ClassVar[MappingProxyType[str, DataFieldSpecification]] = (
-        MappingProxyType(
-            {
-                COMMON_FIELDS["site_id"].name: COMMON_FIELDS["site_id"],
-                COMMON_FIELDS["latitude"].name: COMMON_FIELDS["latitude"],
-                COMMON_FIELDS["longitude"].name: COMMON_FIELDS["longitude"],
-                COMMON_FIELDS["height_ellipsoidal"].name: COMMON_FIELDS[
-                    "height_ellipsoidal"
-                ],
-                "normal_gravity_at_stn_elevation": DataFieldSpecification(
-                    "normal_gravity_at_stn_elevation", float, default=np.nan
-                ),
-                "normal_gravity_at_ellipsoid": DataFieldSpecification(
-                    "normal_gravity_at_ellipsoid", float, default=np.nan
-                ),
-                "free_air_correction": DataFieldSpecification(
-                    "free_air_correction", float, default=np.nan
-                ),
-                "bouguer_slab_correction": DataFieldSpecification(
-                    "bouguer_slab_correction", float, default=np.nan
-                ),
-                "bouguer_slab_curvature_corrected": DataFieldSpecification(
-                    "bouguer_slab_curvature_corrected", float, default=np.nan
-                ),
-                "atmospheric_correction": DataFieldSpecification(
-                    "atmospheric_correction", float, default=np.nan
-                ),
-                COMMON_FIELDS["absolute_gravity"].name: COMMON_FIELDS[
-                    "absolute_gravity"
-                ],
-            }
-        )
+    _known_fields: MappingProxyType[str, DataFieldSpecification] = MappingProxyType(
+        {
+            "site_id": DataFieldSpecification("site_id", str, required=True),
+            "longitude": DataFieldSpecification("longitude", float, required=False),
+            "latitude": DataFieldSpecification("latitude", float, required=False),
+            "height_ellipsoidal": DataFieldSpecification(
+                "height_ellipsoidal", float, required=False, legacy_name="height"
+            ),
+            "normal_gravity_at_stn_elevation": DataFieldSpecification(
+                "normal_gravity_at_stn_elevation", float, required=False, default=np.nan
+            ),
+            "normal_gravity_at_ellipsoid": DataFieldSpecification(
+                "normal_gravity_at_ellipsoid", float, required=False, default=np.nan
+            ),
+            "free_air_correction": DataFieldSpecification(
+                "free_air_correction", float, required=False, default=np.nan
+            ),
+            "bouguer_slab_correction": DataFieldSpecification(
+                "bouguer_slab_correction", float, required=False, default=np.nan
+            ),
+            "bouguer_slab_curvature_corrected": DataFieldSpecification(
+                "bouguer_slab_curvature_corrected",
+                float,
+                required=False,
+                default=np.nan,
+            ),
+            "atmospheric_correction": DataFieldSpecification(
+                "atmospheric_correction", float, required=False, default=np.nan
+            ),
+        }
     )
-    _default_excel_sheet_name: str = "gravity_corrections"
 
     data: pd.DataFrame
     params: GravityCorrectionParameters
@@ -713,9 +707,7 @@ class GravityCorrectionProvider:
                 "params must be None or a GravityCorrectionParameters object, "
                 f"not '{type(params)}'"
             )
-            raise TypeError(
-                msg
-            )
+            raise TypeError(msg)
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}({self.params._param_str()})"
@@ -787,9 +779,7 @@ class GravityCorrectionProvider:
                 "argument 'sites' must be a Dataframe or GravitySites object, not "
                 f"'{type(sites)}'"
             )
-            raise TypeError(
-                msg
-            )
+            raise TypeError(msg)
 
         lon = sites_df[cols["longitude"]].to_numpy()
         lat = sites_df[cols["latitude"]].to_numpy()
