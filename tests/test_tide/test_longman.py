@@ -87,9 +87,7 @@ def test_longman_tidal_correction(
     )
 
 
-def test_longman_gravity_acceleration_bag_args(
-    obs_points: pd.DataFrame, expected_corrections: np.ndarray
-) -> None:
+def test_longman_gravity_acceleration_bad_args(obs_points: pd.DataFrame) -> None:
     corrector = LongmanTidalCorrection()
     with pytest.raises(ValueError):
         _ = corrector.gravity_accelerations(
@@ -131,29 +129,31 @@ def test_longman_time_series():
         ts2 = corrector.time_series(method="bad_method", **args)
 
     # check bad time arguments
-    for bad_arg in [
-        pd.NaT,
-        "not a date",
-        None,
-        ["2020/01/01T00:00", "2020/01/01T12:00"],
-    ]:
-        with pytest.raises(ValueError, match="error parsing starttime and endtime:"):
-            _ = corrector.time_series(
-                starttime=bad_arg,
-                endtime="2020/01/02T00:00",
-                step="1s",
-                lat=-45.0,
-                lon=170.0,
-            )
-
-    with pytest.raises(ValueError, match="error parsing starttime and endtime:"):
+    kwargs = {
+        "endtime": "2020/01/02T00:00",
+        "step": "1s",
+        "lat": -45.0,
+        "lon": 170.0,
+    }
+    # for bad_arg in [
+    #     pd.NaT,
+    #     "not a date",
+    #     None,
+    #     ["2020/01/01T00:00", "2020/01/01T12:00"],
+    # ]:
+    with pytest.raises(ValueError, match="error parsing starttime:"):
+        _ = corrector.time_series(starttime="not a date", **kwargs)
+    with pytest.raises(ValueError, match="error parsing starttime:"):
+        _ = corrector.time_series(starttime=pd.NaT, **kwargs)
+    with pytest.raises(ValueError, match="error parsing starttime:"):
+        _ = corrector.time_series(starttime=None, **kwargs)
+    with pytest.raises(TypeError, match="error parsing starttime:"):
         _ = corrector.time_series(
-            starttime="2020/01/03T00:00",
-            endtime="2020/01/02T00:00",
-            step="1s",
-            lat=-45.0,
-            lon=170.0,
+            starttime=["2020/01/01T00:00", "2020/01/01T12:00"], **kwargs
         )
+
+    with pytest.raises(ValueError, match="starttime is after or equal to endtime"):
+        _ = corrector.time_series(starttime="2020/01/03T00:00", **kwargs)
 
     with pytest.raises(ValueError, match="error parsing step:"):
         _ = corrector.time_series(
@@ -173,8 +173,8 @@ def test_longman_repr():
 
 class TestLongmanTimeFuncs:
     @pytest.mark.parametrize(
-        "dt, expected",
-        [
+        argnames=("dt", "expected"),
+        argvalues=[
             ("2024-01-01T00:00:00", 0.0),
             ("2024-01-01T12:00:00", 12.0),
             ("2024-01-01T23:59:59", 23.99972222222222),
@@ -182,11 +182,13 @@ class TestLongmanTimeFuncs:
             (pd.Timestamp("2024-01-01 18:15:30"), 18.258333333333333),
         ],
     )
-    def test_decimal_hour_of_day_scalar(self, dt, expected) -> None:
+    @staticmethod
+    def test_decimal_hour_of_day_scalar(dt, expected) -> None:
         result = _decimal_hour_of_day(dt)
         assert abs(result - expected) < 1e-8
 
-    def test_decimal_hour_of_day_array(self):
+    @staticmethod
+    def test_decimal_hour_of_day_array() -> None:
         dts = [
             "2024-01-01T00:00:00",
             "2024-01-01T06:00:00",
@@ -199,7 +201,7 @@ class TestLongmanTimeFuncs:
         result2 = _decimal_hour_of_day(pd.Series(dts))
         np.testing.assert_allclose(result2, expected, rtol=1e-10)
 
-    def test_decimal_hour_of_day_pandas_series(self):
+    def test_decimal_hour_of_day_pandas_series(self) -> None:
         times = pd.date_range("2024-01-01", periods=3, freq="8h")
         expected = [0.0, 8.0, 16.0]
         result_idx = _decimal_hour_of_day(times)
@@ -236,4 +238,4 @@ class TestLongmanTimeFuncs:
 def test_gravimetric_factor():
     h2 = 1
     k2 = 2
-    assert gravimetric_factor(k2, h2) == 1 + h2 - 1.5 * k2
+    assert np.isclose(gravimetric_factor(k2, h2), 1 + h2 - 1.5 * k2)

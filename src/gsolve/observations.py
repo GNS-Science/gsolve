@@ -18,10 +18,12 @@
 
 """Classes for handling gravity observations and pre-processing."""
 
+import copy
 import dataclasses
 import pathlib
 import warnings as _warnings
 from collections.abc import Iterable, Sequence
+from types import MappingProxyType
 from typing import Any, Literal, Self
 
 import matplotlib.dates as mdates
@@ -109,6 +111,7 @@ class GravityObservationsParameters(GSolveParameters):
         self,
         fname: FilePath,
         sheet_name: str = "observation_parameters",
+        *,
         if_workbook_exists: IfWorkbookExists = "append",
         if_sheet_exists: IfSheetExists = "replace",
         parameter_name_label: str = "parameter",
@@ -234,38 +237,49 @@ class GravityObservations(GSolveTable):
 
     """
 
-    _known_fields: dict[str, DataFieldSpecification] = {
-        "site_id": COMMON_FIELDS["site_id"],
-        "datetime": COMMON_FIELDS["datetime"],
-        "meter_id": DataFieldSpecification(
-            "meter_id", str, "", True, legacy_name="meter"
-        ),
-        "loop": COMMON_FIELDS["loop"],
-        "active": COMMON_FIELDS["active"],
-        "meter_reading": DataFieldSpecification(
-            "meter_reading", float, np.nan, False, legacy_name="reading"
-        ),
-        "meter_reading_mgal": DataFieldSpecification(
-            "meter_reading_mgal", float, np.nan, False
-        ),
-        "loop_tdelta": DataFieldSpecification("loop_tdelta", float, np.nan, False),
-        "survey_tdelta": DataFieldSpecification("survey_tdelta", float, np.nan, False),
-        "calibration_factor": DataFieldSpecification(
-            "calibration_factor", float, 1.0, False
-        ),
-        "earth_tide_corr": DataFieldSpecification("earth_tide_corr", float, 0.0, False),
-        "ocean_load_corr": DataFieldSpecification("ocean_load_corr", float, 0.0, False),
-        "custom_corr": DataFieldSpecification("custom_corr", float, 0.0, False),
-        "gravity_corr": DataFieldSpecification("gravity_corr", float, np.nan, False),
-        "meter_reading_converter_id": DataFieldSpecification(
-            "meter_reading_converter_id", str, "NA", False
-        ),
-    }
+    _known_fields: MappingProxyType[str, DataFieldSpecification] = MappingProxyType(
+        {
+            "site_id": COMMON_FIELDS["site_id"],
+            "datetime": COMMON_FIELDS["datetime"],
+            "meter_id": DataFieldSpecification(
+                "meter_id", str, "", True, legacy_name="meter"
+            ),
+            "loop": COMMON_FIELDS["loop"],
+            "active": COMMON_FIELDS["active"],
+            "meter_reading": DataFieldSpecification(
+                "meter_reading", float, np.nan, False, legacy_name="reading"
+            ),
+            "meter_reading_mgal": DataFieldSpecification(
+                "meter_reading_mgal", float, np.nan, False
+            ),
+            "loop_tdelta": DataFieldSpecification("loop_tdelta", float, np.nan, False),
+            "survey_tdelta": DataFieldSpecification(
+                "survey_tdelta", float, np.nan, False
+            ),
+            "calibration_factor": DataFieldSpecification(
+                "calibration_factor", float, 1.0, False
+            ),
+            "earth_tide_corr": DataFieldSpecification(
+                "earth_tide_corr", float, 0.0, False
+            ),
+            "ocean_load_corr": DataFieldSpecification(
+                "ocean_load_corr", float, 0.0, False
+            ),
+            "custom_corr": DataFieldSpecification("custom_corr", float, 0.0, False),
+            "gravity_corr": DataFieldSpecification(
+                "gravity_corr", float, np.nan, False
+            ),
+            "meter_reading_converter_id": DataFieldSpecification(
+                "meter_reading_converter_id", str, "NA", False
+            ),
+        }
+    )
     _index_field: str = "obs_id"
     _default_excel_sheet_name: str | tuple[str, ...] = ("observations", "Survey Data")
 
     def __init__(
         self,
+        *,
         site_id: npt.ArrayLike,
         datetime: npt.ArrayLike,
         meter_id: npt.ArrayLike,
@@ -446,9 +460,8 @@ class GravityObservations(GSolveTable):
                 self.data = self.data.drop(columns=idx)
 
         elif is_list_like(idx) and isinstance(idx, Iterable):
-            _idx = [str(i) for i in idx]
             # a sequence will converted to index
-            new_idx = pd.Index(_idx, name=self._index_field, dtype=str)
+            new_idx = pd.Index([str(i) for i in idx], name=self._index_field, dtype=str)
 
         else:
             msg = f"invalid idx arg of type '{type(idx).__name__}'"
@@ -604,10 +617,10 @@ class GravityObservations(GSolveTable):
         if t is None or pd.isna(t):
             self._fixed_time_datum = None
         else:
-            _t = to_naive_utc_datetime(t)
-            if isinstance(_t, pd.Timestamp):
-                self._fixed_time_datum = _t
-            elif _t is pd.NaT:
+            t = to_naive_utc_datetime(t)
+            if isinstance(t, pd.Timestamp):
+                self._fixed_time_datum = t
+            elif t is pd.NaT:
                 self._fixed_time_datum = None
             else:
                 msg = f"invalid fixed_time_datum of type '{type(t).__name__}'"
@@ -634,6 +647,7 @@ class GravityObservations(GSolveTable):
     def apply_dial_to_mgal(
         self,
         converter: MeterReadingConverter,
+        *,
         check_meter_id: bool = True,
         check_datetime: bool = True,
         set_converter_id_column: bool = True,
@@ -966,7 +980,7 @@ class GravityObservations(GSolveTable):
             If any specified ``obs_id``, ``site_id`` or ``loop`` values are not found in the data.
         TypeError
             If any input is not a string or iterable of strings.
-        """
+        """  # ruff: ignore[docstring-extraneous-exception]
 
         def _parse_inputs(o: str | Iterable[str] | None) -> list[str]:
             if o is None:
@@ -979,39 +993,38 @@ class GravityObservations(GSolveTable):
             raise TypeError(msg)
 
         # parse all args first to check for errors before modifying data
-        _obs_id = _parse_inputs(obs_id)
-        _site_id = _parse_inputs(site_id)
-        _loop = _parse_inputs(loop)
+        obs_id = _parse_inputs(obs_id)
+        site_id = _parse_inputs(site_id)
+        loop = _parse_inputs(loop)
 
-        if _obs_id:
-            missing = [oi for oi in _obs_id if oi not in self.data.index.to_list()]
+        if obs_id:
+            missing = [oi for oi in obs_id if oi not in self.data.index.to_list()]
             if missing:
                 msg = f"obs_id's '{missing}' not found in data"
                 raise ValueError(msg)
 
-        if _site_id:
-            missing = [s for s in _site_id if s not in self.data["site_id"].to_list()]
+        if site_id:
+            missing = [s for s in site_id if s not in self.data["site_id"].to_list()]
             if missing:
                 msg_0 = f"site_id's '{missing}' not found in data"
                 raise ValueError(msg_0)
 
-            _obs_id += self.data.loc[
-                self.data["site_id"].isin(_site_id)
-            ].index.to_list()
+            obs_id += self.data.loc[self.data["site_id"].isin(site_id)].index.to_list()
 
-        if _loop:
-            missing = [li for li in _loop if li not in self.loop_ids]
+        if loop:
+            missing = [li for li in loop if li not in self.loop_ids]
             if missing:
                 msg_1 = f"loop's '{missing}' not found in data"
                 raise ValueError(msg_1)
 
-            _obs_id += self.data.loc[self.data["loop"].isin(_loop)].index.to_list()
+            obs_id += self.data.loc[self.data["loop"].isin(loop)].index.to_list()
 
-        if _obs_id:
-            self.data.loc[list(set(_obs_id)), "active"] = flag
+        if obs_id:
+            self.data.loc[list(set(obs_id)), "active"] = flag
 
     def _get_writable_df(
         self,
+        *,
         normalize_column_names: bool = True,
         expand_datetime: str | None = "datetime",
         drop_datetime: bool = False,
@@ -1052,6 +1065,7 @@ class GravityObservations(GSolveTable):
     def write_to_csv(
         self,
         fname: FilePath,
+        *,
         normalize_column_names: bool = True,
         expand_datetime: str | None = "datetime",
         drop_datetime: bool = False,
@@ -1073,6 +1087,7 @@ class GravityObservations(GSolveTable):
     def to_excel(
         self,
         fname: FilePath,
+        *,
         sheet_name: str | None = None,
         params_sheet_name: str | None = None,
         normalize_column_names: bool = True,
@@ -1122,11 +1137,12 @@ class GravityObservations(GSolveTable):
     def plot_observed_data(
         self,
         loop: str | int,
+        *,
         x_column: str = "datetime",
         y_column: str = "meter_reading_mgal",
         savefilename: FilePath | None = None,
         figsize: tuple[float, float] = (12, 8),
-        ax=None,  # ruff: ignore[missing-type-function-argument]
+        ax: plt.Axes | None = None,
         show: bool = True,
         **kwargs,
     ) -> tuple[plt.Figure, plt.Axes]:
@@ -1219,9 +1235,9 @@ class GravityObservations(GSolveTable):
         )
 
         # merge with 'site' object to get location information
-        network_df = pd.merge(
-            left=station_order, right=sites.data, on="site_id", how="inner"
-        ).loc[:, ["site_id", "loop", "latitude", "longitude"]]
+        network_df = station_order.merge(sites.data, on="site_id", how="inner").loc[
+            :, ["site_id", "loop", "latitude", "longitude"]
+        ]
         station_occupations = network_df.site_id.value_counts()
 
         return network_df, station_occupations
@@ -1229,6 +1245,7 @@ class GravityObservations(GSolveTable):
     def plot_network_map(
         self,
         sites: GravitySites,
+        *,
         savefilename: FilePath | None = None,
         figsize: tuple[float, float] = (10, 10),
         marker_scale_factor: float = 25,
@@ -1629,7 +1646,7 @@ class GravitySurvey:
 
     def copy(self) -> Self:
         """Return a deep copy."""  # ruff: ignore[docstring-missing-returns]
-        return self.__copy__()
+        return copy.copy(self)
 
     @classmethod
     def from_excel(

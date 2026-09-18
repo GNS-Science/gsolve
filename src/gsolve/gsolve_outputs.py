@@ -23,9 +23,9 @@ import warnings
 from collections.abc import Sequence
 from typing import Any, Literal, TypeAlias
 
-import matplotlib.pyplot as _plt
-import numpy as _np
-import pandas as _pd
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
 from gsolve.core._typing import FilePath, GSolveSolverMethod, GSolveSolverReturn
 from gsolve.core.data import GSolveParameters
@@ -67,14 +67,14 @@ class GSolveSolutionParameters(GSolveParameters):
     use_loops: bool
     percentile_clipping: float
     calculate_calibration_factor: bool
-    calculated_calibration_factor: float = _np.nan
-    gsolve_run_datetime: _pd.Timestamp | None = None
+    calculated_calibration_factor: float = np.nan
+    gsolve_run_datetime: pd.Timestamp | None = None
     gsolve_version: str | None = None
 
     def __post_init__(self) -> None:
         if self.gsolve_run_datetime is None:
             self.gsolve_run_datetime = to_naive_utc_datetime(
-                _pd.Timestamp.now("UTC"), allow_nat=False
+                pd.Timestamp.now("UTC"), allow_nat=False
             )
         else:
             self.gsolve_run_datetime = to_naive_utc_datetime(
@@ -148,13 +148,13 @@ class GSolveResults:
             calculate_calibration_factor=calculate_calibration_factor,
         )
 
-        self.obs_solution: _pd.DataFrame
-        self.site_solution: _pd.DataFrame
-        self.loop_solution: _pd.DataFrame
-        self.observations_input: _pd.DataFrame
-        self.reference_sites_input: _pd.DataFrame
+        self.obs_solution: pd.DataFrame
+        self.site_solution: pd.DataFrame
+        self.loop_solution: pd.DataFrame
+        self.observations_input: pd.DataFrame
+        self.reference_sites_input: pd.DataFrame
 
-    def set_inputs(self, obs: _pd.DataFrame, ref_sites: _pd.DataFrame) -> None:
+    def set_inputs(self, obs: pd.DataFrame, ref_sites: pd.DataFrame) -> None:
         """Add input data used in the gsolve run."""
         self.observations_input = obs.copy()
         self.reference_sites_input = ref_sites.copy()
@@ -177,54 +177,52 @@ class GSolveResults:
                     "calibration factor was not calculated but "
                     "calculate_calibration_factor is True."
                 )
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
             # store the calculated calibration factor in the params object
             self.params.calculated_calibration_factor = calibration_factor
 
         # set up obs_solution dataframe
         obs = self.observations_input
         n_obs = obs.shape[0]
-        self.obs_solution = _pd.DataFrame(
-            index=_pd.Index(obs.index, name="obs_id"),
+        self.obs_solution = pd.DataFrame(
+            index=pd.Index(obs.index, name="obs_id"),
             data={
                 "site_id": obs["site_id"].astype(str).to_numpy(),
                 "loop": obs["loop"].astype(str).to_numpy(),
-                "residual": _np.atleast_1d(obs_residuals[:n_obs].squeeze()),
+                "residual": np.atleast_1d(obs_residuals[:n_obs].squeeze()),
                 "timedelta": obs["timedelta"].to_numpy(),
-                "active": _np.atleast_1d(mask),
+                "active": np.atleast_1d(mask),
             },
         )
 
         site_ids = obs["site_id"][mask].value_counts().sort_index()
-        mask_gravity = ~_np.isin(
-            _np.unique(obs["site_id"]),
-            _np.setdiff1d(_np.unique(obs["site_id"]), site_ids.index),
+        mask_gravity = ~np.isin(
+            np.unique(obs["site_id"]),
+            np.setdiff1d(np.unique(obs["site_id"]), site_ids.index),
         )
 
-        self.site_solution = _pd.DataFrame(
+        self.site_solution = pd.DataFrame(
             index=site_ids.index,
             data={
                 "n_obs": site_ids.to_numpy(),
-                "absolute_gravity": _np.atleast_1d(site_grav[mask_gravity].squeeze()),
-                "variance": _np.atleast_1d(site_var[mask_gravity].squeeze()),
-                "stdev": _np.sqrt(_np.atleast_1d(site_var[mask_gravity].squeeze())),
-                "stderr": _np.divide(
-                    _np.sqrt(_np.atleast_1d(site_var[mask_gravity])),
-                    _np.sqrt(site_ids.to_numpy()),
+                "absolute_gravity": np.atleast_1d(site_grav[mask_gravity].squeeze()),
+                "variance": np.atleast_1d(site_var[mask_gravity].squeeze()),
+                "stdev": np.sqrt(np.atleast_1d(site_var[mask_gravity].squeeze())),
+                "stderr": np.divide(
+                    np.sqrt(np.atleast_1d(site_var[mask_gravity])),
+                    np.sqrt(site_ids.to_numpy()),
                 ).squeeze(),
             },
         ).sort_index()
 
         # TODO: R-squared value column
         loops = obs["loop"].value_counts().sort_index()
-        self.loop_solution = _pd.DataFrame(
+        self.loop_solution = pd.DataFrame(
             index=loops.index,
             data={
                 "n_obs": loops.to_numpy(),
-                "drift": _np.atleast_1d(drift.squeeze()),
-                "baseline": _np.atleast_1d(baseline.squeeze()),
+                "drift": np.atleast_1d(drift.squeeze()),
+                "baseline": np.atleast_1d(baseline.squeeze()),
             },
         ).sort_index()
 
@@ -234,7 +232,7 @@ class GSolveResults:
         unit: _PlotGravityUnit = "mGal",
         filename: FilePath | None = None,
         show: bool = True,
-    ) -> _plt.Axes:
+    ) -> plt.Axes:
         """
         Plot the empirical cumulative density function of residuals.
 
@@ -262,9 +260,9 @@ class GSolveResults:
         df = self.obs_solution.loc[m].copy()
 
         unit_label: str = ""
-        if isinstance(unit, str) and unit.lower() in ["ugal", "mgal"]:
+        if isinstance(unit, str) and unit.lower() in {"ugal", "mgal"}:
             if unit.lower() == "ugal":
-                df["residual"] = df["residual"] * 1000.0
+                df["residual"] *= 1000.0
                 # drift *= 1000.0
                 unit_label = "μGal"
                 precision = ".01f"
@@ -284,8 +282,7 @@ class GSolveResults:
             loops = df_loops
             ax_title = f"{ax_title} each loop"
         elif is_list_like(loop):
-            loops: list[str] = [str(l) for l in loop]  # type: ignore[bad-assignment-type]
-            ax_title = f"{ax_title} loops {', '.join(loops)}"
+            loops: list[str] = [str(l) for l in loop]
         elif loop == "all":
             loops = ["all"]
             df["loop"] = "all"
@@ -300,20 +297,20 @@ class GSolveResults:
                 raise ValueError(msg)
 
         df = df.loc[df["loop"].isin(loops)]
-        fig = _plt.figure()
+        fig = plt.figure()
         ax = fig.add_subplot(111)
 
         for l, loop_df in df.groupby("loop"):
             residuals = loop_df["residual"].to_numpy()
             label = (
                 f"{l}: n={len(residuals)}, x̄={residuals.mean():<{precision}}, "
-                f"σ={residuals.std():{precision}}"
+                f"σ={residuals.std():{precision}}"  # ruff: ignore[ambiguous-unicode-character-string]
             )
             if hasattr(ax, "ecdf"):
                 ax.ecdf(residuals, label=label)
             else:
-                x = _np.sort(residuals)
-                y = _np.array(_np.arange(len(x))) / len(x)
+                x = np.sort(residuals)
+                y = np.array(np.arange(len(x))) / len(x)
                 ax.step(x, y, label=label)
 
         ax.set_title(ax_title)
@@ -354,7 +351,7 @@ class GSolveResults:
     @property
     def calibration_factor(self) -> float:
         """Convenience property to access the calculated calibration factor."""
-        return float(_np.asarray(self.params.calculated_calibration_factor).item())
+        return float(np.asarray(self.params.calculated_calibration_factor).item())
 
     def plot_residual_drift(
         self,
@@ -363,7 +360,7 @@ class GSolveResults:
         unit: _PlotGravityUnit = "mGal",
         filename: FilePath | None = None,
         show: bool = True,
-    ) -> _plt.Axes:
+    ) -> plt.Axes:
         """
         Plot the residuals and drift curve.
 
@@ -398,10 +395,11 @@ class GSolveResults:
 
         df = self.obs_solution.loc[m_loop & m_active].copy()
 
+        # todo: refactor this
         unit_label = None
         if isinstance(unit, str):
             if unit.lower() == "ugal":
-                df["residual"] = df["residual"] * 1000.0
+                df["residual"] *= 1000.0
                 drift *= 1000.0
                 unit_label = "μGal"
                 precision = ".01f"
@@ -415,12 +413,12 @@ class GSolveResults:
         x = df[x_col].to_numpy()
         y = df[y_col].to_numpy()
 
-        fig = _plt.figure()
+        fig = plt.figure()
         ax = fig.add_subplot(111)
 
         if plot_drift:
             drift_y = drift * x
-            y = y + drift_y
+            y += drift_y
             ax.scatter(x, y, marker=".", label="residuals")
             ax.plot(
                 x,
@@ -451,6 +449,6 @@ class GSolveResults:
         if filename is not None:
             fpath = pathlib.Path(filename)
             fpath = fpath.parent / f"{fpath.stem}_loop_{loop}{fpath.suffix}"
-            _plt.savefig(fpath, dpi=300)
+            plt.savefig(fpath, dpi=300)
 
         return ax

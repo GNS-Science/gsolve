@@ -1,8 +1,8 @@
-from __future__ import annotations
+from __future__ import annotations  # ruff: ignore[undocumented-public-package]
 
 import importlib.metadata
 
-try:
+try:  # ruff: ignore[non-empty-init-module]
     __version__ = importlib.metadata.version(__name__)
 except importlib.metadata.PackageNotFoundError:
     __version__ = "5.X.X.dev"

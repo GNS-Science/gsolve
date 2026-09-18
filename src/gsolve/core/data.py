@@ -18,10 +18,12 @@
 
 """Base class and function definitions for Gsolve data structures."""
 
+import copy
 import dataclasses
 import warnings
 from collections.abc import Callable, Sequence
 from copy import deepcopy
+from types import MappingProxyType
 from typing import Any, ClassVar, Self
 
 import pandas as pd
@@ -113,7 +115,7 @@ class GSolveTable:
 
     """
 
-    _known_fields: ClassVar[dict[str, DataFieldSpecification]]
+    _known_fields: ClassVar[MappingProxyType[str, DataFieldSpecification]]
     _default_excel_sheet_name: ClassVar[str | tuple[str, ...]] = ""
 
     def __init__(self) -> None:
@@ -124,7 +126,7 @@ class GSolveTable:
         if hasattr(self, "data"):
             rval.append(f"data:shape={self.data.shape}")
         if hasattr(self, "params") and isinstance(self.params, GSolveParameters):
-            rval.append(self.params.__param_str__())
+            rval.append(self.params._param_str())
 
         rval = ", ".join(rval)
 
@@ -418,7 +420,7 @@ class GSolveTable:
         expand_datetime: str | None = None,
         drop_datetime: bool = False,
         bool_to_int: bool = False,
-        include_unknown_fields: bool = True,
+        # include_unknown_fields: bool = True,
         **kwargs,
     ) -> None:
         """Write data to a csv file.
@@ -486,7 +488,7 @@ class GSolveTable:
 class GSolveParameters:
     """Base class to store parameters related to GSolveTable derived classes."""
 
-    def __param_str__(self) -> str:
+    def _param_str(self) -> str:
         # Return a string representation of the parameters
         return repr(self).partition("(")[2].rpartition(")")[0]
 
@@ -496,7 +498,7 @@ class GSolveParameters:
 
     def copy(self) -> Self:
         """Return a deep copy of object."""  # ruff: ignore[docstring-missing-returns]
-        return deepcopy(self)
+        return copy.copy(self)
 
     def to_dict(self) -> dict:
         """Return parameters as a dict."""  # ruff: ignore[docstring-missing-returns]
@@ -563,26 +565,26 @@ class GSolveParameters:
         GSolveParameters
 
         """
-        _ds = ds.copy()
-        if _ds.index.nlevels > 1:
+        ds = ds.copy()
+        if ds.index.nlevels > 1:
             msg = "MultiIndex series not supported."
             raise ValueError(msg)
+
         args: dict[str, Any] = {
             str(k): v for k, v in ds.items() if k in cls.__dataclass_fields__
         }
-        missing_args = [k for k in cls.__dataclass_fields__ if k not in args]
 
+        missing_args = [k for k in cls.__dataclass_fields__ if k not in args]
         if not skip_missing and missing_args:
             msg = f"skip_missing=False: missing required parameters: {missing_args}"
-            raise TypeError(
-                msg
-            )
-        extra_args = [k for k in _ds.index if k not in cls.__dataclass_fields__]
+            raise TypeError(msg)
+
+        extra_args = [k for k in ds.index if k not in cls.__dataclass_fields__]
         if extra_args and not skip_unknown_parameters:
-            msg = f"series contains unknown parameters: {_ds.index[extra_args].to_list()}"
-            raise TypeError(
-                msg
+            msg = (
+                f"series contains unknown parameters: {ds.index[extra_args].to_list()}"
             )
+            raise TypeError(msg)
 
         return cls(**args)
 
@@ -602,6 +604,7 @@ class GSolveParameters:
         self,
         fname: FilePath,
         sheet_name: str | None = None,
+        *,
         if_workbook_exists: IfWorkbookExists = "error",
         if_sheet_exists: IfSheetExists = "error",
         parameter_name_label: str = "parameter",
@@ -646,9 +649,7 @@ class GSolveParameters:
                     "sheet_name is None and object has no "
                     "_default_excel_sheet_name attribute."
                 )
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
 
         write_excel_worksheet(
             prepare_writable_df(params_ds.to_frame(), normalize_column_names=True),
@@ -702,19 +703,15 @@ def _concat_gsolvetable_dataframes_with_fill(
             f"incompatible kwarg axis={kwargs['axis']}, "
             "function operates in vstack (axis=0) mode only."
         )
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
     kwargs["axis"] = 0
 
     use_known_fields = False
     if known_fields is not None:
         use_known_fields = True
-        if not all([hasattr(f, "default") for f in known_fields.values()]):
-            msg = f"if specified, known_fields must be a dict of DataFieldSpecification objects"
-            raise TypeError(
-                msg
-            )
+        if not all(hasattr(f, "default") for f in known_fields.values()):
+            msg = "if specified, known_fields must be a dict of DataFieldSpecification objects"
+            raise TypeError(msg)
 
     do_str_fill = fill_str is not None
     if do_str_fill:
@@ -731,12 +728,15 @@ def _concat_gsolvetable_dataframes_with_fill(
     in_df1_only = [c for c in df1.columns if c not in df2.columns]
     idx = df2.index
     for c in in_df1_only:
-        if use_known_fields and c in known_fields:
-            if known_fields[c].default is not None:
-                combined_df.loc[idx, c] = combined_df.loc[idx, c].fillna(
-                    known_fields[c].default
-                )
-                continue
+        if (
+            use_known_fields
+            and c in known_fields
+            and known_fields[c].default is not None
+        ):
+            combined_df.loc[idx, c] = combined_df.loc[idx, c].fillna(
+                known_fields[c].default
+            )
+            continue
         if do_str_fill and is_string_dtype(df1[c]):
             combined_df.loc[idx, c] = combined_df.loc[idx, c].fillna(fill_str)
         elif do_bool_fill and is_bool_dtype(df1[c]):
@@ -745,16 +745,19 @@ def _concat_gsolvetable_dataframes_with_fill(
     in_df2_only = [c for c in df2.columns if c not in df1.columns]
     idx = df1.index
     for c in in_df2_only:
-        if use_known_fields and c in known_fields:
-            if known_fields[c].default is not None:
-                combined_df.loc[idx, c] = combined_df.loc[idx, c].fillna(
-                    known_fields[c].default
-                )
-                continue
+        if (
+            use_known_fields
+            and c in known_fields
+            and known_fields[c].default is not None
+        ):
+            combined_df.loc[idx, c] = combined_df.loc[idx, c].fillna(
+                known_fields[c].default
+            )
+            continue
         if do_str_fill and is_string_dtype(df2[c]):
             combined_df.loc[idx, c] = combined_df.loc[idx, c].fillna(fill_str)
             continue
-        elif do_bool_fill and is_bool_dtype(df2[c]):
+        if do_bool_fill and is_bool_dtype(df2[c]):
             combined_df.loc[idx, c] = combined_df.loc[idx, c].fillna(fill_bool)
 
     return combined_df

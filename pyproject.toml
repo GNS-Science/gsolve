@@ -108,6 +108,7 @@ output = "coverage.xml"
 
 [tool.ruff]
 extend-include = ["*.ipynb"]
+line-length = 88
 
 [tool.ruff.lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
@@ -140,28 +141,47 @@ extend-select = [
     "T20",  # flake8-print
     "UP",   # pyupgrade
     "YTT",  # flake8-2020
+    # "E501",
+    "PLR0917",
 ]
 ignore = [
-    "ANN003",
-    "D105",
-    "DOC502",
-    "DOC501",
-    "D100",
-    "ISC001",  # Conflicts with formatter
+    "ANN003",  # alloww unannotated **kwargs
+    "D105",    # allow undoc magic methods
+    "DOC501",  # don't NEED to document exceptions
+    "D100",    # allow unocumented modules
     "PLR09",   # Too many <...>
     "PLR2004", # Magic value used in comparison
     "RET504",  # Allow variable assignment only for return
     "PT001",   # Conventions for parenthesis on pytest.fixture
     "D200",    # Allow single line docstrings in their own line
     "B028",    # Allow no stacklevel in warnings.warn
+    "UP040",   # Allow old style type alias - will fix later
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["ANN001", "ANN201", "ANN202", "D", "DOC", "PLR6301"]
-"examples/scripts/**" = ["D100"]
+"examples/scripts/**" = [
+    "D",    # Docs not required for scripts
+    "DOC",  # ditto
+    "T201", # Allow print() in scripts
+]
+"tests/**" = [
+    "ANN001",  # type annotations not required for func args
+    "ANN201",  # or public func return
+    "ANN202",  # or private func return
+    "D",       # Docstrings not required
+    "DOC",     # Docstrings not required
+    "PLR6301", # allow unused self in test classess
+    "PLC2701", # permit import of private functions etc - we are need to test em
+]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
+
+[tool.ruff.lint.pycodestyle]
+ignore-overlong-task-comments = true
+
+[tool.ruff.lint.flake8-annotations]
+allow-star-arg-any = true
 
 [tool.burocrata]
 notice = '''

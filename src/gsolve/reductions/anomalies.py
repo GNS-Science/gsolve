@@ -19,8 +19,10 @@
 
 """Functions and classes to compute standard gravity anomalies."""
 
-import numpy as _np
-import pandas as _pd
+from types import MappingProxyType
+
+import numpy as np
+import pandas as pd
 from numpy.typing import ArrayLike
 
 from gsolve.core.data import DataFieldSpecification, GSolveTable
@@ -49,12 +51,13 @@ __all__ = [
 def _args_contain_nulls(*args: ArrayLike) -> list[bool]:
     contains_nulls = []
     for a in args:
-        contains_nulls.append(bool(_pd.isna(_np.asanyarray(a)).any(axis=None)))
+        contains_nulls.append(bool(pd.isna(np.asanyarray(a)).any(axis=None)))
 
     return contains_nulls
 
 
 def compute_complete_bouguer_anomaly(
+    *,
     absolute_gravity: ArrayLike,
     normal_gravity: ArrayLike,
     free_air_correction: ArrayLike,
@@ -62,7 +65,7 @@ def compute_complete_bouguer_anomaly(
     terrain_correction: ArrayLike,
     atmospheric_correction: ArrayLike = 0.0,
     spherical_bouguer_cap_correction: ArrayLike = 0.0,
-) -> _np.ndarray:
+) -> np.ndarray:
     """
     Calculate the Complete Bouguer anomaly.
 
@@ -121,7 +124,7 @@ def compute_complete_bouguer_anomaly(
         msg = "inputs contain nan's"
         raise ValueError(msg)
 
-    return _np.atleast_1d(
+    return np.atleast_1d(
         to_1d_ndarray_or_float(absolute_gravity)
         - (
             to_1d_ndarray_or_float(normal_gravity)
@@ -135,13 +138,14 @@ def compute_complete_bouguer_anomaly(
 
 
 def compute_simple_bouguer_anomaly(
+    *,
     absolute_gravity: ArrayLike,
     normal_gravity: ArrayLike,
     free_air_correction: ArrayLike,
     bouguer_correction: ArrayLike,
     atmospheric_correction: ArrayLike = 0.0,
     spherical_bouguer_cap_correction: ArrayLike = 0.0,
-) -> _np.ndarray:
+) -> np.ndarray:
     """Calculate the Simple Bouguer anomaly from provided corrections.
 
     The Simple Bouguer anomaly differs from the Complete Bouguer anomaly
@@ -215,7 +219,7 @@ def compute_free_air_anomaly(
     absolute_gravity: ArrayLike,
     normal_gravity: ArrayLike,
     free_air_correction: ArrayLike,
-) -> _np.ndarray:
+) -> np.ndarray:
     """
     Calculate the free air anomaly.
 
@@ -247,7 +251,7 @@ def compute_free_air_anomaly(
     if any(_args_contain_nulls(absolute_gravity, normal_gravity, free_air_correction)):
         msg = "inputs contain nan's"
         raise ValueError(msg)
-    return _np.atleast_1d(
+    return np.atleast_1d(
         to_1d_ndarray_or_float(absolute_gravity)
         - (
             to_1d_ndarray_or_float(normal_gravity)
@@ -350,41 +354,49 @@ class GravityAnomalies(GSolveTable):
 
     """
 
-    _known_fields = {
-        "site_id": DataFieldSpecification("site_id", str, required=True),
-        "height_ellipsoidal": DataFieldSpecification(
-            "height_ellipsoidal", float, required=True, legacy_name="height"
-        ),
-        "normal_gravity_at_stn_elevation": DataFieldSpecification(
-            "normal_gravity_at_stn_elevation", float, required=False, default=_np.nan
-        ),
-        "normal_gravity_at_ellipsoid": DataFieldSpecification(
-            "normal_gravity_at_ellipsoid", float, required=False, default=_np.nan
-        ),
-        "free_air_correction": DataFieldSpecification(
-            "free_air_correction", float, required=False, default=_np.nan
-        ),
-        "bouguer_slab_correction": DataFieldSpecification(
-            "bouguer_slab_correction", float, required=False, default=_np.nan
-        ),
-        "bouguer_slab_curvature_corrected": DataFieldSpecification(
-            "bouguer_slab_curvature_corrected", float, required=False, default=_np.nan
-        ),
-        "atmospheric_correction": DataFieldSpecification(
-            "atmospheric_correction", float, required=False, default=0.0
-        ),
-        "spherical_bouguer_cap_correction": DataFieldSpecification(
-            "spherical_bouguer_cap_correction", float, required=False, default=_np.nan
-        ),
-        "tcorr:total": DataFieldSpecification(
-            "terrain_correction", float, required=False, default=0.0
-        ),
-    }
+    _known_fields: MappingProxyType[str, DataFieldSpecification] = MappingProxyType(
+        {
+            "site_id": DataFieldSpecification("site_id", str, required=True),
+            "height_ellipsoidal": DataFieldSpecification(
+                "height_ellipsoidal", float, required=True, legacy_name="height"
+            ),
+            "normal_gravity_at_stn_elevation": DataFieldSpecification(
+                "normal_gravity_at_stn_elevation", float, required=False, default=np.nan
+            ),
+            "normal_gravity_at_ellipsoid": DataFieldSpecification(
+                "normal_gravity_at_ellipsoid", float, required=False, default=np.nan
+            ),
+            "free_air_correction": DataFieldSpecification(
+                "free_air_correction", float, required=False, default=np.nan
+            ),
+            "bouguer_slab_correction": DataFieldSpecification(
+                "bouguer_slab_correction", float, required=False, default=np.nan
+            ),
+            "bouguer_slab_curvature_corrected": DataFieldSpecification(
+                "bouguer_slab_curvature_corrected",
+                float,
+                required=False,
+                default=np.nan,
+            ),
+            "atmospheric_correction": DataFieldSpecification(
+                "atmospheric_correction", float, required=False, default=0.0
+            ),
+            "spherical_bouguer_cap_correction": DataFieldSpecification(
+                "spherical_bouguer_cap_correction",
+                float,
+                required=False,
+                default=np.nan,
+            ),
+            "tcorr:total": DataFieldSpecification(
+                "terrain_correction", float, required=False, default=0.0
+            ),
+        }
+    )
 
     def __init__(
         self,
-        absolute_gravity: GSolveResults | _pd.DataFrame | _pd.Series,
-        sites: GravitySites | GravitySurvey | _pd.DataFrame,
+        absolute_gravity: GSolveResults | pd.DataFrame | pd.Series,
+        sites: GravitySites | GravitySurvey | pd.DataFrame,
         corrections_parameters: (
             GravityCorrectionParameters | GravityCorrectionProvider | GravityCorrections
         ),
@@ -392,35 +404,33 @@ class GravityAnomalies(GSolveTable):
     ) -> None:
         self.params: GravityCorrectionParameters
         self.tcorr_params: dict[str, TerrainCorrectionParameters] = {}
-        self.data: _pd.DataFrame
+        self.data: pd.DataFrame
 
         precomputed_corrections: GravityCorrections | None = None
 
-        abs_grav_df: _pd.DataFrame
+        abs_grav_df: pd.DataFrame
         if isinstance(absolute_gravity, GSolveResults):
             if not absolute_gravity.site_solution:
                 msg = "absolute_gravity has no site_solution data"
                 raise ValueError(msg)
             abs_grav_df = absolute_gravity.site_solution
-        elif isinstance(absolute_gravity, _pd.DataFrame):
+        elif isinstance(absolute_gravity, pd.DataFrame):
             abs_grav_df = absolute_gravity
-        elif isinstance(absolute_gravity, _pd.Series):
+        elif isinstance(absolute_gravity, pd.Series):
             abs_grav_df = absolute_gravity.to_frame(name="absolute_gravity")
         else:
             msg = f"invalid type for arg 'absolute_gravity': {type(absolute_gravity)}"
-            raise TypeError(
-                msg
-            )
+            raise TypeError(msg)
         if abs_grav_df is None:
             msg_0 = "absolute_gravity has no site_solution data"
             raise ValueError(msg_0)
 
-        sites_df: _pd.DataFrame
+        sites_df: pd.DataFrame
         if isinstance(sites, GravitySurvey):
             sites_df = sites.sites.data
         elif isinstance(sites, GravitySites):
             sites_df = sites.data
-        elif isinstance(sites, _pd.DataFrame):
+        elif isinstance(sites, pd.DataFrame):
             sites_df = sites
         else:
             msg = f"invalid type for arg 'sites': {type(sites)}"
@@ -449,21 +459,19 @@ class GravityAnomalies(GSolveTable):
                 "invalid type for corrections_provider argument: "
                 f"{type(corrections_parameters).__name__}"
             )
-            raise TypeError(
-                msg
-            )
+            raise TypeError(msg)
 
         # ensure we have entry in `sites` for all absolute gravity data sites
         if not abs_grav_df.index.isin(sites_df.index).all():
-            msg_0 = "absolute_gravity has sites with no corresponding site info in sites"
-            raise ValueError(
-                msg_0
+            msg_0 = (
+                "absolute_gravity has sites with no corresponding site info in sites"
             )
+            raise ValueError(msg_0)
 
         sites_df = sites_df.loc[abs_grav_df.index]
 
-        self.data = _pd.DataFrame(
-            index=_pd.Index(abs_grav_df.index.to_numpy(), name="site_id"),
+        self.data = pd.DataFrame(
+            index=pd.Index(abs_grav_df.index.to_numpy(), name="site_id"),
             data=abs_grav_df["absolute_gravity"],
         )
 
@@ -471,17 +479,17 @@ class GravityAnomalies(GSolveTable):
             corrs = corr_provider.compute(sites=sites_df)
         else:
             if not self.data.index.isin(precomputed_corrections.data.index).all():
-                msg_0 = "precomputed corrections do not provide corrections for all sites"
-                raise ValueError(
-                    msg_0
+                msg_0 = (
+                    "precomputed corrections do not provide corrections for all sites"
                 )
+                raise ValueError(msg_0)
             precomputed_corrections.data = precomputed_corrections.data.loc[
                 self.data.index
             ]
             corrs = precomputed_corrections
 
         if terrain_corrections is None:
-            tc = _pd.DataFrame(index=self.data.index, data={"tcorr:total": _np.nan})
+            tc = pd.DataFrame(index=self.data.index, data={"tcorr:total": np.nan})
             self.tcorr_params = {}
         else:
             if not isinstance(terrain_corrections, TerrainCorrectionData):
@@ -490,17 +498,15 @@ class GravityAnomalies(GSolveTable):
                     "required TerrainCorrectionData: "
                     f"got {type(terrain_corrections).__name__}"
                 )
-                raise TypeError(
-                    msg
-                )
+                raise TypeError(msg)
             tc = terrain_corrections.get_corrections(
-                self.data.index, if_missing="fill", fill_value=_np.nan
+                self.data.index, if_missing="fill", fill_value=np.nan
             )
             self.tcorr_params = {
                 k: v.copy() for k, v in terrain_corrections.params.items()
             }
 
-        self.data = _pd.merge(self.data, corrs.data, how="inner", on="site_id")
+        self.data = self.data.merge(corrs.data, how="inner", on="site_id")
         for c in tc.columns:
             self.set_column(c, tc[c])
 
@@ -536,7 +542,7 @@ class GravityAnomalies(GSolveTable):
         self.set_column(simple_anom_col, self.data["absolute_gravity"].sub(corrs_sum))
 
         if tcorr_total_col not in self.data.columns:
-            self.set_column(complete_anom_col, _np.nan)
+            self.set_column(complete_anom_col, np.nan)
         else:
             self.set_column(
                 complete_anom_col,

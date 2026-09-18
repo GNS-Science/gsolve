@@ -17,13 +17,12 @@
 # Copyright (c) 2025 Earth Sciences New Zealand.
 
 import abc
-import dataclasses
 import pathlib
 import warnings
 from collections.abc import Callable, Mapping, Sequence
 from copy import deepcopy
 from types import MappingProxyType
-from typing import Any, Literal, Self, Type, TypeAlias, Union
+from typing import Literal, Self, TypeAlias
 
 import numpy as np
 import numpy.typing as npt
@@ -232,6 +231,10 @@ class CG6Data(ScintrexData):
             "loop": str,
         }
     )
+    # instance attributes
+    data: pd.DataFrame
+    metadata: dict[str, _ScintrexMetadataDataTypes]
+    metadata_units: dict[str, str] | None = None
 
     def __init__(
         self,
@@ -252,8 +255,8 @@ class CG6Data(ScintrexData):
         metadata_units: dict[str, str] | None = None,
     ) -> None:
         """Set metadata and metadata_units attributes."""
-        self.metadata: dict[str, _ScintrexMetadataDataTypes] = {}
-        self.metadata_units: dict[str, str] = {}
+        self.metadata = {}
+        self.metadata_units = {}
 
         for k_orig, v_orig in metadata.items():
             k = _normalize_keyword(k_orig)
@@ -262,6 +265,7 @@ class CG6Data(ScintrexData):
                 raise ValueError(msg)
             v = _scintrex_header_type_conversion(v_orig, self._metadata_fields[k])
             self.metadata[k] = v if v is not None else ""
+
             if metadata_units is not None:
                 self.metadata_units[k] = metadata_units.get(k_orig, "")
             else:
@@ -278,28 +282,24 @@ class CG6Data(ScintrexData):
             # if this_dtype is float:
             try:
                 df[c] = df[c].astype(this_dtype)
-            except Exception:
-                if on_error in ["warn", "ignore"]:
-                    if on_error == "warn":
-                        warnings.warn(
-                            f"bad data encountered in column '{c}', setting to nan"
-                        )
-                    try:
-                        df[c] = (
-                            df[c]
-                            .replace(to_replace=["--", "****", "******"], value=np.nan)
-                            .astype(this_dtype)
-                        )
-                    except Exception as err:
-                        msg = f"unfixable error converting data in column '{c}' to {this_dtype}"
-                        raise TypeError(
-                            msg
-                        ) from err
-                else:
+            except Exception as err_read:
+                if on_error not in {"warn", "ignore"}:
                     msg = f"error converting data in column '{c}' to {this_dtype}"
-                    raise TypeError(
-                        msg
+                    raise TypeError(msg) from err_read
+
+                if on_error == "warn":
+                    warnings.warn(
+                        f"bad data encountered in column '{c}', setting to nan"
                     )
+                try:
+                    df[c] = (
+                        df[c]
+                        .replace(to_replace=["--", "****", "******"], value=np.nan)
+                        .astype(this_dtype)
+                    )
+                except Exception as err_cant_replace:
+                    msg = f"unfixable error converting data in column '{c}' to {this_dtype}"
+                    raise TypeError(msg) from err_cant_replace
 
         if (
             "datetime" not in df.columns
@@ -318,8 +318,6 @@ class CG6Data(ScintrexData):
 
         corr_flag_colname = "corrections[drift-temp-na-tide-tilt]"
         if corr_flag_colname in df.columns:
-            print("hello", corr_flag_colname)
-
             flag_labels = corr_flag_colname.rstrip("]").rpartition("[")[-1].split("-")
             flag_labels = [f"correction_{f}" for f in flag_labels]
 
@@ -375,10 +373,14 @@ class CG6Data(ScintrexData):
             msg = f"No data read from {cg6_file}"
             raise ValueError(msg)
 
+        if not file_data[0].startswith("/"):
+            msg = f"No header data found in {cg6_file}"
+            raise ValueError(msg)
+
         idx_column_names = 0
-        for idx_column_names, line in enumerate(file_data):
+        for i, line in enumerate(file_data):
             if not line.startswith(r"/"):
-                idx_column_names -= 1
+                idx_column_names = i - 1
                 break
 
         file_id_found = False
@@ -422,6 +424,7 @@ class CG6Data(ScintrexData):
 
     def set_loop(
         self,
+        *,
         field: str | None = None,
         array: npt.ArrayLike | None = None,
         datetimes: Mapping[str, str] | DatetimeArray | None = None,
@@ -470,9 +473,7 @@ class CG6Data(ScintrexData):
         args = (field, array, datetimes, time_gap)
         if all(a is None for a in args):
             msg = "At least one of 'field', 'array', 'datetimes' or 'time_gap' must be set."
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
         if sum(a is not None for a in args) > 1:
             msg = "Only one of 'field', 'array', or 'datetimes' can be set."
             raise ValueError(msg)
@@ -480,9 +481,7 @@ class CG6Data(ScintrexData):
         if field is not None:
             if field not in self.data.columns:
                 msg = f"arg {field=}, but not column name '{field}' found in obj.data."
-                raise KeyError(
-                    msg
-                )
+                raise KeyError(msg)
             self.data[output_column] = self.data[field].astype(str)
             return
 
@@ -490,9 +489,7 @@ class CG6Data(ScintrexData):
             array = np.atleast_1d(array)
             if len(array) != len(self.data):
                 msg_0 = "Length of 'array' must match the number of observations."
-                raise ValueError(
-                    msg_0
-                )
+                raise ValueError(msg_0)
             self.data[output_column] = array.astype(str).tolist()
             return
 
@@ -510,9 +507,7 @@ class CG6Data(ScintrexData):
                 )
             else:
                 msg_0 = "datetimes must be a dictionary, Series or array-like object."
-                raise TypeError(
-                    msg_0
-                )
+                raise TypeError(msg_0)
 
             if not dates.is_monotonic_increasing:
                 msg_0 = "datetimes must be sorted in increasing order."
@@ -522,12 +517,10 @@ class CG6Data(ScintrexData):
                     f"First datetime in 'datetimes' ({dates[0]}) must be <= "
                     f"earliest observation time ({self.data.datetime.min()})"
                 )
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
             if dates[-1] < self.data["datetime"].max():
                 tmax = self.data["datetime"].max() + pd.Timedelta(seconds=1)
-                dates = pd.DatetimeIndex(dates.to_list() + [tmax])
+                dates = pd.DatetimeIndex([*dates.to_list(), tmax])
 
             loop_intervals = generate_loop_intervals(dates)
             loop_namer = pd.Series(loop_ids, index=loop_intervals)
@@ -621,9 +614,7 @@ class CG6Data(ScintrexData):
             missing = [f for f in include_non_standard_fields if f not in df.columns]
             if missing:
                 msg = f"Requested non-standard fields not found in data: {missing}"
-                raise KeyError(
-                    msg
-                )
+                raise KeyError(msg)
 
             to_drop = set(df.columns) - set(
                 GravityObservations.known_fields() + include_non_standard_fields
@@ -674,15 +665,13 @@ class CG6Data(ScintrexData):
         GravitySites
 
         """
-        if coords_source not in ("user", "gps"):
+        if coords_source not in {"user", "gps"}:
             msg = f"coords_source must be 'user' or 'gps', not {coords_source}."
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         coord_cols = [f"{c}{coords_source}" for c in ("lat", "lon", "elev")]
         agg_method = "mean" if coords_source == "gps" else "first"
-        agg_dict = dict(zip(coord_cols, [agg_method] * 3))
+        agg_dict = dict(zip(coord_cols, [agg_method] * 3, strict=True))
         # height_ellipsoidal
         df = (
             self.data.copy()
@@ -691,7 +680,11 @@ class CG6Data(ScintrexData):
             .agg(agg_dict)
             .rename(
                 columns=dict(
-                    zip(coord_cols, ("latitude", "longitude", "height_ellipsoidal"))
+                    zip(
+                        coord_cols,
+                        ("latitude", "longitude", "height_ellipsoidal"),
+                        strict=True,
+                    )
                 )
             )
         )
@@ -731,26 +724,24 @@ class CG6Data(ScintrexData):
             "driftcorr", pd.Series(0.0, index=self.data.index)
         )
 
-        _drift_zero_time = to_naive_utc_datetime(drift_zero_time)
-        _drift_rate = float(drift_rate)
+        drift_zero_time = to_naive_utc_datetime(drift_zero_time)
+        drift_rate = float(drift_rate)
 
-        if not isinstance(_drift_zero_time, pd.Timestamp):
+        if not isinstance(drift_zero_time, pd.Timestamp):
             msg = "drift_zero_time could not be converted to a valid Timestamp."
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
-        _drift_corr = (
-            (self.data["datetime"] - _drift_zero_time)
+        drift_corr = (
+            (self.data["datetime"] - drift_zero_time)
             .dt.total_seconds()
             .div(pd.Timedelta(86400).total_seconds())
-            .mul(-1 * _drift_rate)
+            .mul(-1 * drift_rate)
         )
 
-        self.metadata["drift_rate"] = _drift_rate
-        self.metadata["drift_zero_time"] = _drift_zero_time
-        self.data["driftcorr"] = _drift_corr
-        self.data["corrgrav"] = self.data["corrgrav"] - current_drift_corr + _drift_corr
+        self.metadata["drift_rate"] = drift_rate
+        self.metadata["drift_zero_time"] = drift_zero_time
+        self.data["driftcorr"] = drift_corr
+        self.data["corrgrav"] = self.data["corrgrav"] - current_drift_corr + drift_corr
 
 
 def _slurp_scintrex_text_file(filepath: FilePath) -> list[str]:
@@ -789,7 +780,7 @@ def _scintrex_header_type_conversion(
     header_val: _ScintrexMetadataDataTypes,
     data_type: type | Callable | None = None,
 ) -> _ScintrexMetadataDataTypes | None:
-    if not header_val or data_type is None:
+    if header_val is None or data_type is None:
         return ""
 
     if data_type is pd.Timestamp:

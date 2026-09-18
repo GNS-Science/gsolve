@@ -3,4 +3,4 @@
 """Classes and functions for computing and applying corrections for the 'tidal'
 component of observed gravity values.
 
-"""
+"""  # ruff: ignore[missing-blank-line-after-summary]

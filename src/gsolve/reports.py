@@ -20,7 +20,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Self
 
-import pandas as _pd
+import pandas as pd
 
 from gsolve.core._typing import FilePath, IfSheetExists, IfWorkbookExists
 from gsolve.core.data import GSolveParameters
@@ -80,6 +80,13 @@ class GSolveReport:
 
     """
 
+    site_data: pd.DataFrame
+    obs_data: pd.DataFrame
+    loop_data: pd.DataFrame
+    terrain_correction_data: pd.DataFrame | None
+    params: dict[str, GSolveParameters]
+    _tcorr_added_from_anomalies: bool
+
     def __init__(
         self,
         observations: GravityObservations | GravitySurvey,
@@ -88,18 +95,13 @@ class GSolveReport:
         anomalies: GravityAnomalies | None = None,
         terrain_corrections: TerrainCorrectionData | None = None,
     ) -> None:
-        self.site_data: _pd.DataFrame
-        self.obs_data: _pd.DataFrame
-        self.loop_data: _pd.DataFrame
-        self.terrain_correction_data: _pd.DataFrame | None = None
-        self.params: dict[str, GSolveParameters] = {}
-        self._tcorr_added_from_anomalies: bool = False
+        self.terrain_correction_data = None
+        self.params = {}
+        self._tcorr_added_from_anomalies = False
 
         if sites is None or results is None or observations is None:
             msg = "'observations', 'sites' and 'results' arguments must be provided."
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         if isinstance(observations, GravitySurvey):
             observations = observations.observations
@@ -124,7 +126,7 @@ class GSolveReport:
 
     def copy(self) -> Self:
         """Return a deep copy."""  # ruff: ignore[docstring-missing-returns]
-        return self.__copy__()
+        return self.__copy__()  # ruff: ignore[unnecessary-dunder-call]
 
     def __copy__(self) -> Self:
         """Return a deep copy."""  # ruff: ignore[docstring-missing-returns]
@@ -170,19 +172,19 @@ class GSolveReport:
         anomalies : GravityAnomalies, optional
             Standard gravity anomalies and corrections for each site.
         """
-        merge_kwargs = dict(
-            left_index=True,
-            right_index=True,
-            how="left",
-            copy=True,
-            suffixes=[None, "_duplicate"],
-        )
+        merge_kwargs = {
+            "left_index": True,
+            "right_index": True,
+            "how": "left",
+            "copy": True,
+            "suffixes": [None, "_duplicate"],
+        }
 
         # start with site input data, will be left side of table
         df = site_input.data.copy()
 
         # merge in site solution
-        if isinstance(results.site_solution, _pd.DataFrame):
+        if isinstance(results.site_solution, pd.DataFrame):
             df = df.merge(results.site_solution, **merge_kwargs)  # type: ignore[invalid-argument-type]
 
         # merge anomalies if present
@@ -294,7 +296,7 @@ class GSolveReport:
                     if zone_id not in self.params or p != self.params[zone_id]:
                         raise ValueError(tcorr_errmsg)
                 # check no zones were added that are not in terrain corrections``
-                for k in self.params.keys():
+                for k in self.params:
                     if k.startswith("tcorr_") and k not in terrain_corrections.params:
                         raise ValueError(tcorr_errmsg)
 
@@ -311,7 +313,7 @@ class GSolveReport:
         filename: FilePath,
         if_workbook_exists: IfWorkbookExists = "error",
         if_sheet_exists: IfSheetExists = "error",
-        **kwargs: Any,  # ruff: ignore[any-type]
+        **kwargs: Any,
     ) -> None:
         """
         Save the report data to an Excel file.
@@ -343,9 +345,7 @@ class GSolveReport:
         if filename.exists():
             if if_workbook_exists == "error":
                 msg = f"file {filename} already exists, and arg {if_workbook_exists=}"
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
 
             if if_workbook_exists == "append" and if_sheet_exists == "error":
                 existing_worksheets = [
@@ -357,9 +357,7 @@ class GSolveReport:
                         "Use 'if_workbook_exists' and 'if_sheet_exists' parameters "
                         "to specify behaviour."
                     )
-                    raise ValueError(
-                        msg
-                    )
+                    raise ValueError(msg)
 
         # observations
         write_excel_worksheet(
@@ -417,14 +415,14 @@ class GSolveReport:
         # This is a kludge - should create method on parameter objects to
         # to normalise parameter outputs for writing to excel.
         def _format_value(x: Any) -> str | float | int | bool:  # ruff: ignore[any-type]
-            if isinstance(x, _pd.Timedelta):
+            if isinstance(x, pd.Timedelta):
                 return x.total_seconds()
             if isinstance(x, Path):
                 return str(x)
             return x
 
         for section, param_obj in self.params.items():
-            df: _pd.DataFrame = (
+            df: pd.DataFrame = (
                 param_obj.to_series(series_name="value", index_name="parameter")
                 .to_frame()
                 .reset_index()
@@ -437,7 +435,7 @@ class GSolveReport:
             _ = kwargs.pop("index")
 
         write_excel_worksheet(
-            df=_pd.concat(all_params),
+            df=pd.concat(all_params),
             filename=filename,
             sheet_name="metadata",
             if_workbook_exists="append",
