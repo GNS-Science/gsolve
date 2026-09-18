@@ -20,7 +20,7 @@
 
 import dataclasses
 import warnings
-from typing import Any, Literal, Protocol, Self, cast, overload, runtime_checkable
+from typing import Any, Literal, Protocol, Self, overload, runtime_checkable
 
 import numpy as np
 import pandas as pd
@@ -40,7 +40,7 @@ from gsolve.core._typing import (
 )
 from gsolve.core.utils import (
     GSolveDataWarning,
-    convert_single_timestamp_arg,
+    _convert_single_timestamp_arg,
     dms2rad,
     to_1d_ndarray,
     to_naive_utc_datetime,
@@ -66,6 +66,7 @@ class EarthTideCorrectionProvider(Protocol):
         elev: FloatArray,
         date_time: DatetimeArray,
         site_id: SiteIDArray | None = None,
+        **kwargs: Any,
     ) -> NDArray[np.float64]: ...
 
     def identifier(self, **kwargs) -> str: ...  # ruff: ignore[undocumented-public-method]
@@ -133,13 +134,15 @@ class LongmanConstants:
     c: float = 3.84399e10  # Mean distance between the centers earth-moon (cm)
     c1: float = 1.495983e13  # Mean distance between centers earth-sun (cm)
     e: float = 0.054900489  # Eccentricity of the moon's orbit
-    i: float = round(deg2rad(5.145, dtype=np.float64), ndigits=9)
-    # = 0.08979719  Inclination of moon's orbit to the ecliptic
+    i: float = round(
+        deg2rad(5.145), ndigits=9
+    )  # = 0.08979719  Inclination of moon's orbit to the ecliptic
     m: float = 0.074804  # Ratio of mean motion of the sun to that of the moon
     mu: float = 6.67428e-08  # Newton's gravitational constant, 6.670e-8 in orig.
     M: float = 7.3477e25  # Mass of the moon in grams
-    omega: float = round(deg2rad(23.452, dtype=np.float64), ndigits=9)
-    # = 0.409315 Incl. of Earth's equator to ecliptic
+    omega: float = round(
+        deg2rad(23.452), ndigits=9
+    )  # = 0.409315 Incl. of Earth's equator to ecliptic
     S: float = 1.98840987e33  # Mass of the sun in grams
     # https://aa.usno.navy.mil/downloads/publications/Constants_2021.pdf
 
@@ -392,8 +395,8 @@ class LongmanTidalCorrection(EarthTideCorrectionProvider):
         lon: FloatArray,
         elev: FloatArray,
         date_time: DatetimeArray,
-        site_id: SiteIDArray | None = None,
-        **kwargs,
+        site_id: SiteIDArray | None = None,  # ruff: ignore[unused-method-argument]
+        **kwargs,  # ruff: ignore[unused-method-argument]
     ) -> NDArray[np.float64]:
         """Compute tidal corrections at specified locations and times.
 
@@ -467,26 +470,21 @@ class LongmanTidalCorrection(EarthTideCorrectionProvider):
 
         try:
             step = pd.Timedelta(step)
-            if not isinstance(step, pd.Timedelta):
-                msg = "step must be a valid timedelta or timedelta string."
-                raise ValueError(msg)
         except ValueError as e:
             msg = f"error parsing step: {e}"
             raise ValueError(msg) from e
 
-        try:
-            t0 = to_naive_utc_datetime(starttime, allow_nat=False)
-            t1 = to_naive_utc_datetime(endtime, allow_nat=False)
-        except ValueError as e:
-            msg = f"error parsing starttime and endtime: {e}"
-            raise ValueError(msg) from None
+        if not isinstance(step, pd.Timedelta):
+            msg = "step must be a valid timedelta or timedelta string."
+            raise TypeError(msg)
 
-        if not isinstance(t0, pd.Timestamp):
-            msg = "startime not convertible to pandas.Timestamp."
-            raise ValueError(msg)
-        if not isinstance(t1, pd.Timestamp):
-            msg = "endtime not convertible to pandas.Timestamp."
-            raise ValueError(msg)
+        t0 = _convert_single_timestamp_arg(
+            starttime, allow_nat=False, err_prefix="error parsing starttime"
+        )
+        t1 = _convert_single_timestamp_arg(
+            endtime, allow_nat=False, err_prefix="error parsing endtime"
+        )
+
         if t0 >= t1:
             msg = "starttime is after or equal to endtime."
             raise ValueError(msg)
@@ -523,6 +521,8 @@ class LongmanTidalCorrection(EarthTideCorrectionProvider):
 
 @overload
 def _decimal_julian_century(dt: DatetimeScalar, **kwargs) -> np.float64: ...
+
+
 @overload
 def _decimal_julian_century(dt: DatetimeArray, **kwargs) -> NDArray[np.float64]: ...
 
@@ -763,7 +763,7 @@ class EternaTidalParameters:
             if gaps.any():
                 warnings.warn(
                     message=(
-                        f"some frequency {gaps.sum()} intervals separated by"
+                        "some frequency intervals separated by "
                         f"greater than {gap_threshold} "
                     ),
                     category=UserWarning,
@@ -1118,6 +1118,7 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
         DataFrame
             DataFrame containing the tidal corrections.
         """
+        unit = unit.lower()
         if unit not in {"mgal", "ugal", "nm/s^2"}:
             msg = f"invalid unit value '{unit}'"
             raise ValueError(msg)
@@ -1178,8 +1179,9 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
         normalised_cols = ["datetime", "signal", "tide", "pole_tide", "lod_tide"]
         tides_df = tides_df.rename(
             columns=dict(zip(tides_df.columns, normalised_cols, strict=True))
-        ).set_index("datetime")
-        tides_df = tides_df.set_index(to_naive_utc_datetime(tides_df.index))
+        )
+        tides_df["datetime"] = to_naive_utc_datetime(tides_df["datetime"])
+        tides_df = tides_df.set_index("datetime")
 
         # values in nm/s2, no conversion required
         if unit == "ugal":
@@ -1200,7 +1202,6 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
         site_id: SiteIDArray | None = None,
         unit: Literal["mgal", "ugal", "nm/s^2"] = "mgal",
         sample_interval: int = 60,
-        **kwargs,
     ) -> NDArray[np.float64]:
         """Compute tidal corrections at specified locations and times.
 
@@ -1231,13 +1232,13 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
         Corrections are computed by:
 
             1. for each unique site_id,
-            2. generate a time series of tidal corrections covering the observation
+            2. generate a time series of tidal corrections covering the obsevarvation
                times for that site,
             3. linearly interpolate tidal corrections at the exact observation times.
         """
-        lat = to_1d_ndarray(lat).astype(float)
-        lon = to_1d_ndarray(lon, expected_size=lat.size).astype(float)
-        elev = to_1d_ndarray(elev, expected_size=lat.size).astype(float)
+        lat = to_1d_ndarray(lat, dtype=float)
+        lon = to_1d_ndarray(lon, expected_size=lat.size, dtype=float)
+        elev = to_1d_ndarray(elev, expected_size=lat.size, dtype=float)
         date_time = pd.DatetimeIndex(
             to_naive_utc_datetime(date_time, allow_nat=False)
         ).round(freq="1s")
@@ -1245,9 +1246,6 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
         # datetime for converting date_time to seconds since epoch for interpolation.
         # - set to a day before the minimum ensure that all are captured
         t0 = date_time.floor(freq="s").min() - pd.Timedelta(days=1)
-
-        # date_time_seconds = (date_time - t0).total_seconds().to_numpy(float)
-        date_time_seconds = date_time.astype("int64")
 
         if site_id is None:
             msg = (
@@ -1257,9 +1255,9 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
             raise ValueError(msg)
         if isinstance(site_id, str):
             site_id = [site_id] * lat.size
-        site_id = to_1d_ndarray(site_id, expected_size=lat.size, dtype=str)
+        site_id = to_1d_ndarray(site_id, expected_size=lat.size, dtype=float)
 
-        corrs = np.zeros_like(lat, dtype=float)
+        corrs = np.full_like(lat, np.nan)
 
         for site in np.unique(site_id):
             site_mask = site_id == site
@@ -1271,7 +1269,7 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
             # TODO:  need to break this up into multiple calls to time_series if the
             # duration is too long for pygtide to handle
             # e.g. sites visited days/weeks/years apart -> lots of work for nowt
-            _duration_hrs = (
+            duration_hrs = (
                 int(np.ceil((date_time[site_mask].max() - t0).total_seconds() / 3600.0))
             ) + 1
 
@@ -1290,9 +1288,13 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
                 raise ValueError(msg)
             ts = ts.set_index(ts.index.round(freq="1s"))
 
-            if not (corrs[site_mask] == 0.0).all():
-                msg = "Unexpected non-zero values in corrs for site mask."
+            if not np.isnan(corrs[site_mask]).all():
+                msg = (
+                    f"Some values for site {site_id}: have already been set: "
+                    "this should not happen"
+                )
                 raise ValueError(msg)
+
             corrs[site_mask] = np.interp(
                 x=date_time[site_mask],
                 xp=ts.index,

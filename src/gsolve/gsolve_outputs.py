@@ -150,6 +150,12 @@ class GSolveResults:
             calculate_calibration_factor=calculate_calibration_factor,
         )
 
+        self.obs_solution: pd.DataFrame
+        self.site_solution: pd.DataFrame
+        self.loop_solution: pd.DataFrame
+        self.observations_input: pd.DataFrame
+        self.reference_sites_input: pd.DataFrame
+
     def set_inputs(self, obs: pd.DataFrame, ref_sites: pd.DataFrame) -> None:
         """Add input data used in the gsolve run."""
         self.observations_input = obs.copy()
@@ -173,9 +179,7 @@ class GSolveResults:
                     "calibration factor was not calculated but "
                     "calculate_calibration_factor is True."
                 )
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
             # store the calculated calibration factor in the params object
             self.params.calculated_calibration_factor = calibration_factor
 
@@ -278,8 +282,7 @@ class GSolveResults:
             loops = df_loops
             ax_title = f"{ax_title} each loop"
         elif is_list_like(loop):
-            loops: list[str] = [str(l) for l in loop]  # type: ignore[bad-assignment-type]
-            ax_title = f"{ax_title} loops {', '.join(loops)}"
+            loops: list[str] = [str(l) for l in loop]
         elif loop == "all":
             loops = ["all"]
             df["loop"] = "all"

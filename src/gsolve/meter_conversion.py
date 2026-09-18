@@ -19,10 +19,9 @@
 """Module for converting Lacoste-Romberg G and D meter readings to mGal."""
 
 import pathlib
-import warnings
 from collections.abc import Sequence
 from io import StringIO
-from typing import Any, Protocol, TextIO, runtime_checkable
+from typing import Protocol, Self, TextIO, runtime_checkable
 
 import numpy as np
 import numpy.typing as npt
@@ -113,28 +112,28 @@ class LaCosteRombergDialConverter:
         c_reading = np.atleast_1d(np.array(counter_reading, dtype=np.float64))
         value_mgal = np.atleast_1d(np.array(value_mgal, dtype=np.float64))
 
-        if _c_reading.ndim != 1 or _c_reading.size == 0:
+        if c_reading.ndim != 1 or c_reading.size == 0:
             msg = "counter_reading must be a non-empty 1-dimensional array."
             raise ValueError(msg)
-        if _np.isnan(_c_reading).any():
+        if np.isnan(c_reading).any():
             msg = "counter_reading contains NaN."
             raise ValueError(msg)
-        if _value_mgal.ndim != 1 or _value_mgal.size == 0:
+        if value_mgal.ndim != 1 or value_mgal.size == 0:
             msg = "value_mgal must be a non-empty 1-dimensional array."
             raise ValueError(msg)
-        if _np.isnan(_value_mgal).any():
+        if np.isnan(value_mgal).any():
             msg = "value_mgal contains NaN."
             raise ValueError(msg)
 
-        if _c_reading.size != _value_mgal.size:
+        if c_reading.size != value_mgal.size:
             msg = "counter_reading and value_mgal arrays must be the same shape."
             raise ValueError(msg)
 
         nrows: int = c_reading.size
 
         if interval_factor is not None:
-            _interval_factor = _np.atleast_1d(interval_factor).astype(float)
-            if _interval_factor.ndim != 1 or _interval_factor.size == 0:
+            interval_factor = np.atleast_1d(interval_factor).astype(float)
+            if interval_factor.ndim != 1 or interval_factor.size == 0:
                 msg = "if specified, interval_factor must be a non-empty 1-dimensional array."
                 raise ValueError(msg)
 
@@ -144,11 +143,11 @@ class LaCosteRombergDialConverter:
                 interval_factor = np.append(interval_factor, np.nan)
             else:
                 msg = (
-                    f"invalid interval_factor: array size {_interval_factor.size} is not "
+                    f"invalid interval_factor: array size {interval_factor.size} is not "
                     f"the same as or 1 less than counter_reading ({nrows})."
                 )
                 raise ValueError(msg)
-            if _np.isnan(_interval_factor[:-1]).any():
+            if np.isnan(interval_factor[:-1]).any():
                 msg_0 = "interval_factor is specified, but contains NaN values."
                 raise ValueError(msg_0)
             recalc_value_mgal = True
@@ -237,7 +236,7 @@ class LaCosteRombergDialConverter:
                 st = to_naive_utc_datetime(starttime, allow_nat=False)
             except ValueError as e:
                 msg = f"Error setting starttime: {e}"
-                raise ValueError(msg)
+                raise ValueError(msg) from None
         else:
             msg = f"invalid starttime type {type(starttime)}. Should be datetimelike or None."
             raise TypeError(msg)
@@ -249,7 +248,7 @@ class LaCosteRombergDialConverter:
                 et = to_naive_utc_datetime(endtime, allow_nat=False)
             except ValueError as e:
                 msg = f"Error setting endtime: {e}"
-                raise ValueError(msg)
+                raise ValueError(msg) from None
         else:
             msg = (
                 f"invalid endtime type {type(endtime)}. Should be datetimelike or None."
@@ -264,19 +263,19 @@ class LaCosteRombergDialConverter:
         self._endtime = et
 
     @property
-    def starttime(self) -> _pd.Timestamp | None:
+    def starttime(self) -> pd.Timestamp | None:
         """The date from which correction parameters are valid."""
         st = getattr(self, "_starttime", None)
-        if st is not None and not isinstance(st, _pd.Timestamp):
+        if st is not None and not isinstance(st, pd.Timestamp):
             msg = f"invalid starttime type {type(st)}. Should be pandas.Timestamp or None."
             raise TypeError(msg)
         return st
 
     @property
-    def endtime(self) -> _pd.Timestamp | None:
+    def endtime(self) -> pd.Timestamp | None:
         """The date up to which correction parameters are valid."""
         r = getattr(self, "_endtime", None)
-        if r is not None and not isinstance(r, _pd.Timestamp):
+        if r is not None and not isinstance(r, pd.Timestamp):
             msg = f"invalid endtime type {type(r)}. Should be pandas.Timestamp or None."
             raise TypeError(msg)
         return r
@@ -331,16 +330,16 @@ class LaCosteRombergDialConverter:
         if meter_id is not None:
             m_meter_id = np.atleast_1d(meter_id).astype(str) == self.meter_id
 
-            if _m_meter_id.size == 0:
+            if m_meter_id.size == 0:
                 msg_0 = "invalid meter_id arg: empty array."
                 raise ValueError(msg_0)
-            if _m_meter_id.ndim != 1:
+            if m_meter_id.ndim != 1:
                 msg_0 = "invalid meter_id arg: must be a scalar or 1-dimensional array."
                 raise ValueError(msg_0)
 
-            if _m_meter_id.size == 1 and _readings.size > 1:
-                _m_meter_id = _np.full(_readings.shape, _m_meter_id[0])
-            elif _m_meter_id.size != _readings.size:
+            if m_meter_id.size == 1 and readings.size > 1:
+                m_meter_id = np.full(readings.shape, m_meter_id[0])
+            elif m_meter_id.size != readings.size:
                 msg_0 = "invalid meter_id arg: length must match readings array."
                 raise ValueError(msg_0)
         else:
@@ -358,10 +357,10 @@ class LaCosteRombergDialConverter:
                 )
                 raise TypeError(msg_0)
 
-            if _date_time.size != _readings.size:
+            if date_time.size != readings.size:
                 msg_0 = "invalid date_time array: date_time values must be the same length as readings."
                 raise ValueError(msg_0)
-            if any(_date_time.isna()):
+            if any(date_time.isna()):
                 msg_0 = "date_time contains NaT values."
                 raise ValueError(msg_0)
 

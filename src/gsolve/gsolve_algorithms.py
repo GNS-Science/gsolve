@@ -294,9 +294,7 @@ def g_solver_lstsq(  # ruff: ignore[too-many-positional-arguments]
             f"invalid percentile value {percentile_clipping}, "
             "must be between 0 and 100 inclusive"
         )
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
     n_obs = np.size(obs_g)
     n_ties = np.size(ties_site_id)
@@ -349,9 +347,7 @@ def g_solver_lstsq(  # ruff: ignore[too-many-positional-arguments]
                     "obs_g_not_detided must be provided when "
                     "calculate_calibration_factor is True"
                 )
-                raise ValueError(
-                    msg_0
-                )
+                raise ValueError(msg_0)
             A[i, n_sites + (2 * n_loops)] = float(obs_g_not_detided[i])
 
     # Ties to absolute sites

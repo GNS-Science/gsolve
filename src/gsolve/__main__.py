@@ -182,7 +182,7 @@ def main() -> None:  # ruff: ignore[undocumented-public-function]
     try:
         args = parse_args()
         processing(args)
-    except Exception as e:  # ruff: ignore[blind-except]
+    except Exception as e:
         sys.stderr.write(e + "\n")
 
 

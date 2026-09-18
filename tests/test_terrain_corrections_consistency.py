@@ -22,6 +22,8 @@ from gsolve.reductions.terrain_corrections import (
     TerrainCorrectionData,
     TerrainCorrectionParameters,
     TerrainCorrector,
+    _is_dataarray,
+    calculate_terrain_correction,
 )
 from gsolve.sites import GravitySites
 
@@ -66,7 +68,7 @@ def sites() -> GravitySites:
     return sites
 
 
-def pre_calculated_tcorr_data() -> TerrainCorrectionData:
+def pre_calced_tcorr_data() -> TerrainCorrectionData:
     # Output from these test methods as at 09-04-2026
     # - These values are not certain to be correct
     # - Catch changes that alter the results
@@ -138,12 +140,12 @@ def test_terrain_correction_consistency():
     assert results.data.loc[bad_points, tcorr_cols].isna().all(axis=None)
 
     # test that pre-calculated results are close to calculated results
-    pre_calculated_tcorr_data_ = pre_calculated_tcorr_data()
+    pre_calced_tcorr_data_ = pre_calced_tcorr_data()
     for col in tcorr_cols:
-        assert col in pre_calculated_tcorr_data_.data.columns
+        assert col in pre_calced_tcorr_data_.data.columns
         assert np.allclose(
             results.data[col].to_numpy(),
-            pre_calculated_tcorr_data_.data[col].to_numpy(),
+            pre_calced_tcorr_data_.data[col].to_numpy(),
             atol=1e-6,
             equal_nan=True,
         )
