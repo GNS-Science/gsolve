@@ -205,8 +205,8 @@ def compute_simple_bouguer_anomaly(
         raise ValueError(msg)
 
     return compute_complete_bouguer_anomaly(
-        absolute_gravity,
-        normal_gravity,
+        absolute_gravity=absolute_gravity,
+        normal_gravity=normal_gravity,
         free_air_correction=free_air_correction,
         bouguer_correction=bouguer_correction,
         spherical_bouguer_cap_correction=spherical_bouguer_cap_correction,

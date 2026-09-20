@@ -31,6 +31,7 @@ from gsolve.scintrex import (
     CG6Data,
     ScintrexData,
     _normalize_keyword,
+    _slurp_scintrex_text_file,
     _split_header_key_val_unit,
 )
 
@@ -86,7 +87,7 @@ def sample_cg6_file(sample_cg6_metadata, sample_cg6_data):
 
         # Write data
         for _, row in sample_cg6_data.iterrows():
-            f.write(" ".join(str(x) for x in row.values) + "\n")
+            f.write(" ".join(str(x) for x in row.to_numpy()) + "\n")
 
         f.flush()
         return f.name
@@ -330,7 +331,6 @@ class TestHelperFunctions:
         assert u == ""
 
     def test_slurp_scintrex_text_file(self, sample_cg6_file):
-        from gsolve.scintrex import _slurp_scintrex_text_file
 
         lines = _slurp_scintrex_text_file(sample_cg6_file)
         assert isinstance(lines, list)

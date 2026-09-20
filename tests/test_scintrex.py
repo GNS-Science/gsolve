@@ -273,7 +273,7 @@ def test_cg6data_to_gsolve_observations(sample_data: CG6Data) -> None:
     bad_sample_data.data = bad_sample_data.data.drop(columns="loop")
 
     with pytest.raises(ValueError):
-        sample_data.to_gsolve_observations()
+        bad_sample_data.to_gsolve_observations()
 
 
 def test_cg6data_to_gsolve_sites(sample_data: CG6Data) -> None:

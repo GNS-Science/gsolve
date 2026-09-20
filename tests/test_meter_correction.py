@@ -63,17 +63,17 @@ def test_lacoste_romberg_dial_converter_init(g936_df: pd.DataFrame) -> None:
     # Case: all inputs equal length
     kwargs["interval_factor"] = df["interval_factor"].iloc[:-1]
 
-    converter = LaCosteRombergDialConverter("G936", **kwargs)
+    converter = LaCosteRombergDialConverter(meter_id="G936", **kwargs)
     assert pd.isna(converter.table.iloc[-1]["interval_factor"])
 
     # Case: ifactor len is 1 less than counter_reading
     kwargs["interval_factor"] = df["interval_factor"].iloc[:-1]
-    converter = LaCosteRombergDialConverter("G936", **kwargs)
+    converter = LaCosteRombergDialConverter(meter_id="G936", **kwargs)
     assert pd.isna(converter.table.iloc[-1]["interval_factor"])
     _ = kwargs.pop("interval_factor")
 
     # Case: no ifactor, so 'value_mgal_from_ifactor' should be all NaN
-    converter = LaCosteRombergDialConverter("G936", **kwargs)
+    converter = LaCosteRombergDialConverter(meter_id="G936", **kwargs)
     assert converter.table["value_mgal_from_ifactor"].isna().all()
 
 
@@ -87,15 +87,15 @@ def test_lacoste_romberg_dial_converter_init_bad(g936_df: pd.DataFrame) -> None:
     # Case: bad dates
     with pytest.raises(ValueError, match=r"invalid time combination"):
         _ = LaCosteRombergDialConverter(
-            "G936", **kwargs, starttime="2021-01-01", endtime="2020-01-01"
+            meter_id="G936", **kwargs, starttime="2021-01-01", endtime="2020-01-01"
         )
-    with pytest.raises(Exception):
-        _ = LaCosteRombergDialConverter("G936", **kwargs, starttime="xxxxx")
+    with pytest.raises(ValueError):
+        _ = LaCosteRombergDialConverter(meter_id="G936", **kwargs, starttime="xxxxx")
 
     # Case: inconsistent data lengths
     with pytest.raises(ValueError, match="arrays must be the same shape"):
         _ = LaCosteRombergDialConverter(
-            "G936",
+            meter_id="G936",
             counter_reading=df["counter_reading"],
             value_mgal=df["value_mgal"].iloc[-1],
             interval_factor=df["interval_factor"],
@@ -104,17 +104,17 @@ def test_lacoste_romberg_dial_converter_init_bad(g936_df: pd.DataFrame) -> None:
     # bad interval factor
     with pytest.raises(ValueError, match="invalid interval_factor: array size"):
         _ = LaCosteRombergDialConverter(
-            "G936",
+            meter_id="G936",
             counter_reading=df["counter_reading"],
             value_mgal=df["value_mgal"],
             interval_factor=df["interval_factor"].iloc[:-2],
         )
     # nan in interval factor
-    with pytest.raises(ValueError, match="contains NaN values."):
-        ifactor = df["interval_factor"].copy()
-        ifactor.iloc[2] = np.nan
+    ifactor = df["interval_factor"].copy()
+    ifactor.iloc[2] = np.nan
+    with pytest.raises(ValueError, match="contains NaN values"):
         _ = LaCosteRombergDialConverter(
-            "G936",
+            meter_id="G936",
             counter_reading=df["counter_reading"],
             value_mgal=df["value_mgal"],
             interval_factor=ifactor,
@@ -122,10 +122,11 @@ def test_lacoste_romberg_dial_converter_init_bad(g936_df: pd.DataFrame) -> None:
     # ifactor empty
     for ifac in [[], np.ones([11, 2])]:
         with pytest.raises(
-            ValueError, match="interval_factor must be a non-empty 1-dimensional array."
+            ValueError,
+            match="interval_factor must be a non-empty 1-dimensional array",
         ):
             _ = LaCosteRombergDialConverter(
-                "G936",
+                meter_id="G936",
                 counter_reading=df["counter_reading"],
                 value_mgal=df["value_mgal"],
                 interval_factor=ifac,
@@ -134,30 +135,34 @@ def test_lacoste_romberg_dial_converter_init_bad(g936_df: pd.DataFrame) -> None:
     # Case: counter_reading not in ascending order
     with pytest.raises(
         ValueError,
-        match="counter_reading values must be unique and in ascending order.",
+        match="counter_reading values must be unique and in ascending order",
     ):
         _ = LaCosteRombergDialConverter(
-            "G936",
+            meter_id="G936",
             counter_reading=df["counter_reading"].iloc[::-1],
             value_mgal=df["value_mgal"],
         )
+    with pytest.raises(
+        ValueError,
+        match="counter_reading values must be unique and in ascending order",
+    ):
         _ = LaCosteRombergDialConverter(
-            "G936", counter_reading=[1, 2, 2], value_mgal=[0, 100, 200]
+            meter_id="G936", counter_reading=[1, 2, 2], value_mgal=[0, 100, 200]
         )
 
     # Case: nan values in counter readings
-    with pytest.raises(ValueError, match="counter_reading contains NaN."):
+    with pytest.raises(ValueError, match="counter_reading contains NaN"):
         _ = LaCosteRombergDialConverter(
-            "G936", counter_reading=[0, 100, np.nan], value_mgal=[1, 2, 3]
+            meter_id="G936", counter_reading=[0, 100, np.nan], value_mgal=[1, 2, 3]
         )
     # Case: nan values in value_mgal
-    with pytest.raises(ValueError, match="value_mgal contains NaN."):
+    with pytest.raises(ValueError, match="value_mgal contains NaN"):
         _ = LaCosteRombergDialConverter(
-            "G936", counter_reading=[0, 100, 200], value_mgal=[1, 2, np.nan]
+            meter_id="G936", counter_reading=[0, 100, 200], value_mgal=[1, 2, np.nan]
         )
 
 
-def test_lacoste_romberg_dial_converter_from_csv(tmp_path, g936_table: list) -> None:  # noqa: ANN001
+def test_lacoste_romberg_dial_converter_from_csv(tmp_path, g936_table: list) -> None:
     csv_file = tmp_path / "G936.csv"
 
     def _write_csv_body(
@@ -166,11 +171,10 @@ def test_lacoste_romberg_dial_converter_from_csv(tmp_path, g936_table: list) -> 
         table = table if table is not None else g936_table
         if column_labels:
             fh.write("counter_reading,value_mgal,interval_factor\n")
-        for line in g936_table:
-            fh.write(",".join(line) + "\n")
+        fh.writelines(",".join(line) + "\n" for line in g936_table)
 
     # Case: std read _csv
-    with open(csv_file, "w") as f:
+    with csv_file.open(mode="w") as f:
         f.write("# meter_id, G936\n")
         _write_csv_body(f)
 
@@ -178,14 +182,14 @@ def test_lacoste_romberg_dial_converter_from_csv(tmp_path, g936_table: list) -> 
     assert pd.isna(converter.table.iloc[-1]["interval_factor"])
 
     # Case: bad header
-    with open(csv_file, "w") as f:
+    with csv_file.open("w") as f:
         f.write("# bad_header, G936\n")
         _write_csv_body(f)
     with pytest.raises(ValueError, match=r"invalid header key name"):
         _ = LaCosteRombergDialConverter.from_csv(csv_file)
 
     # Case: extra header values
-    with open(csv_file, "w") as f:
+    with csv_file.open("w") as f:
         f.write("# meter_id, G936, extra\n")
         _write_csv_body(f)
     with pytest.raises(ValueError, match=r"has multiple corresponding values"):
@@ -283,7 +287,8 @@ def test_lacoste_romberg_dial_converter_correct_meter_id(
     # case: meter_id not in table
     meter_ids = ["G936", "G937"]
     v = converter.convert_readings(array_vals, meter_id=meter_ids)
-    assert v[0] == array_results[0] and pd.isna(v[1])
+    assert v[0] == array_results[0]
+    assert pd.isna(v[1])
 
     # case: meter_id, single value
     nptest.assert_almost_equal(
