@@ -99,7 +99,7 @@ class TestObservationsInit:
 
         # obs_id not specified
         obj_unspec = GravityObservations(**data)
-        assert obj_unspec.data.index.dtype.name in ("object", "str")
+        assert obj_unspec.data.index.dtype.name in {"object", "str"}
 
         prefixes = obj_unspec.data.index.str.partition(".").get_level_values(0)
         assert_index_equal(
@@ -253,18 +253,18 @@ class TestObservationTimedelta:
         # test that timedelta_unit is set correctly
         assert obj1.timedelta_unit() == pd.Timedelta("1h")
         obj1.set_timedelta_unit(pd.Timedelta("1m"))
-        assert obj1.timedelta_unit().total_seconds() == 60.0
+        assert np.isclose(obj1.timedelta_unit().total_seconds(), 60.0)
 
         # test that tdelta columns are set correctly
         obj3.set_tdelta()
         assert "survey_tdelta" in obj3.data.columns
         assert "loop_tdelta" in obj3.data.columns
-        assert obj3.data["survey_tdelta"].iloc[0] == 0.0
+        assert np.isclose(obj3.data["survey_tdelta"].iloc[0], 0.0)
         assert obj3.data["survey_tdelta"].iloc[1:].ne(0.0).all()
 
         for loop in obj3.loop_ids:
             m = obj3.data["loop"].eq(loop).to_list()
-            assert obj3.data[m]["loop_tdelta"].min() == 0.0
+            assert obj3.data[m]["loop_tdelta"].min() == 0.0  # ruff: ignore[float-equality-comparison]
 
     def test_gravity_observations_timedelta_unit(
         self,

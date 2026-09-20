@@ -156,6 +156,7 @@ ignore = [
     "D200",    # Allow single line docstrings in their own line
     "B028",    # Allow no stacklevel in warnings.warn
     "UP040",   # Allow old style type alias - will fix later
+    "PLR6104", # Don't prefer augmented assignment - breaks pandas
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -172,6 +173,8 @@ ignore = [
     "DOC",     # Docstrings not required
     "PLR6301", # allow unused self in test classess
     "PLC2701", # permit import of private functions etc - we are need to test em
+    "PT011",   # allow tests to catch exceptions without a 'match' arg
+    "PT030",   # allow tests to catch warnings without a 'match' arg
 ]
 
 [tool.ruff.lint.pydocstyle]

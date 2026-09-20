@@ -19,13 +19,12 @@
 
 from __future__ import annotations
 
-import pytest
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pytest
 
 from gsolve import GravityObservations
 from gsolve.observations import GravityObservationsParameters
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -68,13 +67,13 @@ class TestGravityObservationsParameters:
         params = GravityObservationsParameters(
             timedelta_unit="1h", fixed_time_datum=None
         )
-        assert pd.isnull(params.fixed_time_datum)
+        assert pd.isna(params.fixed_time_datum)
 
     def test_fixed_time_datum_set(self):
         ts = pd.Timestamp("2024-06-01 00:00:00")
         params = GravityObservationsParameters(timedelta_unit="1h", fixed_time_datum=ts)
         assert params.fixed_time_datum is not None
-        assert not pd.isnull(params.fixed_time_datum)
+        assert not pd.isna(params.fixed_time_datum)
 
 
 # ---------------------------------------------------------------------------
@@ -152,7 +151,7 @@ class TestSetObsId:
     def test_invalid_idx_type_raises(self):
         obs = _make_obs()
         with pytest.raises(TypeError):
-            obs.set_obs_id(123)  # type: ignore
+            obs.set_obs_id(123)
 
 
 # ---------------------------------------------------------------------------

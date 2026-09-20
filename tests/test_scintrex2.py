@@ -19,6 +19,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 from pandas.testing import (
@@ -75,7 +76,9 @@ def sample_cg6_data():
 @pytest.fixture
 def sample_cg6_file(sample_cg6_metadata, sample_cg6_data):
     # Create a temporary file with CG6 format
-    with tempfile.NamedTemporaryFile(mode="w+", suffix=".dat", delete=False) as f:
+    with tempfile.NamedTemporaryFile(
+        mode="w+", suffix=".dat", delete=False, encoding="utf-8"
+    ) as f:
         # Write metadata
         f.write("/cg-6_calibration\n")
         for key, value in sample_cg6_metadata.items():
@@ -99,7 +102,7 @@ class TestScintrexData:
             ScintrexData(pd.DataFrame(), {})
 
     @pytest.mark.skip
-    def test_meter_id_property(self, sample_cg6_metadata, sample_cg6_data):
+    def test_meter_id_property(self, sample_cg6_data):
         class TestScintrex(ScintrexData):
             def to_gsolve_observations(self):
                 pass
@@ -115,16 +118,19 @@ class TestScintrexData:
                 self.data = data
 
         # Test with full serial number
-        obj = TestScintrex(sample_cg6_data, {"instrument_serial_number": "CG6-1234"})
+        obj = TestScintrex(
+            sample_cg6_data, metadata={"instrument_serial_number": "CG6-1234"}
+        )
         assert obj.meter_id == "1234"
 
         # Test with short serial number
-        obj = TestScintrex(sample_cg6_data, {"instrument_serial_number": "12"})
+        obj = TestScintrex(sample_cg6_data, metadata={"instrument_serial_number": "12"})
         assert obj.meter_id == "12"
 
         # Test with no serial number
-        obj = TestScintrex(sample_cg6_data, {})
-        assert obj.meter_id == ""
+        obj = TestScintrex(sample_cg6_data, metadata={})
+        assert isinstance(obj.meter_id, str)
+        assert not obj.meter_id
 
     @pytest.mark.skip
     def test_stations_property(self, sample_cg6_metadata, sample_cg6_data):
@@ -284,7 +290,7 @@ class TestCG6Data:
         )
 
         # Check metadata was updated
-        assert obj.metadata["drift_rate"] == 1.0
+        assert np.isclose(obj.metadata["drift_rate"], 1.0)
         assert isinstance(obj.metadata["drift_zero_time"], pd.Timestamp)
 
         # Check drift correction was applied
@@ -322,13 +328,13 @@ class TestHelperFunctions:
         k, v, u = _split_header_key_val_unit("/another_test: value")
         assert k == "another_test"
         assert v == "value"
-        assert u == ""
+        assert u == ""  # ruff: ignore[compare-to-empty-string]
 
         # Test with no value
         k, v, u = _split_header_key_val_unit("/just_a_keyword")
         assert k == "just_a_keyword"
-        assert v == ""
-        assert u == ""
+        assert v == ""  # ruff: ignore[compare-to-empty-string]
+        assert u == ""  # ruff: ignore[compare-to-empty-string]
 
     def test_slurp_scintrex_text_file(self, sample_cg6_file):
 

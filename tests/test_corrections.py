@@ -19,11 +19,10 @@
 
 from __future__ import annotations
 
+import boule
 import numpy as np
 import pandas as pd
 import pytest
-
-import boule
 
 from gsolve.reductions.corrections import (
     GravityCorrectionParameters,
@@ -38,7 +37,6 @@ from gsolve.reductions.corrections import (
     spherical_bouguer_cap_correction,
 )
 from gsolve.sites import GravitySites
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -322,8 +320,8 @@ class TestGravityCorrectionParameters:
     def test_defaults(self):
         p = GravityCorrectionParameters()
         assert p.ellipsoid == "GRS80"
-        assert p.density_crust == 2670.0
-        assert p.density_water == 1030.0
+        assert p.density_crust == 2670.0  # ruff: ignore[float-equality-comparison]
+        assert p.density_water == 1030.0  # ruff: ignore[float-equality-comparison]
         assert p.use_curvature_corrected is True
         assert p.use_atmospheric_correction is True
 
@@ -394,7 +392,7 @@ class TestGravityCorrectionProvider:
     def test_init_with_params(self):
         params = GravityCorrectionParameters(density_crust=2800.0)
         p = GravityCorrectionProvider(params=params)
-        assert p.params.density_crust == 2800.0
+        assert np.isclose(p.params.density_crust, 2800.0)
 
     def test_init_bad_params_raises(self):
         with pytest.raises(TypeError, match="params must be None"):

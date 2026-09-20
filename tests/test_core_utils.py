@@ -25,7 +25,7 @@ from pandas.testing import (
     assert_series_equal,
 )
 
-import gsolve.core.utils as utils
+from gsolve.core import utils
 from gsolve.core.utils import (
     DEFAULT_TIMESTAMP_COLUMNS,
     check_duplicate_index,
@@ -65,7 +65,8 @@ def ymd_dataframe(ymd_series: pd.Series) -> pd.DataFrame:
 
 
 def test_to_naive_utc_datetime(
-    ymd_datetime_index: pd.DatetimeIndex, ymd_series: pd.Series
+    ymd_datetime_index: pd.DatetimeIndex,
+    ymd_series: pd.Series,  # ruff: ignore[unused-function-argument]
 ) -> None:
     # Test case 1: Convert a single timestamp to naive UTC timestamp
     t1 = datetime(2022, 1, 1, 12, 0, 0)
@@ -144,11 +145,13 @@ def test_to_1d_ndarray() -> None:
 
 
 def test_to_1d_ndarray_or_float():
-    v1 = utils.to_1d_ndarray_or_float(1)
-    assert isinstance(v1, np.float64) and v1 == 1.0
+    v1 = utils.to_1d_ndarray_or_float(1.0)
+    assert isinstance(v1, np.float64)
+    assert np.isclose(v1, 1.0)
 
     v2 = utils.to_1d_ndarray_or_float([0, 1, 2])
-    assert isinstance(v2, np.ndarray) and v2.dtype == np.float64
+    assert isinstance(v2, np.ndarray)
+    assert v2.dtype == np.float64
     assert np.array_equal(v2, np.array([0.0, 1.0, 2.0]))
 
     with pytest.raises(ValueError):
@@ -205,10 +208,8 @@ def test_normalize_columns_names() -> None:
         data=1, columns=cols_bad, index=pd.RangeIndex(4, name=idx_name_bad)
     )
     df2 = normalize_field_names(df1)
-    assert (
-        df2.columns.tolist() == cols_normalised
-        and df2.index.name == idx_name_normalised
-    )
+    assert df2.columns.tolist() == cols_normalised
+    assert df2.index.name == idx_name_normalised
 
     ds1 = pd.Series(data=1, index=pd.Index(cols_bad, name=idx_name_bad))
     assert normalize_field_names(ds1).index.name == idx_name_normalised
@@ -236,7 +237,9 @@ def test_columns_to_timestamp(
 
     # Test ensure ts_columns arg parsed correctly
     new_col_names = ["y", "m", "d", "H", "M", "S"]
-    df2 = ymd_dataframe.rename(columns=dict(zip(std_col_names, new_col_names)))
+    df2 = ymd_dataframe.rename(
+        columns=dict(zip(std_col_names, new_col_names, strict=True))
+    )
     assert_series_equal(
         columns_to_timestamp(df2, ts_columns=new_col_names),
         ymd_series,
@@ -248,8 +251,8 @@ def test_columns_to_timestamp(
         _ = columns_to_timestamp(ymd_dataframe.drop(columns="hour"))
 
     # Test insufficient columns
+    df3 = ymd_dataframe.drop(columns=ymd_dataframe.columns[2:])
     with pytest.raises(ValueError, match=r"must be >= 3"):
-        df3 = ymd_dataframe.drop(columns=ymd_dataframe.columns[2:])
         _ = columns_to_timestamp(df3)
 
     # Test missing columns
@@ -298,7 +301,7 @@ def test_merge_datetime_columns(
     # Test case 4: Merge datetime columns and drop original columns
     df4 = merge_datetime_columns(ymd_dataframe, drop=True)
     assert df4.columns.tolist() == ["datetime"]
-    assert all([c not in df4.columns for c in ymd_dataframe.columns])
+    assert all(c not in df4.columns for c in ymd_dataframe.columns)
 
     with pytest.raises(ValueError, match=r"already exists in dataframe"):
         _ = merge_datetime_columns(ymd_dataframe, name="hour")
@@ -318,17 +321,17 @@ def test_timestamp_to_columns(
 
     # Test case 3: Check bad input types caught
     with pytest.raises(TypeError, match=r"Input data are not datetime-like"):
-        _ = timestamp_to_columns(pd.RangeIndex(100))  # type: ignore
+        _ = timestamp_to_columns(pd.RangeIndex(100))
     with pytest.raises(TypeError, match=r"Input data are not datetime-like"):
-        _ = timestamp_to_columns(["a", "b", "c"])  # type: ignore
+        _ = timestamp_to_columns(["a", "b", "c"])
     with pytest.raises(TypeError, match=r"Input data are not datetime-like"):
-        _ = timestamp_to_columns([1, 2, 3])  # type: ignore
+        _ = timestamp_to_columns([1, 2, 3])
     with pytest.raises(TypeError, match=r"Input data are not datetime-like"):
-        _ = timestamp_to_columns(1)  # type: ignore
+        _ = timestamp_to_columns(1)
 
     # Test case 4: Check bad minimum resolution arg caught
     with pytest.raises(ValueError):
-        _ = timestamp_to_columns(ymd_series, resolution="bad")  # type: ignore
+        _ = timestamp_to_columns(ymd_series, resolution="bad")
 
     # Test case 5: Check minimum resolution arg will truncate output
     ds5 = ymd_series.dt.floor("1h")
@@ -348,7 +351,7 @@ def test_timestamp_to_columns(
     # Test case 7: ensure prefix is set
     prefix = "test_"
     df1 = timestamp_to_columns(ymd_series, prefix=prefix)
-    assert all([str(c).startswith(prefix) for c in df1.columns])
+    assert all(str(c).startswith(prefix) for c in df1.columns)
 
     # deal with NaT's
     ds_nat = ymd_series.copy()
@@ -386,7 +389,8 @@ def test_expand_datetime_column(
 
     # Test Case 5: Check min_resolution arg correctly passed to timestamp_to_columns
     df5 = expand_datetime_column(df, resolution="microsecond")
-    assert "microsecond" in df5.columns and df5["microsecond"].eq(0).all()
+    assert "microsecond" in df5.columns
+    assert df5["microsecond"].eq(0).all()
 
 
 def test_round_coords():
