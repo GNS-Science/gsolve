@@ -31,7 +31,6 @@ from gsolve.reductions.corrections import (
 )
 from gsolve.sites import GravitySites
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

@@ -57,7 +57,8 @@ def test_tcorr_bounds(simple_dem):
 
 def test_tcorr_coords_to_indices_scalar(simple_dem):
     i, j = simple_dem.tcorr.coords_to_indices([20, 200])
-    assert i == 1 and j == 1
+    assert i == 1
+    assert j == 1
 
 
 def test_tcorr_coords_to_indices_array(simple_dem):
@@ -94,7 +95,7 @@ def test_tcorr_generate_bathymetry_density(simple_dem):
 def test_tcorr_get_topography_elevation(simple_dem):
     mask = simple_dem.tcorr.get_land_sea_mask(sea_level_elevation=5)
     topo = simple_dem.tcorr.get_topography_elevation(land_sea_mask=mask)
-    assert np.all((topo.values == simple_dem.values) | (topo.values == 0.0))
+    assert np.all((topo.values == simple_dem.values) | np.isclose(topo.values, 0.0))
 
 
 def test_tcorr_generate_topo_density(simple_dem):

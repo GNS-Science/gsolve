@@ -35,7 +35,7 @@ from gsolve.core.data import (
 @pytest.fixture
 def gsolve_table_subclass():
     class TestClass(data.GSolveTable):
-        _known_fields = {
+        _known_fields = {  # ruff: ignore[mutable-class-default]
             "a": data.DataFieldSpecification("a", str, "", True),
             "b": data.DataFieldSpecification("b", float, 0.0, True),
             "c": data.DataFieldSpecification("c", "datetime", pd.NaT, False),
@@ -53,14 +53,14 @@ class TestDataFieldSpecification:
         fs = data.DataFieldSpecification("site_id", str, "", True)
         assert fs.name == "site_id"
         assert fs.dtype == str
-        assert fs.default == ""
+        assert fs.default == ""  # ruff: ignore[compare-to-empty-string]
         assert fs.required is True
 
         # Test case 2: Create a DataFieldSpecification object with a default value
         fs = data.DataFieldSpecification("longitude", float, 0.0)
         assert fs.name == "longitude"
         assert fs.dtype == float
-        assert fs.default == 0.0
+        assert fs.default == 0.0  # ruff: ignore[float-equality-comparison]
         assert fs.required is False
 
     # def test_data_field_specification_convert(self):
@@ -133,7 +133,10 @@ def test_gsolve_table_bool_and_len():
 def test_gsolve_table_known_and_required_fields():
     assert set(DummyTable.known_fields()) == set(COMMON_FIELDS.keys())
     req = DummyTable.required_fields()
-    assert "site_id" in req and "obs_id" in req and "loop" in req and "datetime" in req
+    assert "site_id" in req
+    assert "obs_id" in req
+    assert "loop" in req
+    assert "datetime" in req
 
 
 def test_gsolve_table_set_column():
@@ -185,15 +188,17 @@ class TestGSolveParameters:
         assert p.to_dict() == {"a": 1, "b": 2.0}
 
     def test_to_series_and_from_series(self):
-        _cls = self._dummy_params_class()
+        d_cls = self._dummy_params_class()
         p = self._dummy_params_class()()
         s = p.to_series()
         assert isinstance(s, pd.Series)
-        assert s["a"] == 1 and s["b"] == 2.0
+        assert s["a"] == 1
+        assert np.isclose(s["b"], 2.0)
 
-        p2 = _cls.from_series(s)
-        assert isinstance(p2, _cls)
-        assert p2.a == 1 and p2.b == 2.0
+        p2 = d_cls.from_series(s)
+        assert isinstance(p2, d_cls)
+        assert p2.a == 1
+        assert np.isclose(p2.b, 2.0)
 
     def test_default_parameters(self):
         defaults = self._dummy_params_class().default_values()
@@ -205,4 +210,5 @@ class TestGSolveParameters:
         assert isinstance(summary_list, list)
         summary_str = p.summary(as_list=False)
         assert isinstance(summary_str, str)
-        assert "a: 1" in summary_str and "b: 2.0" in summary_str
+        assert "a: 1" in summary_str
+        assert "b: 2.0" in summary_str

@@ -18,6 +18,7 @@
 """Tests for gsolve.sites — GravitySites, ReferenceGravity, and combine helpers."""
 
 from __future__ import annotations
+
 from pathlib import Path
 
 import numpy as np
@@ -28,7 +29,6 @@ from gsolve.sites import (
     GravitySites,
     ReferenceGravity,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -101,7 +101,7 @@ class TestGravitySitesInit:
             northing=[2000.0],
         )
         assert "easting" in gs.data.columns
-        assert gs.data.loc["A", "easting"] == 1000.0
+        assert np.isclose(gs.data.loc["A", "easting"], 1000.0)
 
     def test_from_dataframe(self):
         df = pd.DataFrame(

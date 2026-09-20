@@ -239,7 +239,7 @@ class TestGSolveReportToExcel:
 
         calls: list[dict[str, Any]] = []
 
-        def _fake_write_excel_worksheet(df, filename, sheet_name, **kwargs):
+        def _fake_write_excel_worksheet(df, filename, sheet_name, **kwargs):  # ruff: ignore[unused-function-argument]
             calls.append(
                 {"sheet_name": sheet_name, "kwargs": kwargs, "shape": df.shape}
             )
@@ -287,7 +287,7 @@ class TestGSolveReportToExcel:
 
         sheet_names: list[str] = []
 
-        def _fake_write_excel_worksheet(df, filename, sheet_name, **_kwargs):
+        def _fake_write_excel_worksheet(df, filename, sheet_name, **_kwargs):  # ruff: ignore[unused-function-argument]
             sheet_names.append(sheet_name)
 
         monkeypatch.setattr(

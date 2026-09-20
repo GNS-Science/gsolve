@@ -25,7 +25,6 @@ import pytest
 
 from gsolve.gsolve_outputs import GSolveResults, GSolveSolutionParameters
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
