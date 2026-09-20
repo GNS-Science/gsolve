@@ -53,7 +53,7 @@ def test_rongotai_network_adjustment(shared_datadir: pathlib.Path) -> None:
     for method in [1, 2, 3]:
         for percentile_clipping in [95, 100]:
             # reference site solution file
-            suffix = f"_ci{percentile_clipping:1d}"
+            suffix = "_ci%1i" % percentile_clipping  # ruff: ignore[printf-string-formatting]
             site_solution_file = data_path / (
                 f"RIG_G106_site_solution_method{method}{suffix}.csv"
             )
