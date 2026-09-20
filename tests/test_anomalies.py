@@ -15,11 +15,11 @@
 # SPDX-License-Identifier: GPLv3
 
 from __future__ import annotations
-from tornado.routing import AnyMatches
 
 import numpy as np
 import pytest
 from scipy.constants import atm
+from tornado.routing import AnyMatches
 
 from gsolve.reductions.anomalies import (
     compute_complete_bouguer_anomaly,

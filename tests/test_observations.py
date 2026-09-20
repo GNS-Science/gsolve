@@ -97,8 +97,8 @@ class TestObservationsInit:
         data = dummy_data()
 
         # obs_id not specified
-        obj_unspecified = GravityObservations(**data)
-        assert obj_unspecified.data.index.dtype.name in {"object", "str"}
+        obj_unspec = GravityObservations(**data)
+        assert obj_unspec.data.index.dtype.name in {"object", "str"}
 
         prefixes = obj_unspecified.data.index.str.partition(".").get_level_values(0)
         assert_index_equal(
@@ -263,7 +263,7 @@ class TestObservationTimedelta:
 
         for loop in obj3.loop_ids:
             m = obj3.data["loop"].eq(loop).to_list()
-            assert np.isclose(obj3.data[m]["loop_tdelta"].min(), 0.0)
+            assert obj3.data[m]["loop_tdelta"].min() == 0.0  # ruff: ignore[float-equality-comparison]
 
     def test_gravity_observations_timedelta_unit(
         self,
