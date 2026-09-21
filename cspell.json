@@ -9,11 +9,6 @@
         }
     ],
     "dictionaries": [
-        "project-words",
-        "python",
-        "python-common",
-        "data-science-tools",
-        "git",
-        "en-au"
+        "project-words"
     ]
 }
