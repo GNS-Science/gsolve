@@ -413,7 +413,7 @@ class GSolveReport:
         all_params = []
 
         # This is a kludge - should create method on parameter objects to
-        # to normalise parameter outputs for writing to excel.
+        # to normalize parameter outputs for writing to excel.
         def _format_value(x: Any) -> str | float | int | bool:  # ruff: ignore[any-type]
             if isinstance(x, pd.Timedelta):
                 return x.total_seconds()

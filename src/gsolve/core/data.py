@@ -803,7 +803,7 @@ class GSolveParameters:
         index_name : str | None, default is None
             The series index name.
         index_prefix : str | None, optional
-            Create a multiinidex where level 0 is 'index_prefix` and level 1 are
+            Create a multiindex where level 0 is 'index_prefix` and level 1 are
             the parameter names.
 
         Returns
@@ -833,7 +833,7 @@ class GSolveParameters:
         Parameters
         ----------
         ds : pd.Series
-            The input Series is parsed in a dict-like manner with indicies as parameter
+            The input Series is parsed in a dict-like manner with indices as parameter
             names and series data as values.
         skip_missing: bool, default False:
             How to handle cases where ``ds`` does not provide values for all parameters.
