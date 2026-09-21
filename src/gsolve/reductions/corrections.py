@@ -66,7 +66,7 @@ def normal_gravity_at_stn_elevation(
 
     Based on the closed-form expressions by Lakshmanan (1991) [2]_ and corrected by
     Li & Gotze (2001) [3]_, which do not require the free-air correction. Normal gravity is
-    calcualted using `Boule <https://www.fatiando.org/boule/latest/index.html>`_
+    calculated using `Boule <https://www.fatiando.org/boule/latest/index.html>`_
     from the `Fatiando a Terra <https://www.fatiando.org/>`_ project.
 
     Parameters
@@ -502,7 +502,7 @@ def bouguer_slab_curvature_corrected(
 
 @dataclass
 class GravityCorrectionParameters(GSolveParameters):
-    """Class to store parameters for normal gravity and anomally calculations.
+    """Class to store parameters for normal gravity and anomaly calculations.
 
     Parameters
     ----------
@@ -786,7 +786,7 @@ class GravityCorrectionProvider:
                 c for c in corrs if c not in self.available_corrections()
             ]
             if has_bad_corrections:
-                msg = f"Unrecognised corrections: {has_bad_corrections}"
+                msg = f"Unrecognized corrections: {has_bad_corrections}"
                 raise ValueError(msg)
         else:
             corrs = self.params.bouguer_correction_fields()

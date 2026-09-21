@@ -406,7 +406,7 @@ class GravitySites(GSolveTable):
             warner("no reference gravity values have been set.")
 
         if "gsolve_tie" not in self.data.columns:
-            warner("mising require  column: 'gsolve_tie'")
+            warner("missing require  column: 'gsolve_tie'")
         else:
             m = self.data["gsolve_tie"].eq(True)
             if not m.any():
@@ -514,7 +514,7 @@ class GravitySites(GSolveTable):
         excel_file : str or PathLike
             The excel workbook to write to.
         sheet_name : str, default None
-            The name of the worksheet to write to. If not specifed then use the
+            The name of the worksheet to write to. If not specified then use the
             default sheet name "sites".
         normalize_column_names : bool, default True
             Convert columns name to snake case.

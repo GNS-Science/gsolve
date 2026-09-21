@@ -52,12 +52,12 @@ class GSolveSolutionParameters(GSolveParameters):
     percentile_clipping: float
         The percentile clip applied.
     solve_for_calibration_factor : bool, default False
-        If soluton solved for gravity meter calibration factor.
+        If solution solved for gravity meter calibration factor.
     calculated_calibration_factor : float, default NaN
         The output calibration factor if ``calculate_calibration_factor`` is True.
     gsolve_run_datetime : pandas.Timestamp, optional
         The solution runtime.  If not defined, will be set automatically at
-        object initialisation.
+        object initialization.
     gsolve_version : str, optional
         If unset, attempt to set by calling ``importlib.metadata.version()``.
 
@@ -110,8 +110,8 @@ class GSolveResults:
         .. math:: g_{adj}(t) = g_{drift} t + g_{baseline}
 
         where :math:`t` is time since the start of the  (``timedelta`` column in
-        obj.obs_solution arribute), :math:`g_{drift}` is the drift rate and :math:`g_{baseline}`
-        is a constant taken from the ``drift`` and ``baseline`` columns of loop_solutiom.
+        obj.obs_solution attribute), :math:`g_{drift}` is the drift rate and :math:`g_{baseline}`
+        is a constant taken from the ``drift`` and ``baseline`` columns of loop_solution.
         Finally, the absolute gravity for some observed gravity :math:`g_{obs}` at
         time :math:`t` is given by:
 
@@ -128,7 +128,7 @@ class GSolveResults:
     use_loops: bool
         If loops were used in the solution.
     calculate_calibration_factor : bool
-        If soluton solved for gravity meter calibration factor.
+        If solution solved for gravity meter calibration factor.
     percentile_clipping: float
         The percentile clip applied.
 
@@ -252,7 +252,7 @@ class GSolveResults:
 
         Returns
         -------
-        matoplotlibs.axes.Axes
+        matplotlib.axes.Axes
             The plot axes instance.
 
         """
@@ -270,7 +270,7 @@ class GSolveResults:
                 unit_label = "mGal"
                 precision = ".04f"
         else:
-            msg = f"unrecgnised unit '{unit}'. Must be 'mGal' or 'uGal'"
+            msg = f"unrecognized unit '{unit}'. Must be 'mGal' or 'uGal'"
             raise ValueError(msg)
 
         df_loops: list[str] = [str(l) for l in df["loop"].unique()]
@@ -382,7 +382,7 @@ class GSolveResults:
 
         Returns
         -------
-        matoplotlibs.axes.Axes
+        matplotlib.axes.Axes
             The plot axes instance.
         """
         loop = str(loop)
@@ -407,7 +407,7 @@ class GSolveResults:
                 unit_label = "mGal"
                 precision = ".04f"
         if unit_label is None:
-            msg = f"unrecgnised unit '{unit}'. Must be 'mGal' or 'uGal'"
+            msg = f"unrecognized unit '{unit}'. Must be 'mGal' or 'uGal'"
             raise ValueError(msg)
 
         x = df[x_col].to_numpy()

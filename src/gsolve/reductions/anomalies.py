@@ -278,7 +278,7 @@ class GravityAnomalies(GSolveTable):
             - Series : absolute gravity values indexed by 'site_id'.
 
     sites : GravitySites, GravitySurvey or DataFrame
-        An object providing the geographic coordiates and ellipsoidal height for each
+        An object providing the geographic coordinates and ellipsoidal height for each
         site. Can be any of the following:
 
             - GravitySites or GravitySurvey : A gsolve object providing site metadata.
@@ -299,7 +299,7 @@ class GravityAnomalies(GSolveTable):
               its ``params`` copied to self.params.
             - GravityCorrections : pre-computed gravity corrections for a set of sites
               according to parameters in a GravityCorrectionParameters object. The
-              corrections used dircetly and , and its ``params`` copied to self.params
+              corrections used directly and , and its ``params`` copied to self.params
 
     terrain_corrections : TerrainCorrectionData, optional
         An object providing terrain corrections at each site. These are required to
@@ -319,7 +319,7 @@ class GravityAnomalies(GSolveTable):
                     self.params.ellipsoid
             - free_air_correction : the free-air correction.
             - atmospheric_correction : the atmospheric corrections due to elevation.
-              Only inclued if ``self.params.use_atmospheric_correction`` is True.
+              Only included if ``self.params.use_atmospheric_correction`` is True.
             - bouguer_slab_correction or bouguer_slab_curvature_corrected : the
               Bouguer correction, with form determined by ``self.params.use_curvature_corrected``.
             - tcorr:* : terrain correction for various zones, if terrain corrections
@@ -341,7 +341,7 @@ class GravityAnomalies(GSolveTable):
             - params.spherical_cap_radius : the radius of spherical cap used in
               computing curvature-corrected form of the Bouguer correction.
             - params.use_curvature_corrected : The type of Bouguer correction used.
-              If True, the Bouger correction was the curvature-corrected form, otherwise
+              If True, the Bouguer correction was the curvature-corrected form, otherwise
               the infinite planar slab form was used.
             - params.use_atmospheric_correction : If True, atmospheric corrections
               were included in anomaly calculations.

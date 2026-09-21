@@ -157,7 +157,7 @@ class CG6Data(ScintrexData):
             split into individual boolean columns.
 
     metadata : dict
-        Metadata from file headers converted to approiate dtypes, with field names
+        Metadata from file headers converted to appropriate dtypes, with field names
         normalized to lowercase. Measurement units stored as a suffix to the field
         name (e.g. "fieldname [unit]") are removed and stored in the ``metadata_units``
         attribute.
@@ -356,12 +356,12 @@ class CG6Data(ScintrexData):
             The CG-6 data file to load.
         loop_from_line : bool, optional
             If True, use the 'line' field as the loop identifier, by default False.
-        on_error : {"except", "warn", "ignore"}, deafault "warn"
+        on_error : {"except", "warn", "ignore"}, default "warn"
             How to handle errors arising from null values in some output fields:
 
                 - except: raise an Exception if bad data encountered
-                - warn: issuse a wraning and fix errors
-                - ignore: fix errrors silently
+                - warn: issues a warning and fix errors
+                - ignore: fix errors silently
 
         Returns
         -------
@@ -448,7 +448,7 @@ class CG6Data(ScintrexData):
             Use time intervals defined by ``datetimes`` and assign observations to those
             intervals based on observation times. If ``datetimes`` is dict-like or Series,
             then construct intervals from the keys/index and assign loop id's from the
-            corrresponding values.  If ``datetimes`` is an array-like, then loop
+            corresponding values.  If ``datetimes`` is an array-like, then loop
             identifiers will be generated automatically.
         time_gap: timedelta-like, str int, default None
             Set ``loop`` values based on time gaps in the data. Loop intervals are
@@ -648,7 +648,7 @@ class CG6Data(ScintrexData):
 
             - 'gps' : the mean of 'latgps', 'longps' and 'elevgps'
                for each site. These positions are derived from the internal GPS
-               reciever and are of low accuracy, but are almost certainly correct
+               receiver and are of low accuracy, but are almost certainly correct
                to within a few 10's of metres.
             - 'user' : take values from 'latuser', 'lonuser' and 'elevuser'
                for each site. The 'user' coords are sourced from the instrument file

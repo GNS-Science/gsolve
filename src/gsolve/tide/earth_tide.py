@@ -378,13 +378,13 @@ class LongmanTidalCorrection(EarthTideCorrectionProvider):
         # (D) Distance between centers of the Earth and the sun
         D = (1 / c1 + a1_prime * e1 * cos(h - p1)) ** -1
 
-        # eq. 1 (g_lunar) Vertical componet of tidal acceleration due to the moon
+        # eq. 1 (g_lunar) Vertical component of tidal acceleration due to the moon
         g_lunar = (
             mu * M * r * d**-3 * (3 * cos_theta**2 - 1)
             + (3 / 2) * mu * M * r**2 / d**4 * (5 * cos_theta**3 - 3 * cos_theta)
         ) * 1e03
 
-        # eq. 3 (g_solar) Vertical componet of tidal acceleration due to the sun
+        # eq. 3 (g_solar) Vertical component of tidal acceleration due to the sun
         g_solar = mu * S * r * D**-3 * (3 * cos_phi**2 - 1) * 1e03
 
         return g_lunar, g_solar
@@ -621,7 +621,7 @@ class EternaTidalParameters:
     """Class to store tidal parameters for use with ETERNA/pygtide.
 
     Tidal parameters (``TIDALPARAM`` in ETERNA, ``wave_group`` in pygtide)
-    define the ampltude factors and phase leads to be applied to the tidal potentials
+    define the amplitude factors and phase leads to be applied to the tidal potentials
     provided by a given tidal catalogue. A single tidal parameter is comprises 4 values
 
         - 'freq_start': the start frequency of the tidal constituent in cycles per day (cpd).
@@ -716,7 +716,7 @@ class EternaTidalParameters:
         - Frequency intervals are positive and increasing
             i.e. ``freq_start < freq_stop``.
         - Frequency intervals are discrete and do not overlap.
-        - Warn if there are gaps between successivefrequency intervals.
+        - Warn if there are gaps between successive frequency intervals.
 
         Raises
         ------
@@ -937,7 +937,7 @@ class EternaTidalParameters:
         return cls.from_array([freq_start, freq_stop, amplitude_factor, phase_lead])
 
     def pygtide_wavegroup_arg(self) -> NDArray[np.float64]:
-        """Return a copy of the paramaters as ndarray.
+        """Return a copy of the parameters as ndarray.
 
         The returned array is intended to be used as the argument to
         ``pygtide.set_wavegroup()`` method.
@@ -966,7 +966,7 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
     tidalpoten : int, default 8
         The tide potential catalogue to use. ETERNA/pygtide provides 8 potential
         catalogues of increasing resolution and therefore computational cost.
-        The most commonly used cataloges:
+        The most commonly used catalogues:
 
         - ``4`` : Tamura (1987), 1200 waves.
         - ``7`` : Hartmann and Wenzel (1995), 12935 waves.
@@ -990,7 +990,7 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
     lodtidecor : float, default 1.16
         Amplitude factor for of Length Of Day tide gravity component, due to variations
         in the Earth's rotation rate and are not included in the standard tidal
-        potential catalogues.. LOD corrections are depenedent on observational data
+        potential catalogues.. LOD corrections are dependent on observational data
         provided by IERS, so the user should that they periodically run
         ``pgtide.update()`` to ensure these data are up to date.
     **kwargs :
@@ -1175,9 +1175,9 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
             msg = "No results returned from pygtide prediction."
             raise ValueError(msg)
 
-        normalised_cols = ["datetime", "signal", "tide", "pole_tide", "lod_tide"]
+        normalized_cols = ["datetime", "signal", "tide", "pole_tide", "lod_tide"]
         tides_df = tides_df.rename(
-            columns=dict(zip(tides_df.columns, normalised_cols, strict=True))
+            columns=dict(zip(tides_df.columns, normalized_cols, strict=True))
         )
         tides_df["datetime"] = to_naive_utc_datetime(tides_df["datetime"])
         tides_df = tides_df.set_index("datetime")
@@ -1231,7 +1231,7 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
         Corrections are computed by:
 
             1. for each unique site_id,
-            2. generate a time series of tidal corrections covering the obsevarvation
+            2. generate a time series of tidal corrections covering the observation
                times for that site,
             3. linearly interpolate tidal corrections at the exact observation times.
         """
@@ -1242,7 +1242,7 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
             to_naive_utc_datetime(date_time, allow_nat=False)
         ).round(freq="1s")
 
-        # datume for converting date_time to seconds since epoch for interpolation.
+        # datetime for converting date_time to seconds since epoch for interpolation.
         # - set to a day before the minimum ensure that all are captured
         t0 = date_time.floor(freq="s").min() - pd.Timedelta(days=1)
 

@@ -233,7 +233,7 @@ def calculate_terrain_correction(
             )
             if pt_land_sea_mask is None:
                 # mismatch between actual DEM extent and requested extent
-                # - cannot ctreate point dem etc
+                # - cannot create point dem etc
                 # - return nan - this is an error
                 tcorr_bathy[i] = np.nan
                 tcorr_topo[i] = np.nan
@@ -334,7 +334,7 @@ def tcorr_harmonica_topography(
 
     See Also
     --------
-    harmonica.prism_layer.gravity : the underkying harmonica method used to compute
+    harmonica.prism_layer.gravity : the underlying harmonica method used to compute
         the terrain correction.
     """
     site_z = point[2]
@@ -425,8 +425,8 @@ def tcorr_harmonica_bathymetry(
 class TerrainCorrectionParameters(GSolveParameters):
     """Class to store parameters for computing terrain corrections for a single "zone".
 
-    A "zone" here is analagous to classic Hammer zones; ia symmetric region
-    surrounding a point over which terrain corrections arecomputed.
+    A "zone" here is analogous to classic Hammer zones; ia symmetric region
+    surrounding a point over which terrain corrections are computed.
     It is, defined by its extent (``min_dist`` and ``max_dist``), material densities,
     and topography data sources.
 
@@ -478,7 +478,7 @@ class TerrainCorrectionParameters(GSolveParameters):
     compute_bathymetry : bool, default is True
         Compute gravity corrections due to water bodies below ``sea_level_elevation``.
         Points where no bathymetry correction is possible (i.e. all terrain above
-        ``sea_level_elevation``), the corrrection will be set to NaN.
+        ``sea_level_elevation``), the correction will be set to NaN.
     site_height_field : str, default is "height_ellipsoidal"
         Column in a ``GravitySites.data`` object containing site elevations/z coordinates.
     site_easting_field : str, default is "easting"
@@ -512,7 +512,7 @@ class TerrainCorrectionParameters(GSolveParameters):
     def __setattr__(self, name: str, value: Any) -> None:  # ruff: ignore[any-type]
         fieldnames = []
         if name not in (n.name for n in dataclasses.fields(self)):
-            msg = f"unrecopgnised field name {name}"
+            msg = f"unrecognized field name {name}"
             raise ValueError(msg)
 
         if name in {
@@ -550,7 +550,7 @@ class TerrainCorrectionParameters(GSolveParameters):
         Parameters
         ----------
         if_errors : {"warn", "error"}, default "error"
-            How to handle anry validation errors. If ``'error'``, then raise
+            How to handle any validation errors. If ``'error'``, then raise
             an exception. If ``'warn'``, issue a warning and continue checking.
         """
         throw_error: bool = if_errors == "error"
@@ -772,7 +772,7 @@ class TerrainCorrector:
     Attributes
     ----------
     params : dict
-        A dictionary of TerrainCorrectionParmeter objects defining the "zones" to be computed.
+        A dictionary of TerrainCorrectionParameter objects defining the "zones" to be computed.
     """
 
     def __init__(
@@ -941,7 +941,7 @@ class TerrainCorrector:
             params=None,
         )
 
-        nan_error_desciption_displayed = False
+        nan_error_description_displayed = False
 
         for zone in self.zones:
             pars = self.params[zone].copy()
@@ -1014,8 +1014,8 @@ class TerrainCorrector:
                     f"{indent}Warning: zone '{zone}': terrain corrections "
                     f"not calculated for {n_missing_tc} of {len(x)} sites."
                 )
-                if not nan_error_desciption_displayed:
-                    nan_error_desciption_displayed = True
+                if not nan_error_description_displayed:
+                    nan_error_description_displayed = True
                     sys.stderr.write(
                         f"{indent}    This is probably due to:",
                     )
@@ -1073,12 +1073,12 @@ class TerrainCorrectionData(GSolveTable):
         TerrainCorrectionParameters object = ``obj``, the output columns will be:
 
           - 'tcorr:{obj.name}:topo' : the topography only component of the terrain
-            correction.  Ommited if ``compute_topography`` is False.
+            correction.  Omitted if ``compute_topography`` is False.
           - 'tcorr:{obj.name}:bath' : the bathymetry only component of the terrain
-            correction.  Ommited if ``compute_bathymetry`` is False.
+            correction.  Omitted if ``compute_bathymetry`` is False.
 
         The total terrain correction column will be labeled ``'tcorr:total'``. This is
-        computed at initialisation and whenever new corrections are added via the
+        computed at initialization and whenever new corrections are added via the
         ``set_corrections()`` method.
 
         Columns are ordered by minimum distance of the corresponding zone, with the
@@ -1388,7 +1388,7 @@ class TerrainCorrectionData(GSolveTable):
         df : DataFrame
             DataFrame containing terrain correction data.
         params : TerrainCorrectionParameters, array-like, DataFrame, or Series
-            Parmeters for terrain correction calculations.
+            Parameters for terrain correction calculations.
             If a DataFrame, it must have a column named 'parameters'.
         include_extra_cols : bool, default is True
             If True, include any extra columns in the DataFrame that are not
@@ -1458,15 +1458,15 @@ class TerrainCorrectionData(GSolveTable):
 
             obj.set_corrections(**tc_args)
 
-        uncomsumed_columns = [
+        unconsumed_columns = [
             c
             for c in df.columns
             if c.startswith("tcorr:") and c not in consumed_columns
         ]
-        if uncomsumed_columns:
+        if unconsumed_columns:
             msg = (
                 "terrain corrections parameters and values are inconsistent: "
-                f"no parameters for terrain_correction data {uncomsumed_columns}"
+                f"no parameters for terrain_correction data {unconsumed_columns}"
             )
             raise ValueError(msg)
 
@@ -1554,7 +1554,7 @@ class TerrainCorrectionData(GSolveTable):
             **kwargs,
         )
 
-        # write params to a seprarate sheet
+        # write params to a separate sheet
         if params_sheet_name is None:
             params_sheet_name = f"{sheet_name}_params"
 
@@ -1736,7 +1736,7 @@ class TerrainCorrectionData(GSolveTable):
             return tcorrs.loc[site_id_found, cols]
 
         err_msg = (
-            f"no terrain corrrection data found for {len(site_id_missing)} of "
+            f"no terrain correction data found for {len(site_id_missing)} of "
             f"{len(site_id_idx)} site_id's "
         )
 
@@ -1744,7 +1744,7 @@ class TerrainCorrectionData(GSolveTable):
             raise ValueError(err_msg)
 
         if if_missing == "drop":
-            warnings.warn(f"{err_msg}, dropping from ouput")
+            warnings.warn(f"{err_msg}, dropping from output")
             return tcorrs.loc[site_id_found, cols]
 
         warnings.warn(f"{err_msg}, filling with {fill_value}")

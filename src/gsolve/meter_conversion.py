@@ -61,7 +61,7 @@ class LaCosteRombergDialConverter:
     counter_reading : ArrayLike
         Array of counter readings. This will typically be an array of floats
         from 0.0 to 7000.0 in increments of 100.0 for G meters or
-        0.0 to 200.0 in incremenets of 10.0 for D meters
+        0.0 to 200.0 in increments of 10.0 for D meters
     value_mgal : ArrayLike
         Gravity in milligals at each ``counter_reading``.
     interval_factor : ArrayLike, optional
@@ -86,7 +86,7 @@ class LaCosteRombergDialConverter:
     typically provide ``value_mgal`` rounded to 2 dp (10 ugal resolution)
     whereas ``interval_factor`` is specified to 5 dp (1 ugal resolution).
     Corrections are interpolated using ``value_mgal_from_ifactor`` where
-    possible to minimise loss of precision.
+    possible to minimize loss of precision.
     """
 
     _table_header_keys = ("meter_id", "starttime", "endtime")

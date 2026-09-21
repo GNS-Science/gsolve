@@ -16,7 +16,7 @@
 
 # Copyright (c) 2025 Earth Sciences New Zealand.
 
-"""Funtions used in generating summary statistics for various GSolve classes."""
+"""Functions used in generating summary statistics for various GSolve classes."""
 
 import pandas as pd
 

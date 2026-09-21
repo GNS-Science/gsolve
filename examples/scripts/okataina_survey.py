@@ -130,7 +130,7 @@ qtp_ocean_load_corrector = qtp_to_corrector(
 obs.apply_ocean_load_correction(corrector=qtp_ocean_load_corrector)
 
 
-# Calculate the final correcity gravity value that will be passed to network adjustment
+# Calculate the final corrected gravity value that will be passed to network adjustment
 # - all previously applied corrections are included.
 obs.calculate_tide_corrected_gravity()
 
@@ -170,7 +170,7 @@ results.plot_residual_cdf(
 )
 
 # %%
-# Define parameters for calculating gravity corections and anomalies
+# Define parameters for calculating gravity corrections and anomalies
 correction_params = GravityCorrectionParameters(
     ellipsoid="GRS80",
     density_crust=2670.0,

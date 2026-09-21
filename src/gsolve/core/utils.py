@@ -454,7 +454,7 @@ def merge_datetime_columns(
     Returns
     -------
     pandas.DataFrame
-        Modifed copy of the input DataFrame.
+        Modified copy of the input DataFrame.
 
     See Also
     --------
@@ -568,7 +568,7 @@ def timestamp_to_columns(
         'floor' might be a better choice where ``resolution`` is a date increment.
     fill_nat : int, default = None
         If not None, fill ``pandas.NaT`` values with ``fill_nat``. NaT's are
-        correctly split to NaN's, hoever a side effect is that the
+        correctly split to NaN's, however a side effect is that the
         dataframe dtype will be `float` dtype rather than `int`
     prefix : str, default = ""
         Prepend ``prefix`` to output column names. This is useful when
@@ -605,7 +605,7 @@ def timestamp_to_columns(
         elif round_method == "ceil":
             ds = ds.dt.ceil(res)
         else:
-            msg_0 = f"unreconised rounding method '{round_method}'"
+            msg_0 = f"unrecognized rounding method '{round_method}'"
             raise ValueError(msg_0)
 
     df = pd.DataFrame(
@@ -647,10 +647,10 @@ def expand_datetime_column(
     """Expand datetime column(s) to discrete date and time component columns.
 
     The output columns will be named 'year', 'month', 'day', 'hour', 'minute', 'second',
-    'microsecond', 'nanosecond', depending on the specied ``resolution`` and ``prefix``
+    'microsecond', 'nanosecond', depending on the specified ``resolution`` and ``prefix``
     parameters.
 
-    This method facillitates the export of data for reading by Microsoft Excel and
+    This method facilitates the export of data for reading by Microsoft Excel and
     other spreadsheet software.  These applications arbitrarily mutilate date and time
     data on import. Splitting such data into discrete date and time component columns
     ensures that all information is preserved.
@@ -694,7 +694,7 @@ def expand_datetime_column(
     Returns
     -------
     pandas.DataFrame
-        Modifed copy of the input DataFrame.
+        Modified copy of the input DataFrame.
 
     See Also
     --------
@@ -736,7 +736,7 @@ def expand_datetime_column(
         prefixes = prefix if is_list_like(prefix) else [prefix]
         if len(prefixes) != len(cols_to_split):
             msg = (
-                f"inconsisitent 'column_name' and 'prefix' arg lengths: "
+                f"inconsistent 'column_name' and 'prefix' arg lengths: "
                 f"{len(cols_to_split)} != {len(prefixes)}"
             )
             raise ValueError(msg)
@@ -796,7 +796,7 @@ def prepare_writable_df(
     expand_datetime : str, default None
         Name of the column holding datetime to expand.
     datetime_resolution : str | None, default 'second'
-        The resolution to which datettime column are to be epaneded. See
+        The resolution to which datetime column are to be expanded. See
         ``expand_datetime_column`` for explanation.
     datetime_round_method : {'floor', 'ceil', 'round'}, default 'floor'
         Control how datetimes are truncated to the specified resolution.
@@ -835,7 +835,7 @@ class GSolveDataWarning:
     """A convenience class for collecting and displaying warning messages.
 
     Its primary purpose is to aggregate warning messages, display them
-    in a controlled manner, and provide a summary of errors/warnings ecountered.
+    in a controlled manner, and provide a summary of errors/warnings encountered.
 
     Parameters
     ----------
@@ -1051,7 +1051,7 @@ def generate_loop_names(
 
 
 def round_coords(arr: np.typing.ArrayLike) -> np.ndarray:
-    """Round values in ``arr``, with halfway cases rounded towards positive inifinty.
+    """Round values in ``arr``, with halfway cases rounded towards positive infinity.
 
     Used in converting coords to indices, which is essentially a binning
     operation.
@@ -1088,7 +1088,7 @@ def dms2rad(
     Parameters
     ----------
     d, m, s : int, float, array_like
-        The degrees ``d``, mintes ``m`` and seconds ``s`` of the angle(s) to
+        The degrees ``d``, minutes ``m`` and seconds ``s`` of the angle(s) to
         be converted. Scalar and array_like inputs can be mixed, but
         arrays must be of the same shape.
 
