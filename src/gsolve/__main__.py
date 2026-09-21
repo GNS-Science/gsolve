@@ -123,7 +123,7 @@ def parse_args(*args: str) -> argparse.Namespace:  # ruff: ignore[undocumented-p
         "--calculate-calibration-factor",
         action="store_true",
         default=False,
-        help="[Optional] Claculate calibration factor. Default: False",
+        help="[Optional] calculate calibration factor. Default: False",
     )
 
     # Help function

@@ -36,7 +36,7 @@ __all__ = ["GSolveReport"]
 
 
 class GSolveReport:
-    """Class for summarising and reporting results of a gSolve network adjustment.
+    """Class for summarizing and reporting results of a gSolve network adjustment.
 
     This class provides a simple interface for collating the various inputs
     and outputs from a gSolve run. The report can be written to an Excel workbook.
@@ -334,7 +334,7 @@ class GSolveReport:
             ``if_workbook_exists='append'``)
 
                 - 'error': raise a ValueError
-                - 'replace' : overwrite workseet.
+                - 'replace' : overwrite worksheet.
                 - 'new' : create a new worksheet with a different name.
         **kwargs :
             Arguments to be passed to ``DataFrame.to_excel()`` method.
@@ -413,7 +413,7 @@ class GSolveReport:
         all_params = []
 
         # This is a kludge - should create method on parameter objects to
-        # to normalise parameter outputs for writing to excel.
+        # to normalize parameter outputs for writing to excel.
         def _format_value(x: Any) -> str | float | int | bool:  # ruff: ignore[any-type]
             if isinstance(x, pd.Timedelta):
                 return x.total_seconds()

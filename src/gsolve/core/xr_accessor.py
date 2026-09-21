@@ -192,8 +192,8 @@ class TCorrMethods:
         Parameters
         ----------
         sea_level_elevation : float, default 0.0
-            The theshold elevation.
-        name : str, defaut = 'mask'
+            The threshold elevation.
+        name : str, default = 'mask'
             The name of the output DataArray.
 
         Returns
@@ -255,12 +255,12 @@ class TCorrMethods:
 
         The output density DataArray can be used in calculating bathymetric terrain
         corrections.  Bathymety cells are assigned a density of
-        terrain_density - water_density. Density in topograpjy cells is set to 0.0.
+        terrain_density - water_density. Density in topography cells is set to 0.0.
 
         Parameters
         ----------
         land_sea_mask : xarray.DataArray, None, optional
-            A boolean mask where land/topgraphy is True and sea/bathymetry is
+            A boolean mask where land/topography is True and sea/bathymetry is
             False. If None, a mask will be generated from the calling DataArray
             using ``sea_level_elevation`` as the threshold.
         terrain_density : float, default is 2670.0

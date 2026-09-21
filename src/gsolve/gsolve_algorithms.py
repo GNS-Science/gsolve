@@ -81,7 +81,7 @@ def call_gsolve_lstsq(
         raise ValueError(msg)
     ref_sites = ref_sites.loc[m_ties]
 
-    # set up g_solver_lstsq input arguments - do this sgemented so that can report
+    # set up g_solver_lstsq input arguments - do this segmented so that can report
     # missing fields in a comfortable way.
     try:
         kwargs: dict[str, Any] = {
@@ -250,7 +250,7 @@ def g_solver_lstsq(  # ruff: ignore[too-many-positional-arguments]
         Calculate gravity meter calibration factor.
     obs_g_not_detided : ndarray
         The gravity observations specified in ``obs_g`` converted to milligals,
-        but without any tidal corrections, calibration_factor or other corretions
+        but without any tidal corrections, calibration_factor or other corrections
         applied.
     percentile_clipping : float, default = 100.0
         Exclude observations with residuals outside percentile range from
@@ -270,7 +270,7 @@ def g_solver_lstsq(  # ruff: ignore[too-many-positional-arguments]
     baseline :
         The baseline shift for each loop.
     calibration_factor : float or None,
-        The calulated ``calibration_factor``  if ``calculate_calibration_factor``
+        The calculated ``calibration_factor``  if ``calculate_calibration_factor``
         is True, otherwise None.
     mask : ndarray
         Boolean array indicating whether an observation was included in the solution

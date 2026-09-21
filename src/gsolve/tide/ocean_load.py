@@ -88,7 +88,7 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
     """
     A class to provide ocean load corrections at discrete locations and times.
 
-    The class is effctively a lookup table populated with precaclculated ocean load
+    The class is effectively a lookup table populated with precalculated ocean load
     correction values for multiple at arbitrary times. Corrections are
     retrieved by matching a site identifier and datetime.
 
@@ -347,7 +347,7 @@ class OceanLoadTimeSeries(OceanLoadCorrectionProvider):
             Array of ocean load corrections in mGal. Datetimes outside the range of
             the timeseries data are set to NaN.
         """
-        # reformat datimes to be numpy datetime64[s] ie seconds precision
+        # reformat datetimes to be numpy datetime64[s] ie seconds precision
         t = _datetimes_to_np_datetime64(date_time, dtype="datetime64[s]")
         df_t = self.data.index.to_numpy(dtype="datetime64[s]")
 
@@ -575,7 +575,7 @@ def read_qtp_multistation(file_path: FilePath) -> pd.DataFrame:
     )
 
     if df.shape[1] != len(column_definitions):
-        msg = f"Format error reading '{file_path}': not QTP multiistation ocean load format?"
+        msg = f"Format error reading '{file_path}': not QTP multistation ocean load format?"
         raise ValueError(msg)
 
     if df.isna().any(axis=None):
@@ -713,7 +713,7 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
     def _get_model_parameters(self, f: FilePath) -> None:
         """Extract model parameters from the file and store in metadata."""
         # try to extract model name and parameters from file name
-        matadata = {
+        metadata = {
             "Greens_function": "",
             "ocean_tide_model": "",
             "center_mass_correction": False,
@@ -722,15 +722,15 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
             model_txt = [l.strip() for l in fh if l.startswith("$$")]
             for l in model_txt:
                 if l.startswith("$$ Greens function:"):
-                    matadata["Greens_function"] = l.split(":", 1)[1].strip()
+                    metadata["Greens_function"] = l.split(":", 1)[1].strip()
                 elif l.startswith("$$ Ocean tide model:"):
-                    matadata["ocean_tide_model"] = l.split(":", 1)[1].strip()
+                    metadata["ocean_tide_model"] = l.split(":", 1)[1].strip()
                 elif l.startswith("$$ CMC"):
                     v = l.split(":", 1)[1].strip().split()[0]
-                    matadata["center_mass_correction"] = v != "NO"
+                    metadata["center_mass_correction"] = v != "NO"
                 elif l.startswith("$$ END HEADER:"):
                     break
-        self.metadata.update(matadata)
+        self.metadata.update(metadata)
 
     @property
     def stations(self) -> list[str]:

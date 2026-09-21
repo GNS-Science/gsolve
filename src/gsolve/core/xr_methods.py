@@ -120,7 +120,7 @@ def prepare_dem(
     ----------
     dem : DataArray or DataSet
         The Dataset or DataArray to tidy up.
-    input_var_name : str or None, defaut is None
+    input_var_name : str or None, default is None
         Name of the data variable to extracted from ``dem``. Required if ``dem``
         is a DataSet containing multiple variables.
     output_var_name : str or None, default None

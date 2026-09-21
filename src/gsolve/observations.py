@@ -374,10 +374,10 @@ class GravityObservations(GSolveTable):
             duplicates disambiguated by appending a 3-digit sequence.
         """
         tstamps = self.data["datetime"].apply(lambda t: int(t.timestamp())).astype(str)
-        siteid_tstamp_labels = (
+        site_id_tstamp_labels = (
             self.data["site_id"].astype(str).str.cat(tstamps, sep=".")
         )
-        new_idx = pd.Index(siteid_tstamp_labels, name=self._index_field, dtype=str)
+        new_idx = pd.Index(site_id_tstamp_labels, name=self._index_field, dtype=str)
         return self._index_deduplicator(new_idx)
 
     @staticmethod
@@ -1505,13 +1505,13 @@ class GravityObservations(GSolveTable):
         ----------
         other : GravityObservations
             The``GravityObservations`` to be merged.
-        if_duplicate_loops : {'error', 'keep', 'drop', 'rename'}, defaut is 'error'
+        if_duplicate_loops : {'error', 'keep', 'drop', 'rename'}, default is 'error'
             How to handle situations where duplicate 'loop' identifiers are exist in
             ``other``:
 
                 - 'error' : raise a ValueError
                 - 'keep' : duplicates are unchanged
-                - 'drop' : drop dupliate data from ``other`` prior to merging
+                - 'drop' : drop duplicate data from ``other`` prior to merging
                 - 'rename' : rename the duplicate loops by adding suffix '_merged'.
         if_duplicate_obs_ids : {'error', 'drop', 'rename', 'regenerate'}, default is 'error'
             How to handle situations where duplicate 'obs_id' values exist in ``other``
@@ -1780,7 +1780,7 @@ class GravitySurvey:
             percentile will be excluded from the adjustment.  Must be between 0 and 100.
         use_loops : bool, default=True
             If True, compute drift on a loop-by-loop basis. If False, compute a single
-            drift adjustmen for all data.
+            drift adjustment for all data.
 
         Returns
         -------
@@ -1827,7 +1827,7 @@ class GravitySurvey:
             percentile will be excluded from the adjustment.  Must be between 0 and 100.
         use_loops : bool, default=True
             If True, compute drift on a loop-by-loop basis. If False, compute a single
-            drift adjustmen for all data.
+            drift adjustment for all data.
 
         Returns
         -------
@@ -1837,7 +1837,7 @@ class GravitySurvey:
         meter_ids = self.observations.data["meter_id"].unique()
         if len(meter_ids) > 1:
             msg = (
-                "Calibration factor can only be calulated for a single instrument. "
+                "Calibration factor can only be calculated for a single instrument. "
                 f"Observations include data from {len(meter_ids)} meter_id's = {meter_ids}"
             )
             raise ValueError(msg)
@@ -1883,13 +1883,13 @@ class GravitySurvey:
         ----------
         other : GravitySurvey
             The ``GravitySurvey`` object to be merged.
-        if_duplicate_loops : {'error', 'keep', 'drop', 'rename'}, defaut is 'error'
+        if_duplicate_loops : {'error', 'keep', 'drop', 'rename'}, default is 'error'
             How to handle situations where duplicate 'loop' identifiers are exist in
             ``other.obs``:
 
                 - 'error' : raise a ValueError
                 - 'keep' : duplicates are unchanged
-                - 'drop' : drop dupliate data from ``other`` prior to merging
+                - 'drop' : drop duplicate data from ``other`` prior to merging
                 - 'rename' : rename the duplicate loops by adding suffix '_merged'.
         if_duplicate_obs_ids : {'error', 'drop', 'rename', 'regenerate'}, default is 'error'
             How to handle situations where duplicate 'obs_id' values exist in ``other.obs``
