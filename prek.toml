@@ -4,7 +4,11 @@ hooks = [
     { id = "trailing-whitespace" },
     { id = "end-of-file-fixer" },
     { id = "check-added-large-files" },
-
+    { id = "check-case-conflict" },
+    { id = "detect-private-key" },
+    { id = "mixed-line-ending", args = [
+        "--fix=lf",
+    ] },
 ]
 
 [[repos]]
@@ -12,10 +16,20 @@ repo = "https://github.com/astral-sh/ruff-pre-commit"
 rev = "v0.16.7" # Ruff version.
 hooks = [
     # Run the linter.
-    { id = "ruff-check", args = ["--fix"], types_or = ["python", "pyi"] },
+    { id = "ruff-check", args = [
+        "--fix",
+    ], types_or = [
+        "python",
+        "pyi",
+        "pyproject",
+    ] },
 
     # Run the formatter.
-    { id = "ruff-format", types_or = ["python", "pyi", "markdown"] },
+    { id = "ruff-format", types_or = [
+        "python",
+        "pyi",
+        "markdown",
+    ] },
 ]
 
 
