@@ -132,7 +132,16 @@ class GSolveResults:
         The final 'absolute_gravity' solution for each site after adjustment, with
         solution statistics.
 
-    """
+    Parameters
+    ----------
+    method : {1, 2, 3}
+        The gsolve algorithm used.
+    use_loops: bool
+        If loops were used in the solution.
+    calculate_calibration_factor : bool
+        If solution solved for gravity meter calibration factor.
+    percentile_clipping: float
+        The percentile clip applied.
 
     """  # ruff: ignore[incorrect-section-order]
 
@@ -272,7 +281,7 @@ class GSolveResults:
                 unit_label = "mGal"
                 precision = ".04f"
         else:
-            msg = f"unrecgnised unit '{unit}'. Must be 'mGal' or 'uGal'"
+            msg = f"unrecognized unit '{unit}'. Must be 'mGal' or 'uGal'"
             raise ValueError(msg)
 
         df_loops: list[str] = [str(l) for l in df["loop"].unique()]
@@ -407,7 +416,7 @@ class GSolveResults:
                 unit_label = "mGal"
                 precision = ".04f"
         if unit_label is None:
-            msg = f"unrecgnised unit '{unit}'. Must be 'mGal' or 'uGal'"
+            msg = f"unrecognized unit '{unit}'. Must be 'mGal' or 'uGal'"
             raise ValueError(msg)
 
         x = df[x_col].to_numpy()

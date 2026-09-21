@@ -575,7 +575,7 @@ def read_qtp_multistation(file_path: FilePath) -> pd.DataFrame:
     )
 
     if df.shape[1] != len(column_definitions):
-        msg = f"Format error reading '{file_path}': not QTP multiistation ocean load format?"
+        msg = f"Format error reading '{file_path}': not QTP multistation ocean load format?"
         raise ValueError(msg)
 
     if df.isna().any(axis=None):
@@ -727,7 +727,7 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
                     metadata["ocean_tide_model"] = l.split(":", 1)[1].strip()
                 elif l.startswith("$$ CMC"):
                     v = l.split(":", 1)[1].strip().split()[0]
-                    matadata["center_mass_correction"] = v != "NO"
+                    metadata["center_mass_correction"] = v != "NO"
                 elif l.startswith("$$ END HEADER:"):
                     break
         self.metadata.update(metadata)

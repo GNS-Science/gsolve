@@ -509,7 +509,7 @@ class TerrainCorrectionParameters(GSolveParameters):
     def __setattr__(self, name: str, value: Any) -> None:  # ruff: ignore[any-type]
         fieldnames = []
         if name not in (n.name for n in dataclasses.fields(self)):
-            msg = f"unrecopgnised field name {name}"
+            msg = f"unrecognized field name {name}"
             raise ValueError(msg)
 
         if name in {
@@ -547,7 +547,7 @@ class TerrainCorrectionParameters(GSolveParameters):
         Parameters
         ----------
         if_errors : {"warn", "error"}, default "error"
-            How to handle anry validation errors. If ``'error'``, then raise
+            How to handle any validation errors. If ``'error'``, then raise
             an exception. If ``'warn'``, issue a warning and continue checking.
         """
         throw_error: bool = if_errors == "error"
@@ -938,7 +938,7 @@ class TerrainCorrector:
             params=None,
         )
 
-        nan_error_desciption_displayed = False
+        nan_error_description_displayed = False
 
         for zone in self.zones:
             pars = self.params[zone].copy()
@@ -1011,8 +1011,8 @@ class TerrainCorrector:
                     f"{indent}Warning: zone '{zone}': terrain corrections "
                     f"not calculated for {n_missing_tc} of {len(x)} sites."
                 )
-                if not nan_error_desciption_displayed:
-                    nan_error_desciption_displayed = True
+                if not nan_error_description_displayed:
+                    nan_error_description_displayed = True
                     sys.stderr.write(
                         f"{indent}    This is probably due to:",
                     )
@@ -1460,7 +1460,7 @@ class TerrainCorrectionData(GSolveTable):
             for c in df.columns
             if c.startswith("tcorr:") and c not in consumed_columns
         ]
-        if uncomsumed_columns:
+        if unconsumed_columns:
             msg = (
                 "terrain corrections parameters and values are inconsistent: "
                 f"no parameters for terrain_correction data {unconsumed_columns}"
@@ -1741,7 +1741,7 @@ class TerrainCorrectionData(GSolveTable):
             raise ValueError(err_msg)
 
         if if_missing == "drop":
-            warnings.warn(f"{err_msg}, dropping from ouput")
+            warnings.warn(f"{err_msg}, dropping from output")
             return tcorrs.loc[site_id_found, cols]
 
         warnings.warn(f"{err_msg}, filling with {fill_value}")

@@ -796,7 +796,7 @@ class GravityCorrectionProvider:
                 c for c in corrs if c not in self.available_corrections()
             ]
             if has_bad_corrections:
-                msg = f"Unrecognised corrections: {has_bad_corrections}"
+                msg = f"Unrecognized corrections: {has_bad_corrections}"
                 raise ValueError(msg)
         else:
             corrs = self.params.bouguer_correction_fields()

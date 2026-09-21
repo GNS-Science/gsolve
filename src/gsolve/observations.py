@@ -377,7 +377,7 @@ class GravityObservations(GSolveTable):
         site_id_tstamp_labels = (
             self.data["site_id"].astype(str).str.cat(tstamps, sep=".")
         )
-        new_idx = pd.Index(siteid_tstamp_labels, name=self._index_field, dtype=str)
+        new_idx = pd.Index(site_id_tstamp_labels, name=self._index_field, dtype=str)
         return self._index_deduplicator(new_idx)
 
     @staticmethod
@@ -1843,7 +1843,7 @@ class GravitySurvey:
         meter_ids = self.observations.data["meter_id"].unique()
         if len(meter_ids) > 1:
             msg = (
-                "Calibration factor can only be calulated for a single instrument. "
+                "Calibration factor can only be calculated for a single instrument. "
                 f"Observations include data from {len(meter_ids)} meter_id's = {meter_ids}"
             )
             raise ValueError(msg)

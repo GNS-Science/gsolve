@@ -938,7 +938,7 @@ class EternaTidalParameters:
         return cls.from_array([freq_start, freq_stop, amplitude_factor, phase_lead])
 
     def pygtide_wavegroup_arg(self) -> NDArray[np.float64]:
-        """Return a copy of the paramaters as ndarray.
+        """Return a copy of the parameters as ndarray.
 
         The returned array is intended to be used as the argument to
         ``pygtide.set_wavegroup()`` method.
@@ -1176,9 +1176,9 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
             msg = "No results returned from pygtide prediction."
             raise ValueError(msg)
 
-        normalised_cols = ["datetime", "signal", "tide", "pole_tide", "lod_tide"]
+        normalized_cols = ["datetime", "signal", "tide", "pole_tide", "lod_tide"]
         tides_df = tides_df.rename(
-            columns=dict(zip(tides_df.columns, normalised_cols, strict=True))
+            columns=dict(zip(tides_df.columns, normalized_cols, strict=True))
         )
         tides_df["datetime"] = to_naive_utc_datetime(tides_df["datetime"])
         tides_df = tides_df.set_index("datetime")
@@ -1232,7 +1232,7 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
         Corrections are computed by:
 
             1. for each unique site_id,
-            2. generate a time series of tidal corrections covering the obsevarvation
+            2. generate a time series of tidal corrections covering the observation
                times for that site,
             3. linearly interpolate tidal corrections at the exact observation times.
         """

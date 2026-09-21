@@ -597,7 +597,7 @@ def timestamp_to_columns(
         elif round_method == "ceil":
             ds = ds.dt.ceil(res)
         else:
-            msg_0 = f"unreconised rounding method '{round_method}'"
+            msg_0 = f"unrecognized rounding method '{round_method}'"
             raise ValueError(msg_0)
 
     df = pd.DataFrame(
@@ -728,7 +728,7 @@ def expand_datetime_column(
         prefixes = list(prefix) if is_list_like(prefix) else [prefix]
         if len(prefixes) != len(cols_to_split):
             msg = (
-                f"inconsisitent 'column_name' and 'prefix' arg lengths: "
+                f"inconsistent 'column_name' and 'prefix' arg lengths: "
                 f"{len(cols_to_split)} != {len(prefixes)}"
             )
             raise ValueError(msg)
