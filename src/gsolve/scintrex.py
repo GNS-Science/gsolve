@@ -48,6 +48,8 @@ __all__ = ["CG6Data", "ScintrexData"]
 
 _ScintrexMetadataDataTypes: TypeAlias = str | float | int | bool | pd.Timestamp
 
+type _SCINTREX_ON_ERROR_OPTIONS = Literal["raise", "warn", "ignore"]
+
 
 class ScintrexData(abc.ABC):
     """Base class for classes that read and manipulate Scintrex data."""
@@ -242,7 +244,7 @@ class CG6Data(ScintrexData):
         metadata: dict[str, _ScintrexMetadataDataTypes],
         metadata_units: dict[str, str] | None = None,
         loop_from_line: bool = False,
-        on_error: _ScintrexOnErrorOptions = "warn",
+        on_error: _SCINTREX_ON_ERROR_OPTIONS = "warn",
     ) -> None:
         super().__init__(data, metadata, metadata_units, on_error)
 
@@ -273,7 +275,7 @@ class CG6Data(ScintrexData):
 
     def _set_data(self, data: pd.DataFrame, on_error: str = "raise") -> None:
         """Set data attribute."""
-        if not is_in_literal(on_error, _ScintrexOnErrorOptions):
+        if not is_in_literal(on_error, _SCINTREX_ON_ERROR_OPTIONS):
             msg = f"invalid on_error arg {on_error}"
             raise ValueError(msg)
 
@@ -287,14 +289,10 @@ class CG6Data(ScintrexData):
             try:
                 df[c] = df[c].astype(this_dtype)
             except Exception as err_read:
-                if on_error not in {"warn", "ignore"}:
+                if on_error == "raise":
                     msg = f"error converting data in column '{c}' to {this_dtype}"
                     raise TypeError(msg) from err_read
 
-                if on_error == "warn":
-                    warnings.warn(
-                        f"bad data encountered in column '{c}', setting to nan"
-                    )
                 try:
                     df[c] = (
                         df[c]
@@ -304,6 +302,10 @@ class CG6Data(ScintrexData):
                 except Exception as err_cant_replace:
                     msg = f"unfixable error converting data in column '{c}' to {this_dtype}"
                     raise TypeError(msg) from err_cant_replace
+                else:
+                    if on_error == "warn":
+                        msg = f"bad data encountered in column '{c}', setting to nan"
+                        warnings.warn(msg)
 
         if (
             "datetime" not in df.columns
