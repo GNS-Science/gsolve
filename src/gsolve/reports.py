@@ -436,7 +436,7 @@ class GSolveReport:
 
         write_excel_worksheet(
             df=pd.concat(all_params),
-            filename=filename,
+            excel_file=filename,
             sheet_name="metadata",
             if_workbook_exists="append",
             if_sheet_exists=if_sheet_exists,
