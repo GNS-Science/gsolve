@@ -6,9 +6,6 @@ hooks = [
     { id = "check-added-large-files" },
     { id = "check-case-conflict" },
     { id = "detect-private-key" },
-    { id = "mixed-line-ending", args = [
-        "--fix=lf",
-    ] },
 ]
 
 [[repos]]
