@@ -652,8 +652,8 @@ class GSolveParameters:
                 raise ValueError(msg)
 
         write_excel_worksheet(
-            prepare_writable_df(params_ds.to_frame(), normalize_column_names=True),
-            fname,
+            df=prepare_writable_df(params_ds.to_frame(), normalize_column_names=True),
+            excel_file=fname,
             sheet_name=sheet_name,
             if_workbook_exists=if_workbook_exists,
             if_sheet_exists=if_sheet_exists,

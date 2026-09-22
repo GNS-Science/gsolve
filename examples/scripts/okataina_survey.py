@@ -216,4 +216,6 @@ results.obs_solution.to_csv(
 
 # %%
 # or everything as a single excel from the report object.
-report.to_excel(obs_path / "okataina_survey_results.xlsx", if_workbook_exists="replace")
+report.to_excel(
+    filename=obs_path / "okataina_survey_results.xlsx", if_workbook_exists="replace"
+)

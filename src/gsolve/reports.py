@@ -367,7 +367,7 @@ class GSolveReport:
                 drop_datetime=False,
                 bool_to_int=True,
             ),
-            filename=filename,
+            excel_file=filename,
             sheet_name="observations",
             if_workbook_exists=if_workbook_exists,
             if_sheet_exists=if_sheet_exists,
@@ -383,7 +383,7 @@ class GSolveReport:
                 expand_datetime=None,
                 bool_to_int=True,
             ),
-            filename=filename,
+            excel_file=filename,
             sheet_name="sites",
             if_workbook_exists="append",
             if_sheet_exists=if_sheet_exists,
@@ -393,7 +393,7 @@ class GSolveReport:
         # loop
         write_excel_worksheet(
             df=prepare_writable_df(self.loop_data),
-            filename=filename,
+            excel_file=filename,
             sheet_name="loops",
             if_workbook_exists="append",
             if_sheet_exists=if_sheet_exists,
@@ -402,7 +402,7 @@ class GSolveReport:
         if self.terrain_correction_data is not None:
             write_excel_worksheet(
                 df=prepare_writable_df(self.terrain_correction_data),
-                filename=filename,
+                excel_file=filename,
                 sheet_name="terrain_corrections",
                 if_workbook_exists="append",
                 if_sheet_exists=if_sheet_exists,
@@ -436,7 +436,7 @@ class GSolveReport:
 
         write_excel_worksheet(
             df=pd.concat(all_params),
-            filename=filename,
+            excel_file=filename,
             sheet_name="metadata",
             if_workbook_exists="append",
             if_sheet_exists=if_sheet_exists,
