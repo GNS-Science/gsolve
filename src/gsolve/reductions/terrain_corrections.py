@@ -1546,8 +1546,8 @@ class TerrainCorrectionData(GSolveTable):
                 sheet_name = self._default_excel_sheet_name[0]
 
         write_excel_worksheet(
-            prepare_writable_df(self.data, normalize_column_names=True),
-            fname,
+            df=prepare_writable_df(self.data, normalize_column_names=True),
+            excel_file=fname,
             sheet_name=sheet_name,
             if_workbook_exists=if_workbook_exists,
             if_sheet_exists=if_sheet_exists,
@@ -1559,7 +1559,7 @@ class TerrainCorrectionData(GSolveTable):
             params_sheet_name = f"{sheet_name}_params"
 
         write_excel_worksheet(
-            prepare_writable_df(
+            df=prepare_writable_df(
                 self._params_to_series().to_frame().reset_index(level=1),
                 normalize_column_names=True,
             ),

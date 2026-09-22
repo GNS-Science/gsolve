@@ -1254,7 +1254,7 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
             raise ValueError(msg)
         if isinstance(site_id, str):
             site_id = [site_id] * lat.size
-        site_id = to_1d_ndarray(site_id, expected_size=lat.size, dtype=float)
+        site_id = to_1d_ndarray(site_id, expected_size=lat.size, dtype=str)
 
         corrs = np.full_like(lat, np.nan)
 
