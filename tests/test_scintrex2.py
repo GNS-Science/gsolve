@@ -282,7 +282,7 @@ class TestCG6Data:
 
     def test_set_drift_correction(self, sample_cg6_metadata, sample_cg6_data):
         obj = CG6Data(sample_cg6_data, sample_cg6_metadata)
-        orig_drift_corrr = obj.data["driftcorr"].copy()
+        orig_drift_corr = obj.data["driftcorr"].copy()
         # Set drift correction
         obj.set_drift_correction(
             drift_rate=1.0,  # 1 mGal/day
@@ -295,7 +295,7 @@ class TestCG6Data:
 
         # Check drift correction was applied
         assert "driftcorr" in obj.data.columns
-        assert not obj.data["driftcorr"].equals(orig_drift_corrr)
+        assert not obj.data["driftcorr"].equals(orig_drift_corr)
 
     def test_copy_method(self, sample_cg6_metadata, sample_cg6_data):
         obj = CG6Data(sample_cg6_data, sample_cg6_metadata)

@@ -94,21 +94,21 @@ class TestObservationsInit:
         ):
             _ = GravityObservations(**data)
 
-    def test_gravity_observations_init_has_obsid(self) -> None:
+    def test_gravity_observations_init_has_obs_id(self) -> None:
         data = dummy_data()
 
         # obs_id not specified
-        obj_unspec = GravityObservations(**data)
-        assert obj_unspec.data.index.dtype.name in {"object", "str"}
+        obj_unspecified = GravityObservations(**data)
+        assert obj_unspecified.data.index.dtype.name in {"object", "str"}
 
-        prefixes = obj_unspec.data.index.str.partition(".").get_level_values(0)
+        prefixes = obj_unspecified.data.index.str.partition(".").get_level_values(0)
         assert_index_equal(
-            prefixes, pd.Index(obj_unspec.data["site_id"]), check_names=False
+            prefixes, pd.Index(obj_unspecified.data["site_id"]), check_names=False
         )
 
         # obs_id specified but is None
         obj_none = GravityObservations(**data, obs_id=None)
-        assert_frame_equal(obj_none.data, obj_unspec.data)
+        assert_frame_equal(obj_none.data, obj_unspecified.data)
 
         # obs_id is a sequence
         idx = ["id1", "id2", "id3"]
@@ -183,7 +183,7 @@ class TestObservationsMerge:
 
         assert len(obj_final.data) == len(obj_unique) + len(obj_orig)
 
-        # ensure that paraeters are set to orig
+        # ensure that parameters are set to orig
         obj_unique.set_fixed_time_datum("2010-10-10T00:00:00")
         obj_unique.set_timedelta_unit("1s")
         obj_final = obj_orig.merge(obj_unique)
@@ -223,20 +223,20 @@ class TestObservationsMerge:
             _ = obj_orig.merge(obj_dupe_loop, if_duplicate_loops="rename")
 
         # catch duplicate obs_id
-        obj_dupe_obsid = obj_unique.copy()
-        obj_dupe_obsid.data.index = obj_orig.data.index
+        obj_dupe_obs_id = obj_unique.copy()
+        obj_dupe_obs_id.data.index = obj_orig.data.index
 
         with pytest.raises(ValueError, match=r"duplicate obs_id"):
             _ = obj_orig.merge(
-                obj_dupe_obsid,
+                obj_dupe_obs_id,
                 if_duplicate_obs_ids="error",
             )
 
         with pytest.warns(UserWarning, match=r"dropping"):
-            _ = obj_orig.merge(obj_dupe_obsid, if_duplicate_obs_ids="drop")
+            _ = obj_orig.merge(obj_dupe_obs_id, if_duplicate_obs_ids="drop")
 
         with pytest.warns(UserWarning, match=r"adding suffix"):
-            _ = obj_orig.merge(obj_dupe_obsid, if_duplicate_obs_ids="rename")
+            _ = obj_orig.merge(obj_dupe_obs_id, if_duplicate_obs_ids="rename")
 
 
 class TestObservationTimedelta:
@@ -325,7 +325,7 @@ def test_gravity_observations_properties() -> None:
     obs.set_column("loop", 2)
     assert obs.loop_ids == ["2"]
 
-    # test that loop_ids are returne in dat_time oredr rather than lexically
+    # test that loop_ids are d in dat_time order rather than lexically
     obs.data.iloc[-1, obs.data.columns.get_loc("loop")] = "1"
     assert obs.loop_ids == ["2", "1"]
 

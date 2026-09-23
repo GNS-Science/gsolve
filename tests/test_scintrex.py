@@ -189,10 +189,10 @@ def test_cg6data_set_loop(cg6_file: pathlib.Path) -> None:
     cg6.set_loop(
         datetimes=dict(zip(times, ["a", "b"], strict=True)),
         loop_start=200,
-        output_column="xloop",
+        output_column="x_loop",
     )
-    assert cg6.data["xloop"].iloc[0] == "a"
-    assert cg6.data["xloop"].iloc[i_mid] == "b"
+    assert cg6.data["x_loop"].iloc[0] == "a"
+    assert cg6.data["x_loop"].iloc[i_mid] == "b"
 
     # 2.3 from a series
     cg6.set_loop(
@@ -202,12 +202,16 @@ def test_cg6data_set_loop(cg6_file: pathlib.Path) -> None:
     assert cg6.data["loop"].iloc[i_mid] == "z"
 
     # Case 3: set from time gap
-    fstr = "a_{LOOP}"
+    fmt_str = "a_{LOOP}"
     cg6.set_loop(
-        time_gap="12h", loop_start=300, loop_format=fstr, output_column="zloop"
+        time_gap="12h", loop_start=300, loop_format=fmt_str, output_column="z_loop"
     )
-    assert cg6.data["zloop"].iloc[0] == fstr.format(LOOP=300)
-    assert cg6.data.loc[cg6.data["line"].eq(2), "zloop"].eq(fstr.format(LOOP=301)).all()
+    assert cg6.data["z_loop"].iloc[0] == fmt_str.format(LOOP=300)
+    assert (
+        cg6.data.loc[cg6.data["line"].eq(2), "z_loop"]
+        .eq(fmt_str.format(LOOP=301))
+        .all()
+    )
 
     # Case X: bad args
     with pytest.raises(TypeError):
@@ -230,22 +234,22 @@ def test_cg6data_set_loop(cg6_file: pathlib.Path) -> None:
 def test_set_drift_correction(sample_data: CG6Data) -> None:
     "drift_rate"
     "drift_zero_time"
-    drate = 0.1
-    dzero = sample_data.data["datetime"].min()
-    assert sample_data.metadata["drift_rate"] != drate
+    drift_rate = 0.1
+    drift_zero = sample_data.data["datetime"].min()
+    assert sample_data.metadata["drift_rate"] != drift_rate
     data2 = sample_data.copy()
-    data2.set_drift_correction(drift_rate=drate, drift_zero_time=dzero)
+    data2.set_drift_correction(drift_rate=drift_rate, drift_zero_time=drift_zero)
 
-    assert data2.metadata["drift_rate"] == drate
-    assert data2.metadata["drift_zero_time"] == dzero
+    assert data2.metadata["drift_rate"] == drift_rate
+    assert data2.metadata["drift_zero_time"] == drift_zero
     # pdt.assert_series_equal(
     #     updated.data["driftcorr"],
     #     updated.data["datetime"]
-    #     .sub(dzero)
+    #     .sub(drift_zero)
     #     .dt.total_seconds()
     #     .astype(float)
     #     .div(86400)
-    #     .mul(-1 * drate),
+    #     .mul(-1 * drift_rate),
     #     check_names=False,
     # )
 

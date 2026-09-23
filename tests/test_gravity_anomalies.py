@@ -36,8 +36,8 @@ from gsolve.sites import GravitySites
 # ---------------------------------------------------------------------------
 
 SITE_IDS = ["A", "B", "C"]
-LATS = [-45.0, -44.0, -43.0]
-LONS = [170.0, 171.0, 172.0]
+LATITUDES = [-45.0, -44.0, -43.0]
+LONGITUDES = [170.0, 171.0, 172.0]
 HEIGHTS = [10.0, 50.0, 200.0]
 ABS_GRAVITY = [980100.0, 980200.0, 980300.0]
 
@@ -45,8 +45,8 @@ ABS_GRAVITY = [980100.0, 980200.0, 980300.0]
 def _make_sites() -> GravitySites:
     return GravitySites(
         site_id=SITE_IDS,
-        latitude=LATS,
-        longitude=LONS,
+        latitude=LATITUDES,
+        longitude=LONGITUDES,
         height_ellipsoidal=HEIGHTS,
     )
 
@@ -109,8 +109,8 @@ class TestGravityAnomaliesInit:
     def test_sites_as_dataframe(self):
         sites_df = pd.DataFrame(
             {
-                "latitude": LATS,
-                "longitude": LONS,
+                "latitude": LATITUDES,
+                "longitude": LONGITUDES,
                 "height_ellipsoidal": HEIGHTS,
             },
             index=pd.Index(SITE_IDS, name="site_id"),

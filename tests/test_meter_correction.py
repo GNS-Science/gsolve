@@ -17,7 +17,7 @@
 from typing import TextIO
 
 import numpy as np
-import numpy.testing as nptest
+import numpy.testing as npt
 import pandas as pd
 import pytest
 
@@ -210,19 +210,19 @@ def test_lacoste_romberg_dial_converter_correct_readings(g936_df: pd.DataFrame) 
         meter_id="G936", table=g936_df
     )
     # Case: single value
-    nptest.assert_almost_equal(converter.convert_readings([0.0]), [0], 6)
-    nptest.assert_almost_equal(converter.convert_readings([100.0]), [101.798], 6)
+    npt.assert_almost_equal(converter.convert_readings([0.0]), [0], 6)
+    npt.assert_almost_equal(converter.convert_readings([100.0]), [101.798], 6)
 
     # Case: arrays
     array_vals = [0.0, 100.0]
     array_result = [0, 101.798]
-    nptest.assert_array_almost_equal(
+    npt.assert_array_almost_equal(
         converter.convert_readings(array_vals), array_result, 6
     )
-    nptest.assert_array_almost_equal(
+    npt.assert_array_almost_equal(
         converter.convert_readings(pd.Series(array_vals)), array_result, 6
     )
-    nptest.assert_array_almost_equal(
+    npt.assert_array_almost_equal(
         converter.convert_readings(np.asarray(array_vals)), array_result, 6
     )
 
@@ -254,7 +254,7 @@ def test_lacoste_romberg_dial_converter_correct_datetimes(
 
     # case: normal dates
     dates = ["2021-01-01", "2021-01-02"]
-    nptest.assert_array_almost_equal(
+    npt.assert_array_almost_equal(
         converter.convert_readings(array_vals, date_time=dates), array_results, 6
     )
 
@@ -262,9 +262,9 @@ def test_lacoste_romberg_dial_converter_correct_datetimes(
     dates = ["2021-01-01", "2024-01-02"]
     v = converter.convert_readings(array_vals, date_time=dates)
     assert pd.isna(v[1])
-    nptest.assert_array_almost_equal(v[0], array_results[0], 6)
+    npt.assert_array_almost_equal(v[0], array_results[0], 6)
 
-    # case: date precedes startime
+    # case: date precedes starttime
     v = converter.convert_readings([100], date_time="2019-01-01")
     assert pd.isna(converter.convert_readings([100], date_time="2019-01-01"))
 
@@ -280,7 +280,7 @@ def test_lacoste_romberg_dial_converter_correct_meter_id(
     meter_ids = ["G936", "G936"]
 
     # case: normal meter_id
-    nptest.assert_array_almost_equal(
+    npt.assert_array_almost_equal(
         converter.convert_readings(array_vals, meter_id=meter_ids), array_results, 6
     )
 
@@ -291,7 +291,7 @@ def test_lacoste_romberg_dial_converter_correct_meter_id(
     assert pd.isna(v[1])
 
     # case: meter_id, single value
-    nptest.assert_almost_equal(
+    npt.assert_almost_equal(
         converter.convert_readings([array_vals[1]], meter_id="G936"), array_results[1]
     )
     assert pd.isna(converter.convert_readings([array_vals[1]], meter_id="xxxx"))
@@ -309,7 +309,7 @@ def test_lacoste_romberg_dial_converter_correct_meter_id_date(
     converter = LaCosteRombergDialConverter.from_dataframe(
         meter_id="G936", table=g936_df, starttime="2021-01-01", endtime="2022-01-01"
     )
-    nptest.assert_array_almost_equal(
+    npt.assert_array_almost_equal(
         converter.convert_readings(array_vals, meter_id=meter_ids, date_time=dates),
         array_results,
         6,
@@ -337,7 +337,7 @@ def test_lacoste_romberg_dial_converter_correct_meter_id_date(
 #         meter_id, starttime="2021-01-01", endtime="2022-01-01"
 #     )
 #     assert converter.convert_readings(0.0) == 0.0
-#     nptest.assert_array_equal(converter.convert_readings([0.0, 100.0]), [0.0, 100.0])
+#     npt.assert_array_equal(converter.convert_readings([0.0, 100.0]), [0.0, 100.0])
 
 #     v = converter.convert_readings(readings=[100.0, 200.0], meter_id=[meter_id, "junk"])
 #     assert v[0] == 100.0 and pd.isna(v[1])

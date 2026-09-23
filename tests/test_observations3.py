@@ -154,7 +154,7 @@ class TestGravitySurvey:
     def test_merge_dupe_obs_id(self) -> None:
         surv_1 = _make_survey()
         surv_2 = _make_survey_uniq()
-        # un-uniqify obs_id
+        # make obs_id non unique
         surv_2.observations.set_obs_id(surv_1.observations.data.index)
 
         # default should be error

@@ -224,7 +224,7 @@ class TestGSolveReportToExcel:
 
         with pytest.raises(ValueError, match="already exist"):
             report.to_excel(
-                out_file,
+                filename=out_file,
                 if_workbook_exists="append",
                 if_sheet_exists="error",
             )
@@ -239,9 +239,14 @@ class TestGSolveReportToExcel:
 
         calls: list[dict[str, Any]] = []
 
-        def _fake_write_excel_worksheet(df, filename, sheet_name, **kwargs):  # ruff: ignore[unused-function-argument]
+        def _fake_write_excel_worksheet(df, excel_file, sheet_name, **kwargs):
             calls.append(
-                {"sheet_name": sheet_name, "kwargs": kwargs, "shape": df.shape}
+                {
+                    "excel_file": excel_file,
+                    "sheet_name": sheet_name,
+                    "kwargs": kwargs,
+                    "shape": df.shape,
+                }
             )
 
         monkeypatch.setattr(
@@ -249,7 +254,9 @@ class TestGSolveReportToExcel:
         )
 
         out_file = tmp_path / "report.xlsx"
-        report.to_excel(out_file, if_workbook_exists="replace", if_sheet_exists="new")
+        report.to_excel(
+            filename=out_file, if_workbook_exists="replace", if_sheet_exists="new"
+        )
 
         assert [c["sheet_name"] for c in calls] == [
             "observations",
@@ -287,7 +294,7 @@ class TestGSolveReportToExcel:
 
         sheet_names: list[str] = []
 
-        def _fake_write_excel_worksheet(df, filename, sheet_name, **_kwargs):  # ruff: ignore[unused-function-argument]
+        def _fake_write_excel_worksheet(df, excel_file, sheet_name, **_kwargs):  # ruff: ignore[unused-function-argument]
             sheet_names.append(sheet_name)
 
         monkeypatch.setattr(

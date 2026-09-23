@@ -91,10 +91,10 @@ class TestNormalGravityAtStnElevation:
             normal_gravity_at_stn_elevation(0.0, 0.0, 0.0, ellipsoid="GRS67")
 
     def test_array_input(self):
-        lons = np.array([0.0, 0.0, 0.0])
-        lats = np.array([0.0, -45.0, -90.0])
-        hts = np.array([0.0, 0.0, 0.0])
-        g = normal_gravity_at_stn_elevation(lons, lats, hts)
+        longitudes = np.array([0.0, 0.0, 0.0])
+        latitudes = np.array([0.0, -45.0, -90.0])
+        heights = np.array([0.0, 0.0, 0.0])
+        g = normal_gravity_at_stn_elevation(longitudes, latitudes, heights)
         assert g.shape == (3,)
         # gravity at pole > gravity at equator
         assert g[2] > g[0]
@@ -441,7 +441,7 @@ class TestGravityCorrectionProvider:
     def test_compute_bad_correction_raises(self):
         sites = _make_sites()
         provider = GravityCorrectionProvider()
-        with pytest.raises(ValueError, match="Unrecognised corrections"):
+        with pytest.raises(ValueError, match="Unrecognized corrections"):
             provider.compute(sites, corrections=["not_a_correction"])
 
     def test_compute_bad_sites_type_raises(self):

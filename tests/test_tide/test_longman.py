@@ -17,7 +17,7 @@
 import datetime
 
 import numpy as np
-import numpy.testing as nptest
+import numpy.testing as npt
 import pandas as pd
 import pytest
 
@@ -71,7 +71,7 @@ def test_longman_tidal_correction(
     output = corrector.tidal_correction(
         obs_points["lat"], obs_points["lon"], obs_points["elev"], obs_points.index
     )
-    nptest.assert_allclose(output, expected_corrections, rtol=1e-6)
+    npt.assert_allclose(output, expected_corrections, rtol=1e-6)
 
     # change amp factor, outputs should be scaled to the new factor
     new_amp_factor = 1.1
@@ -80,7 +80,7 @@ def test_longman_tidal_correction(
     output = corrector.tidal_correction(
         obs_points["lat"], obs_points["lon"], obs_points["elev"], obs_points.index
     )
-    nptest.assert_allclose(
+    npt.assert_allclose(
         output,
         new_amp_factor * expected_corrections / expected_amp_factor,
         rtol=1e-6,
@@ -123,7 +123,7 @@ def test_longman_time_series():
     assert ts1.shape[0] == 86400 + 1
 
     ts2 = corrector.time_series(method="acceleration", **args)
-    nptest.assert_array_equal(ts1, ts2)
+    npt.assert_array_equal(ts1, ts2)
 
     with pytest.raises(ValueError):
         ts2 = corrector.time_series(method="bad_method", **args)
@@ -171,7 +171,7 @@ def test_longman_repr():
     assert repr(corrector) == expected_repr
 
 
-class TestLongmanTimeFuncs:
+class TestLongmanTimeFunctions:
     @pytest.mark.parametrize(
         argnames=("dt", "expected"),
         argvalues=[
@@ -226,7 +226,7 @@ class TestLongmanTimeFuncs:
         # test that it works with both DatetimeIndex and Series
         d1 = _decimal_julian_century(dates)
         d2 = _decimal_julian_century(pd.Series(data=dates.to_list()))
-        nptest.assert_array_equal(d1, d2)
+        npt.assert_array_equal(d1, d2)
 
         # check that bad dates are caught
         # - actually a test of the underlying to_naive_utc_datetime

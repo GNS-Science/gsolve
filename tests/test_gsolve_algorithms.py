@@ -133,7 +133,7 @@ class TestCallGSolveLstsq:
 
         with pytest.raises(KeyError, match="obs dataframe missing required column"):
             call_gsolve_lstsq(
-                obs=obs.rename(columns={"gravity": "xxgravity"}),
+                obs=obs.rename(columns={"gravity": "xx_gravity"}),
                 ref_sites=ref,
                 method=1,
             )
@@ -209,7 +209,7 @@ class TestCallGSolveCalibration:
 
         with pytest.raises(KeyError, match="obs dataframe missing required column"):
             call_gsolve_lstsq(
-                obs=obs.rename(columns={"gravity": "xxgravity"}),
+                obs=obs.rename(columns={"gravity": "xx_gravity"}),
                 ref_sites=ref,
                 method=1,
             )
