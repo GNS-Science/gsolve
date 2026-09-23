@@ -37,14 +37,14 @@ from gsolve.sites import (
 
 def _make_sites(n: int = 3, with_ref_gravity: bool = False) -> GravitySites:
     site_ids = [f"S{i}" for i in range(n)]
-    lats = np.linspace(-45.0, -40.0, n)
-    lons = np.linspace(170.0, 175.0, n)
+    latitudes = np.linspace(-45.0, -40.0, n)
+    longitudes = np.linspace(170.0, 175.0, n)
     hts = np.linspace(0.0, 100.0, n)
     ref_grav = np.linspace(980000.0, 980100.0, n) if with_ref_gravity else None
     return GravitySites(
         site_id=site_ids,
-        latitude=lats,
-        longitude=lons,
+        latitude=latitudes,
+        longitude=longitudes,
         height_ellipsoidal=hts,
         reference_gravity=ref_grav,
     )

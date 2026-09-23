@@ -201,8 +201,8 @@ def test_normalize_columns_names() -> None:
     # characters
     cols_bad = ["Aa", "bB", 1, "aa bb"]
     cols_normalised = ["aa", "bb", "1", "aa_bb"]
-    idx_name_bad = "test indeXX"
-    idx_name_normalised = "test_indexx"
+    idx_name_bad = "test indeX"
+    idx_name_normalised = "test_index"
 
     df1 = pd.DataFrame(
         data=1, columns=cols_bad, index=pd.RangeIndex(4, name=idx_name_bad)
@@ -345,7 +345,7 @@ def test_timestamp_to_columns(
     #     ymd_dataframe["day"] + 1,
     # )
 
-    with pytest.raises(ValueError, match=r"unreconised rounding method"):
+    with pytest.raises(ValueError, match=r"unrecognized rounding method"):
         _ = timestamp_to_columns(ymd_series, resolution="day", round_method="bad")
 
     # Test case 7: ensure prefix is set
