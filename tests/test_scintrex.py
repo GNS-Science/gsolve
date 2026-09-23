@@ -189,10 +189,10 @@ def test_cg6data_set_loop(cg6_file: pathlib.Path) -> None:
     cg6.set_loop(
         datetimes=dict(zip(times, ["a", "b"], strict=True)),
         loop_start=200,
-        output_column="xloop",
+        output_column="x_loop",
     )
-    assert cg6.data["xloop"].iloc[0] == "a"
-    assert cg6.data["xloop"].iloc[i_mid] == "b"
+    assert cg6.data["x_loop"].iloc[0] == "a"
+    assert cg6.data["x_loop"].iloc[i_mid] == "b"
 
     # 2.3 from a series
     cg6.set_loop(
@@ -212,8 +212,6 @@ def test_cg6data_set_loop(cg6_file: pathlib.Path) -> None:
         .eq(fmt_str.format(LOOP=301))
         .all()
     )
-    assert cg6.data["zloop"].iloc[0] == fstr.format(LOOP=300)
-    assert cg6.data.loc[cg6.data["line"].eq(2), "zloop"].eq(fstr.format(LOOP=301)).all()
 
     # Case X: bad args
     with pytest.raises(TypeError):
