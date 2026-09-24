@@ -223,7 +223,7 @@ results.obs_solution.to_csv(obs_path / "Okataina_observations_solution.csv")
 
 If you want to carry on and calculate corrections and anomalies.
 
-Define parameters for calculating gravity corections and anomalies.
+Define parameters for calculating gravity corrections and anomalies.
 
 ```python
 correction_params = GravityCorrectionParameters(
