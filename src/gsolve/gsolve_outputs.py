@@ -33,7 +33,7 @@ from gsolve.core.utils import is_list_like, to_naive_utc_datetime
 
 __all__ = ["GSolveResults", "GSolveSolutionParameters"]
 
-_PlotGravityUnit: TypeAlias = Literal["uGal", "mGal", "mgal", "ugal"]
+type _PlotGravityUnit = Literal["uGal", "mGal", "mgal", "ugal"]
 
 
 @dataclasses.dataclass
