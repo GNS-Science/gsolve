@@ -1,6 +1,6 @@
 # gSolve CLI manual
 
-gSolve CLI or gsolve-cli is a comand-line interface to run relative
+gSolve CLI or gsolve-cli is a command-line interface to run relative
 gravity data adjustment in a terminal.
 
 ## Installation
@@ -50,7 +50,7 @@ Processing options:
                         [Optional] Clip data by percentile value. Default: 100
   --use-loops           [Optional] Use individual loops in the adjustment process. Default: False
   --calculate-calibration-factor
-                        [Optional] Claculate calibration factor. Default: False
+                        [Optional] Calculate calibration factor. Default: False
 ```
 
 ## Configuration basics

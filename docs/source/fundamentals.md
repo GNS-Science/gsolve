@@ -34,7 +34,7 @@ If terrain corrections are to be calculated then cartesian coordinates, easting,
 
 ## Reference Gravity
 
-The `ReferenceGravity` object holds "reference" gravity information for tie sites, base stations and so on.  Reference gravity is usually taken to be a well constrained absolute gravity measurement, but can be set to any arbitary value for the survey purpose, such as time change gravity where absolute gravity values are not of interest.
+The `ReferenceGravity` object holds "reference" gravity information for tie sites, base stations and so on.  Reference gravity is usually taken to be a well constrained absolute gravity measurement, but can be set to any arbitrary value for the survey purpose, such as time change gravity where absolute gravity values are not of interest.
 
 If Bouguer anomalies are the goal, then absolute values are required.  Otherwise the reference station value can be set to zero for time change surveys.
 
@@ -56,11 +56,11 @@ The `GravitySurvey` links together `GravityObservations` and `GravitySites` in t
 
 GSolve uses the Reilly 1970 [algorithm](gsolve_algorithms.md) with three solving options to suit different survey situations.
 
-The [adjustment](Tutorial_network_adjustment_and_anomaly_calculation.md) calculates residuals for each observation, along with the loop drift rate.  It calculates the variance, standard error and stardard deviation of gravity values at each site.
+The [adjustment](Tutorial_network_adjustment_and_anomaly_calculation.md) calculates residuals for each observation, along with the loop drift rate.  It calculates the variance, standard error and standard deviation of gravity values at each site.
 
 The [meter calibration](Tutorial_calculate_calibration_beta_factor.md) (or beta) factor can also be calculated from a set of measurements at locations with absolute gravity measurements.
 
-Plots of residuals distribution and drift rate can be made as well as outputing solution tables at the observations or sites level.
+Plots of residuals distribution and drift rate can be made as well as outputting solution tables at the observations or sites level.
 
 ## Data reading
 

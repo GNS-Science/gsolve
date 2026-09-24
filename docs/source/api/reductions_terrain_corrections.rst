@@ -24,7 +24,7 @@ Set parameters for a terrain correction computation.
 ================
 TerrainCorrector
 ================
-Compute terrain coorections for a set of stations.
+Compute terrain corrections for a set of stations.
 
 .. currentmodule:: gsolve
 
