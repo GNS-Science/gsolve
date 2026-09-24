@@ -22,7 +22,7 @@ import warnings
 from collections.abc import Callable, Mapping, Sequence
 from copy import deepcopy
 from types import MappingProxyType
-from typing import Literal, Self, TypeAlias
+from typing import Literal, Self
 
 import numpy as np
 import numpy.typing as npt
@@ -47,9 +47,9 @@ from gsolve.sites import GravitySites
 
 __all__ = ["CG6Data", "ScintrexData"]
 
-_ScintrexMetadataDataTypes: TypeAlias = str | float | int | bool | pd.Timestamp
+type _ScintrexMetadataDataTypes = str | float | int | bool | pd.Timestamp
 
-type _SCINTREX_ON_ERROR_OPTIONS = Literal["raise", "warn", "ignore"]
+type _ScintrexOnErrorOptions = Literal["raise", "warn", "ignore"]
 
 
 class ScintrexData(abc.ABC):
@@ -245,7 +245,7 @@ class CG6Data(ScintrexData):
         metadata: dict[str, _ScintrexMetadataDataTypes],
         metadata_units: dict[str, str] | None = None,
         loop_from_line: bool = False,
-        on_error: _SCINTREX_ON_ERROR_OPTIONS = "warn",
+        on_error: _ScintrexOnErrorOptions = "warn",
     ) -> None:
         super().__init__(data, metadata, metadata_units, on_error)
 
@@ -276,7 +276,7 @@ class CG6Data(ScintrexData):
 
     def _set_data(self, data: pd.DataFrame, on_error: str = "raise") -> None:
         """Set data attribute."""
-        if not is_in_literal(on_error, _SCINTREX_ON_ERROR_OPTIONS):
+        if not is_in_literal(on_error, _ScintrexOnErrorOptions):
             msg = f"invalid on_error arg {on_error}"
             raise ValueError(msg)
 
