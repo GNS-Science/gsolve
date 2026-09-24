@@ -392,6 +392,7 @@ class GravityAnomalies(GSolveTable):
             ),
         }
     )
+    _default_excel_sheet_name: str = "gravity_anomalies"
 
     def __init__(
         self,
