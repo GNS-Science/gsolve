@@ -27,6 +27,7 @@ from copy import deepcopy
 from types import MappingProxyType
 from typing import Any, ClassVar, Protocol, Self
 
+import numpy as np
 import pandas as pd
 from pandas.api.types import is_bool_dtype, is_string_dtype
 
@@ -96,7 +97,7 @@ _COMMON_FIELDS: list[DataFieldSpecification] = [
     ),
     DataFieldSpecification("active", bool, default=True, required=False),
     DataFieldSpecification("latitude", float, required=False),
-    DataFieldSpecification("longitude", float, required=False),
+    DataFieldSpecification("latitude", float, required=False),
     DataFieldSpecification(
         "height_ellipsoidal", float, legacy_name="height", default=np.nan
     ),

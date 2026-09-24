@@ -604,36 +604,33 @@ class GravityCorrections(GSolveTable):
     _known_fields: ClassVar[MappingProxyType[str, DataFieldSpecification]] = (
         MappingProxyType(
             {
-                "site_id": DataFieldSpecification("site_id", str, required=True),
-                "longitude": DataFieldSpecification("longitude", float, required=False),
-                "latitude": DataFieldSpecification("latitude", float, required=False),
-                "height_ellipsoidal": DataFieldSpecification(
-                    "height_ellipsoidal", float, required=False, legacy_name="height"
-                ),
+                COMMON_FIELDS["site_id"].name: COMMON_FIELDS["site_id"],
+                COMMON_FIELDS["latitude"].name: COMMON_FIELDS["timestamp"],
+                COMMON_FIELDS["longitude"].name: COMMON_FIELDS["longitude"],
+                COMMON_FIELDS["height_ellipsoidal"].name: COMMON_FIELDS[
+                    "height_ellipsoidal"
+                ],
                 "normal_gravity_at_stn_elevation": DataFieldSpecification(
-                    "normal_gravity_at_stn_elevation",
-                    float,
-                    required=False,
-                    default=np.nan,
+                    "normal_gravity_at_stn_elevation", float, default=np.nan
                 ),
                 "normal_gravity_at_ellipsoid": DataFieldSpecification(
-                    "normal_gravity_at_ellipsoid", float, required=False, default=np.nan
+                    "normal_gravity_at_ellipsoid", float, default=np.nan
                 ),
                 "free_air_correction": DataFieldSpecification(
-                    "free_air_correction", float, required=False, default=np.nan
+                    "free_air_correction", float, default=np.nan
                 ),
                 "bouguer_slab_correction": DataFieldSpecification(
-                    "bouguer_slab_correction", float, required=False, default=np.nan
+                    "bouguer_slab_correction", float, default=np.nan
                 ),
                 "bouguer_slab_curvature_corrected": DataFieldSpecification(
-                    "bouguer_slab_curvature_corrected",
-                    float,
-                    required=False,
-                    default=np.nan,
+                    "bouguer_slab_curvature_corrected", float, default=np.nan
                 ),
                 "atmospheric_correction": DataFieldSpecification(
-                    "atmospheric_correction", float, required=False, default=np.nan
+                    "atmospheric_correction", float, default=np.nan
                 ),
+                COMMON_FIELDS["absolute_gravity"].name: COMMON_FIELDS[
+                    "absolute_gravity"
+                ],
             }
         )
     )

@@ -288,7 +288,7 @@ def to_1d_ndarray(
     expected_size: int | None = None,
     extend_len_1_array: bool = False,
     dtype: DTypeLike | None = None,
-) -> NDArray[np.float64]:
+) -> np.ndarray[tuple[int], np.dtype[Any]]:
     """Convert input to a 1D numpy array.
 
     Replicates the functionality of numpy.atleast_1d, but with additional
