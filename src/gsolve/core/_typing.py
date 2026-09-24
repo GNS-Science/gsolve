@@ -22,13 +22,13 @@ from __future__ import annotations
 import datetime
 from collections.abc import Callable, Hashable, Mapping, Sequence
 from os import PathLike
-from typing import Any, Literal, Protocol, runtime_checkable
+from typing import Any, Literal, Protocol, TypeAlias, runtime_checkable
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 from numpy.typing import ArrayLike, NDArray
-from pandas import DatetimeIndex, Index, Series
+from pandas import DataFrame, DatetimeIndex, Index, Series
 
 # from pandas.api.typing.aliases import TimedeltaConvertibleTypes
 
@@ -74,20 +74,8 @@ type FilePath = str | PathLike
 type Renamer = Mapping[Any, Hashable] | Callable[[Any], Hashable]
 
 
-DateTimeConvertibleTypes: TypeAlias = (
-    str
-    | int
-    | float
-    | datetime.timedelta
-    | list
-    | tuple
-    | range
-    | ArrayLike
-    | Index
-    | Series
-)
-DatetimeScalar: TypeAlias = (
-    int | float | str | datetime.date | np.datetime64 | pd.Timestamp
+type DateTimeConvertibleTypes = (
+    str | int | float | datetime.timedelta | list | tuple | ArrayLike | Index | Series
 )
 type DatetimeScalar = int | float | str | datetime.date | np.datetime64 | pd.Timestamp
 
