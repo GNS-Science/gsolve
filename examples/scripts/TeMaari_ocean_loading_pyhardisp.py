@@ -98,7 +98,7 @@ survey = GravitySurvey(obs, sites)
 """
 Run the network adjustment.
 Here we use solve method "2", see documentation.  We process each loop individually
-and apply a 99 percentile cutoff filter to the residuals."""
+and apply a 95 percentile cutoff filter to the residuals."""
 results = survey.solve_lstsq(method=2, use_loops=True, percentile_clipping=95)
 
 # results.site_solution contains the adjusted gravity per station
