@@ -66,10 +66,10 @@ class LaCosteRombergDialConverter:
         Gravity in milligals at each ``counter_reading``.
     interval_factor : ArrayLike, optional
         The gradient of mGal/counter_reading for each interval.
-    starttime : datetimelike, optional
+    starttime : datetime-like, optional
         Date from which correction parameters are valid, default is
         :attr:`pandas.Timestamp.min`.
-    endtime : datetimelike, optional
+    endtime : datetime-like, optional
         Date up to which correction parameters are valid. Defaults to
         :attr:`pandas.Timestamp.max`.
 
@@ -214,10 +214,10 @@ class LaCosteRombergDialConverter:
 
         Parameters
         ----------
-        starttime : datetimelike, NaT or None
+        starttime : datetime-like, NaT or None
             Date from which correction parameters are valid, default is None (i.e.
             no start date).
-        endtime : datetimelike, NaT or None
+        endtime : datetime-like, NaT or None
             Date up to which correction parameters are valid. Defaults to None (i.e.
             no end date).
 
@@ -227,32 +227,30 @@ class LaCosteRombergDialConverter:
             If starttime or endtime cannot be converted to a ``pandas.Timestamp``, or if
             starttime is >= endtime.
         TypeError
-            If starttime or endtime is not datetimelike, NaT or None.
+            If starttime or endtime is not datetime-like, NaT or None.
         """
         if starttime is pd.NaT or starttime is None:
             st = None
-        elif isinstance(starttime, DatetimeScalar):
+        elif isinstance(starttime, DatetimeScalar.__value__):
             try:
                 st = to_naive_utc_datetime(starttime, allow_nat=False)
             except ValueError as e:
                 msg = f"Error setting starttime: {e}"
                 raise ValueError(msg) from None
         else:
-            msg = f"invalid starttime type {type(starttime)}. Should be datetimelike or None."
+            msg = f"invalid starttime type {type(starttime)}. Should be datetime-like or None."
             raise TypeError(msg)
 
         if endtime is pd.NaT or endtime is None:
             et = None
-        elif isinstance(endtime, DatetimeScalar):
+        elif isinstance(endtime, DatetimeScalar.__value__):
             try:
                 et = to_naive_utc_datetime(endtime, allow_nat=False)
             except ValueError as e:
                 msg = f"Error setting endtime: {e}"
                 raise ValueError(msg) from None
         else:
-            msg = (
-                f"invalid endtime type {type(endtime)}. Should be datetimelike or None."
-            )
+            msg = f"invalid endtime type {type(endtime)}. Should be datetime-like or None."
             raise TypeError(msg)
 
         if st is not None and et is not None and st >= et:
@@ -295,7 +293,7 @@ class LaCosteRombergDialConverter:
         meter_id : str, array_like, optional
             The meter id/name associated with the readings. If provided, only readings
             with ``meter_id`` matching the converter's ``meter_id`` will be converted.
-        date_time : datetimelike, array_like, optional
+        date_time : datetime-like, array_like, optional
             The date/time of the readings. If provided, only readings
             with ``date_time`` falling within converter's ``valid_date_range``
             are converted.
@@ -313,7 +311,7 @@ class LaCosteRombergDialConverter:
             Where reading(s) are outside the limits of the conversion table.
         TypeError
             If ``meter_id`` is not a string or array of strings, or if ``date_time``
-            is not datetimelike or array of datetimelike.
+            is not datetime-like or array of datetime-like.
         """
         interval_bounds: npt.NDArray[np.float64] = self.table.index.to_numpy(np.float64)
 
@@ -431,10 +429,10 @@ class LaCosteRombergDialConverter:
             Meter id/name.
         table : _pd.DataFrame | _npt.ArrayLike
             The correction table data.
-        starttime : datetimelike
+        starttime : datetime-like
             Date from which correction parameters are valid, default is
             ``pandas.Timestamp.min``.
-        endtime : datetimelike
+        endtime : datetime-like
             Date up to which correction parameters are valid. Defaults to
             ``pandas.Timestamp.max``.
 

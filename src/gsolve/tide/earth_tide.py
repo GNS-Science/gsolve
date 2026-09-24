@@ -20,7 +20,7 @@
 
 import dataclasses
 import warnings
-from typing import Any, Literal, Protocol, Self, overload, runtime_checkable
+from typing import Any, Literal, Protocol, Self, cast, overload, runtime_checkable
 
 import numpy as np
 import pandas as pd
@@ -40,7 +40,7 @@ from gsolve.core._typing import (
 )
 from gsolve.core.utils import (
     GSolveDataWarning,
-    _convert_single_timestamp_arg,
+    convert_single_timestamp_arg,
     dms2rad,
     to_1d_ndarray,
     to_naive_utc_datetime,
@@ -73,7 +73,7 @@ class EarthTideCorrectionProvider(Protocol):
 
 
 def gravimetric_factor(
-    k2: float = 0.2980, h2: float = 0.6032
+    k2: float | FloatArray = 0.2980, h2: float | FloatArray = 0.6032
 ) -> np.float64 | NDArray[np.float64]:
     """Compute gravimetric factor from Love numbers ``k2`` and ``h2``.
 
@@ -96,7 +96,7 @@ def gravimetric_factor(
     .. [1] Agnew, D. C. (2007). 3.06 Earth Tides. In Treatise on Geophysics (pp. 163-195).
        Elsevier. https://doi.org/10.1016/B978-044452748-6.00056-0
     """
-    h2 = to_1d_ndarray(h2).astype(float)
+    h2 = to_1d_ndarray(h2, dtype=float).astype(float)
     k2 = to_1d_ndarray(k2, expected_size=h2.size).astype(float)
     gfactor = 1 + h2 - 1.5 * k2
     return gfactor[0] if gfactor.size == 1 else gfactor
@@ -135,7 +135,8 @@ class LongmanConstants:
     c1: float = 1.495983e13  # Mean distance between centers earth-sun (cm)
     e: float = 0.054900489  # Eccentricity of the moon's orbit
     i: float = round(
-        deg2rad(5.145), ndigits=9
+        deg2rad(5.145, dtype=float),
+        ndigits=9,
     )  # = 0.08979719  Inclination of moon's orbit to the ecliptic
     m: float = 0.074804  # Ratio of mean motion of the sun to that of the moon
     mu: float = 6.67428e-08  # Newton's gravitational constant, 6.670e-8 in orig.
@@ -463,7 +464,7 @@ class LongmanTidalCorrection(EarthTideCorrectionProvider):
             The time series of tidal corrections or accelerations.
 
         """
-        valid_methods = ("correction", "acceleration")
+        valid_methods = {"correction", "acceleration"}
         if method not in valid_methods:
             msg = f"method parameter must be one of {valid_methods}, not '{method}'."
             raise ValueError(msg)
@@ -474,14 +475,10 @@ class LongmanTidalCorrection(EarthTideCorrectionProvider):
             msg = f"error parsing step: {e}"
             raise ValueError(msg) from e
 
-        if not isinstance(step, pd.Timedelta):
-            msg = "step must be a valid timedelta or timedelta string."
-            raise TypeError(msg)
-
-        t0 = _convert_single_timestamp_arg(
+        t0 = convert_single_timestamp_arg(
             starttime, allow_nat=False, err_prefix="error parsing starttime"
         )
-        t1 = _convert_single_timestamp_arg(
+        t1 = convert_single_timestamp_arg(
             endtime, allow_nat=False, err_prefix="error parsing endtime"
         )
 
@@ -494,7 +491,7 @@ class LongmanTidalCorrection(EarthTideCorrectionProvider):
         lon_arr = np.full(len(t_idx), lon)
         elev_array = np.full(len(t_idx), elev)
         if method == "correction":
-            tseries = pd.Series(
+            time_series = pd.Series(
                 data=self.tidal_correction(
                     site_id=None,
                     lat=lat_arr,
@@ -507,7 +504,7 @@ class LongmanTidalCorrection(EarthTideCorrectionProvider):
             )
         elif method == "acceleration":
             a, b = self.gravity_accelerations(lat_arr, lon_arr, elev_array, t_idx)
-            tseries = pd.Series(
+            time_series = pd.Series(
                 data=a + b,
                 index=t_idx,
                 name=method,
@@ -516,7 +513,7 @@ class LongmanTidalCorrection(EarthTideCorrectionProvider):
             msg = f"Invalid method: {method}"
             raise ValueError(msg)
 
-        return tseries
+        return time_series
 
 
 @overload
@@ -878,7 +875,7 @@ class EternaTidalParameters:
         """Return an EternaTidalParameters instance with parameters used by QuickTide Pro.
 
         Quick tide pro uses the Tamura (1987) tidal potential catalogue.
-        Using thee parameters with higer resolution tide catalogues may
+        Using thee parameters with higher resolution tide catalogues may
         produce unexpected results.
 
         Returns
@@ -1117,8 +1114,9 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
         DataFrame
             DataFrame containing the tidal corrections.
         """
-        unit = unit.lower()
-        if unit not in {"mgal", "ugal", "nm/s^2"}:
+        if unit in {"mgal", "ugal", "nm/s^2"}:
+            unit = cast(Literal["mgal", "ugal", "nm/s^2"], unit.lower())
+        else:
             msg = f"invalid unit value '{unit}'"
             raise ValueError(msg)
 
@@ -1256,7 +1254,7 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
             site_id = [site_id] * lat.size
         site_id = to_1d_ndarray(site_id, expected_size=lat.size, dtype=str)
 
-        corrs = np.full_like(lat, np.nan)
+        corrs = np.full_like(lat, np.nan, dtype=np.float64)
 
         for site in np.unique(site_id):
             site_mask = site_id == site
@@ -1298,6 +1296,6 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
                 x=date_time[site_mask],
                 xp=ts.index,
                 fp=ts["signal"].to_numpy(),
-            )
+            ).astype(np.float64)
 
         return corrs

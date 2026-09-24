@@ -166,9 +166,9 @@ def prepare_dem(
     for coord_name in list(dem.coords):
         if coord_name not in dem.dims:
             try:
-                csize = getattr(dem.coords[coord_name], "size", 0)
+                coord_size = getattr(dem.coords[coord_name], "size", 0)
                 # drop singleton non-dimension coords or coords whose size doesn't match any dimension
-                if csize == 1 or csize not in dem.shape:
+                if coord_size == 1 or coord_size not in dem.shape:
                     dem = dem.drop_vars([coord_name])
             except Exception as e:
                 msg = (

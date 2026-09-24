@@ -26,7 +26,7 @@ from typing import Any, get_args
 import pandas as pd
 
 from gsolve.core._typing import FilePath, IfSheetExists, IfWorkbookExists
-from gsolve.core.utils import is_list_like
+from gsolve.core.utils import is_in_literal, is_list_like
 
 __all__ = [
     "get_excel_worksheets",
@@ -160,8 +160,10 @@ def read_excel_worksheet(
     sheet_name_list = _parse_sheet_name_arg(sheet_name)
 
     true_sheet_name = None
-    for sname in sheet_name_list:
-        true_sheet_name = get_true_sheet_name(excel_file, sname, raise_error=False)
+    for s in sheet_name_list:
+        true_sheet_name = get_true_sheet_name(
+            excel_file, sheet_name=s, raise_error=False
+        )
         if true_sheet_name is not None:
             break
 
@@ -216,14 +218,14 @@ def write_excel_worksheet(
     pandas.ExcelWriter
 
     """
-    if if_workbook_exists not in get_args(IfWorkbookExists):
+    if not is_in_literal(if_workbook_exists, IfWorkbookExists):
         msg = (
             f"invalid value for {if_workbook_exists=}, must be one of "
             f"{get_args(IfWorkbookExists)}"
         )
         raise ValueError(msg)
 
-    if if_sheet_exists not in get_args(IfSheetExists):
+    if not is_in_literal(if_sheet_exists, IfSheetExists):
         msg = (
             f"invalid value for {if_sheet_exists=}, must be one of "
             f"{get_args(IfSheetExists)}"

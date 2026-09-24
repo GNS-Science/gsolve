@@ -22,14 +22,13 @@ from __future__ import annotations
 import datetime
 from collections.abc import Callable, Hashable, Mapping, Sequence
 from os import PathLike
-from typing import Any, Literal, Protocol, TypeAlias, Union, runtime_checkable
+from typing import Any, Literal, Protocol, TypeAlias, runtime_checkable
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 from numpy.typing import ArrayLike, NDArray
-from pandas import DataFrame, DatetimeIndex, Index, Series, Timestamp
-from pandas.api.typing import NaTType
+from pandas import DataFrame, DatetimeIndex, Index, Series
 
 # from pandas.api.typing.aliases import TimedeltaConvertibleTypes
 
@@ -53,17 +52,17 @@ __all__ = [
 ]
 
 # Aliases by gsolve for various functions arguments
-AllowedTimestampResolution: TypeAlias = Literal[
+type AllowedTimestampResolution = Literal[
     "year", "month", "day", "hour", "minute", "second", "microsecond", "nanosecond"
 ]
-AllowedTimestampRoundingMethods: TypeAlias = Literal["round", "floor", "ceil"]
+type AllowedTimestampRoundingMethods = Literal["round", "floor", "ceil"]
 
-IfWorkbookExists: TypeAlias = Literal["error", "replace", "append"]
-IfSheetExists: TypeAlias = Literal["error", "replace", "new"]
+type IfWorkbookExists = Literal["error", "replace", "append"]
+type IfSheetExists = Literal["error", "replace", "new"]
 
-GSolveSolverMethod: TypeAlias = Literal[1, 2, 3]
+type GSolveSolverMethod = Literal[1, 2, 3]
 
-GSolveSolverReturn: TypeAlias = tuple[
+type GSolveSolverReturn = tuple[
     NDArray, NDArray, NDArray, NDArray, NDArray, float | np.float64 | None, NDArray
 ]
 
@@ -72,41 +71,30 @@ type FilePath = str | PathLike
 # The following type aliases are copied/adapted from pandas to ensure
 # function parameters are compatible with pandas methods they are passed to
 
-Renamer: TypeAlias = Mapping[Any, Hashable] | Callable[[Any], Hashable]
+type Renamer = Mapping[Any, Hashable] | Callable[[Any], Hashable]
 
 
-DateTimeConvertibleTypes: TypeAlias = (
-    str
-    | int
-    | float
-    | datetime.timedelta
-    | list
-    | tuple
-    | range
-    | ArrayLike
-    | Index
-    | Series
+type DateTimeConvertibleTypes = (
+    str | int | float | datetime.timedelta | list | tuple | ArrayLike | Index | Series
 )
-DatetimeScalar: TypeAlias = (
-    int | float | str | datetime.date | np.datetime64 | pd.Timestamp
-)
+type DatetimeScalar = int | float | str | datetime.date | np.datetime64 | pd.Timestamp
 
 type DatetimeArray = list | tuple | Series | Index | DatetimeIndex | np.ndarray
-DatetimeScalarOrArray: TypeAlias = DatetimeScalar | DatetimeArray
+type DatetimeScalarOrArray = DatetimeScalar | DatetimeArray
 
-TimedeltaScalar: TypeAlias = str | int | float | pd.Timedelta | datetime.timedelta
+type TimedeltaScalar = str | int | float | pd.Timedelta | datetime.timedelta
 
-SiteIDArray: TypeAlias = Sequence[str] | Series | Index | NDArray[np.str_]
-FloatArray: TypeAlias = Sequence[float] | Series | Index | NDArray[np.floating]
-StringArray: TypeAlias = Sequence[str] | Series | Index | NDArray[np.str_]
-BoolArray: TypeAlias = Sequence[bool] | Series | Index | NDArray[np.bool_]
+type SiteIDArray = Sequence[str] | Series | Index | NDArray[np.str_]
+type FloatArray = Sequence[float] | Series | Index | NDArray[np.floating]
+type StringArray = Sequence[str] | Series | Index | NDArray[np.str_]
+type BoolArray = Sequence[bool] | Series | Index | NDArray[np.bool_]
 
 # aliases used in terrain correction
-DatasetOrArray: TypeAlias = xr.DataArray | xr.Dataset
-ArrayOrCoords: TypeAlias = DatasetOrArray | Sequence[ArrayLike]
-Points2D: TypeAlias = tuple[FloatArray, FloatArray]
-Points3D: TypeAlias = tuple[FloatArray, FloatArray, FloatArray]
-Points3DTrue = tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]
+type DatasetOrArray = xr.DataArray | xr.Dataset
+type ArrayOrCoords = DatasetOrArray | Sequence[ArrayLike]
+type Points2D = tuple[FloatArray, FloatArray]
+type Points3D = tuple[FloatArray, FloatArray, FloatArray]
+type Points3DTrue = tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]
 type TCorrDistanceMaskType = Literal["radial", "rectangular"]
 
 
