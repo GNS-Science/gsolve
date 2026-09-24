@@ -14,11 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # SPDX-License-Identifier: GPLv3
 
-import pandas as pd
 import pytest
-
-from gsolve import GravityObservations
-from gsolve.sites import GravitySites
 
 
 @pytest.fixture

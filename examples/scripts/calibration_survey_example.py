@@ -24,7 +24,6 @@ from gsolve import (
     LaCosteRombergDialConverter,
     ReferenceGravity,
 )
-from gsolve.reports import GSolveReport
 from gsolve.tide.earth_tide import LongmanTidalCorrection
 
 # %%

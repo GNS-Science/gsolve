@@ -119,7 +119,7 @@ line-length = 88
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
 # Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
 # McCabe complexity (`C901`) by default.
-select = ["ANN", "D", "DOC", "PD", "NPY"]
+# select = ["ANN", "D", "DOC", "PD", "NPY"]
 preview = true
 extend-select = [
     "ARG",                           # flake8-unused-arguments

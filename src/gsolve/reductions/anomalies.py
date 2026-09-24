@@ -26,9 +26,9 @@ import pandas as pd
 from numpy.typing import ArrayLike
 
 from gsolve.core.data import DataFieldSpecification, GSolveTable
-from gsolve.core.utils import to_1d_ndarray, to_1d_ndarray_or_float
+from gsolve.core.utils import to_1d_ndarray_or_float
 from gsolve.gsolve_outputs import GSolveResults
-from gsolve.observations import GravityObservations, GravitySurvey
+from gsolve.observations import GravitySurvey
 from gsolve.reductions.corrections import (
     GravityCorrectionParameters,
     GravityCorrectionProvider,

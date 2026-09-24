@@ -21,7 +21,7 @@ import importlib.metadata
 import pathlib
 import warnings
 from collections.abc import Sequence
-from typing import Any, Literal, TypeAlias
+from typing import Literal
 
 import matplotlib.pyplot as plt
 import numpy as np

@@ -27,7 +27,7 @@ from gsolve.core._typing import (
     SitesLike,
     TCorrDistanceMaskType,
 )
-from gsolve.core.utils import GSolveDataWarning, round_coords
+from gsolve.core.utils import round_coords
 
 
 # Todo: rename accessor key to 'gsolve'?

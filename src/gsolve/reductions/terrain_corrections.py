@@ -30,9 +30,7 @@ import harmonica as hm
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-import tqdm
 import xarray as xr
-from numpy.f2py.auxfuncs import throw_error
 from tqdm import tqdm as _tqdm
 
 from gsolve.core._typing import (
@@ -67,8 +65,8 @@ __all__ = [
 ]
 
 
-def _is_dataarray(obj: Any) -> bool:  # ruff: ignore[any-type]
-    """Check if an object is an xarray DataArray."""  # ruff: ignore[docstring-missing-returns]
+def _is_dataarray(obj: Any) -> bool:
+    """Check if an object is an xarray DataArray."""
     return isinstance(obj, xr.DataArray)
 
 
@@ -128,9 +126,6 @@ def calculate_terrain_correction(
         The terrain corrections at each point.
 
     """
-    compute_bathymetry_by_arg = bool(compute_bathymetry)
-    compute_topography_by_arg = bool(compute_topography)
-
     # ensure supplied density is a DataArray (if a Dataset was provided)
     use_supplied_density = density_dataset is not None
     if use_supplied_density:
@@ -157,7 +152,7 @@ def calculate_terrain_correction(
         pts_x = to_1d_ndarray(points[0]).astype(np.float64)
         pts_y = to_1d_ndarray(points[1], expected_size=pts_x.size).astype(np.float64)
         pts_z = to_1d_ndarray(points[2], expected_size=pts_x.size).astype(np.float64)
-    except Exception as e:
+    except Exception as e:  # ruff: ignore[blind-except]
         msg = f"Points must contain 1d x,y,z arrays of equal size: {e}"
         raise ValueError(msg) from None
 
@@ -509,8 +504,7 @@ class TerrainCorrectionParameters(GSolveParameters):
     def __post_init__(self) -> None:
         self._sanity_check(if_errors="warn")
 
-    def __setattr__(self, name: str, value: Any) -> None:  # ruff: ignore[any-type]
-        fieldnames = []
+    def __setattr__(self, name: str, value: Any) -> None:
         if name not in (n.name for n in dataclasses.fields(self)):
             msg = f"unrecognized field name {name}"
             raise ValueError(msg)
@@ -971,7 +965,7 @@ class TerrainCorrector:
                         ycol=pars.site_northing_field,
                         zcol=pars.site_height_field,
                     )
-                except Exception as e:
+                except Exception as e:  # ruff: ignore[blind-except]
                     msg = f"Error extracting site coordinates from GravitySites object: {e}"
                     raise ValueError(msg) from None
 

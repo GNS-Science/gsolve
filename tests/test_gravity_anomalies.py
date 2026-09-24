@@ -27,7 +27,6 @@ from gsolve.reductions.anomalies import GravityAnomalies
 from gsolve.reductions.corrections import (
     GravityCorrectionParameters,
     GravityCorrectionProvider,
-    GravityCorrections,
 )
 from gsolve.sites import GravitySites
 

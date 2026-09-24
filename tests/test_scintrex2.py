@@ -15,18 +15,11 @@
 # SPDX-License-Identifier: GPLv3
 
 import tempfile
-from copy import deepcopy
-from datetime import datetime, timedelta
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.testing import (
-    assert_frame_equal,
-    assert_index_equal,
-    assert_series_equal,
-)
 
 from gsolve.scintrex import (
     CG6Data,

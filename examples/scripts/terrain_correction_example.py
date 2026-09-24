@@ -22,12 +22,7 @@ Created on Fri Mar  3 17:54:24 2023.
 """
 
 # %%
-import os
 import pathlib
-
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
 
 from gsolve import (
     GravitySites,

@@ -19,8 +19,6 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-import datetime
-import os
 import sys
 from pathlib import Path
 
@@ -113,7 +111,6 @@ html_theme_options = {
 }
 html_context = {
     "display_version": True,  # Ensure version is displayed
-    "version": release,  # Pass version variable to templates
     "version": release,  # Pass version variable to templates
 }
 

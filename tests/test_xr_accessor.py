@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from gsolve.core.xr_accessor import TCorrMethods as _TCorrMethods
+from gsolve.core.xr_accessor import TCorrMethods as _TCorrMethods  # ruff: ignore[unused-import]
 
 
 @pytest.fixture

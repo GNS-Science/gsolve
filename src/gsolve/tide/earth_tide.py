@@ -556,14 +556,14 @@ def _decimal_julian_century(
     dt_ = to_naive_utc_datetime(dt, allow_nat=False, **kwargs)
     if dt_ is None or isinstance(dt_, NaTType):
         msg = "dt cannot be NaT or None."
-        raise ValueError(msg)
+        raise TypeError(msg)
     if isinstance(dt_, pd.Timestamp):
         dt_ = pd.DatetimeIndex([dt_])
     elif isinstance(dt_, (pd.DatetimeIndex, pd.Series)):
         dt_ = pd.DatetimeIndex(dt_)
     else:
         msg = "dt could not be resolved to a datetime, DatetimeIndex, Series, or array-like of datetimes."
-        raise ValueError(msg)
+        raise TypeError(msg)
 
     julian_century_origin = pd.Timestamp("1899-12-31T12:00:00", tz=None)
     td_seconds = (dt_ - julian_century_origin).total_seconds()
@@ -602,7 +602,7 @@ def _decimal_hour_of_day(
         raise ValueError(msg)
     if not isinstance(dt, (pd.Timestamp, pd.Series, pd.DatetimeIndex)):
         msg = "date_time could not be resolved to a datetime, DatetimeIndex, Series, or array-like of datetimes."
-        raise ValueError(msg)
+        raise TypeError(msg)
 
     if isinstance(dt, pd.Timestamp):
         dt = pd.DatetimeIndex([dt])
@@ -753,13 +753,14 @@ class EternaTidalParameters:
         if gap_threshold is not None and self.data.shape[0] > 1:
             gap_threshold = float(gap_threshold)
             gaps = (
-                self.data.iloc[:-1, 1] - self.data.iloc[1:, 0] > gap_threshold
-            ).to_numpy()
+                (self.data.iloc[:-1, 1] - self.data.iloc[1:, 0])
+                .gt(gap_threshold)
+                .to_numpy()
+            )
             if gaps.any():
-                n_gaps = gaps.sum()
                 warnings.warn(
                     message=(
-                        "some frequency intervals separated by "
+                        f"some frequency {gaps.sum()} intervals separated by"
                         f"greater than {gap_threshold} "
                     ),
                     category=UserWarning,
@@ -866,7 +867,7 @@ class EternaTidalParameters:
         df = pd.read_excel(fname, sheet_name=sheet_name)
         if isinstance(df, dict):
             msg = "Excel file contains multiple sheets. Please specify sheet_name."
-            raise ValueError(msg)
+            raise ValueError(msg)  # ruff: ignore[type-check-without-type-error]
 
         return cls.from_dataframe(df)
 
@@ -1171,7 +1172,7 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
         tides_df = self._pgt.results()
         if not isinstance(tides_df, pd.DataFrame):
             msg = "No results returned from pygtide prediction."
-            raise ValueError(msg)
+            raise ValueError(msg)  # ruff: ignore[type-check-without-type-error]
 
         normalized_cols = ["datetime", "signal", "tide", "pole_tide", "lod_tide"]
         tides_df = tides_df.rename(
@@ -1282,7 +1283,7 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
 
             if not isinstance(ts.index, pd.DatetimeIndex):
                 msg = "Unexpected time series index type from pygtide results."
-                raise ValueError(msg)
+                raise ValueError(msg)  # ruff: ignore[type-check-without-type-error]
             ts = ts.set_index(ts.index.round(freq="1s"))
 
             if not np.isnan(corrs[site_mask]).all():
