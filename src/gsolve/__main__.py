@@ -166,9 +166,8 @@ def processing(args: argparse.Namespace) -> None:  # ruff: ignore[undocumented-p
     # Perform adjustment
     results = survey.solve_lstsq(
         method=args.method,
-        use_loops=args.use_loops,
-        calculate_calibration_factor=args.calculate_calibration_factor,
         percentile_clipping=args.percentile_clipping,
+        use_loops=args.use_loops,
     )
 
     # Save output files

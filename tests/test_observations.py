@@ -264,7 +264,7 @@ class TestObservationTimedelta:
 
         for loop in obj3.loop_ids:
             m = obj3.data["loop"].eq(loop).to_list()
-            assert obj3.data[m]["loop_tdelta"].min() == 0.0  # ruff: ignore[float-equality-comparison]
+            assert np.isclose(obj3.data[m]["loop_tdelta"].min(), 0.0)
 
     def test_gravity_observations_timedelta_unit(
         self,

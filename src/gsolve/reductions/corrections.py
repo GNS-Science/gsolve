@@ -632,6 +632,7 @@ class GravityCorrections(GSolveTable):
             }
         )
     )
+    _default_excel_sheet_name: str = "gravity_corrections"
 
     data: pd.DataFrame
     params: GravityCorrectionParameters

@@ -603,7 +603,7 @@ class GravitySites(GSolveTable):
         z = (
             dem.interp(
                 {dem.dims[0]: self.data[ycol], dem.dims[1]: self.data[xcol]},
-                method=method,  # type: ignore[invalid-argument-type, ty:invalid-argument-type]
+                method=method,
             )
             .to_numpy()
             .diagonal()
@@ -767,9 +767,8 @@ class ReferenceGravity(GSolveTable):
             raise ValueError(msg)
 
         # catch empty site_id
-        if (m := idx.isna() | (idx == "")).any():  # ruff: ignore[compare-to-empty-string]
-            empty = pd.Series(m)
-            empty = empty.loc[m.tolist()].index.to_list()
+        if (m := idx.isna() | idx.eq("")).any():
+            empty = pd.Series(m).loc[m.tolist()].index.to_list()
             msg = (
                 "creating ReferenceGravity object: "
                 f"site_id field contains empty values at rows: {empty}"

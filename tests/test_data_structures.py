@@ -15,6 +15,7 @@
 # SPDX-License-Identifier: GPLv3
 
 from dataclasses import dataclass
+from types import MappingProxyType
 
 import numpy as np
 import pandas as pd
@@ -35,12 +36,14 @@ from gsolve.core.data import (
 @pytest.fixture
 def gsolve_table_subclass():
     class TestClass(data.GSolveTable):
-        _known_fields = {  # ruff: ignore[mutable-class-default]
-            "a": data.DataFieldSpecification("a", str, "", True),
-            "b": data.DataFieldSpecification("b", float, 0.0, True),
-            "c": data.DataFieldSpecification("c", "datetime", pd.NaT, False),
-            "d": data.DataFieldSpecification("d", bool, False, False),
-        }
+        _known_fields = MappingProxyType(
+            {
+                "a": data.DataFieldSpecification("a", str, "", True),
+                "b": data.DataFieldSpecification("b", float, 0.0, True),
+                "c": data.DataFieldSpecification("c", "datetime", pd.NaT, False),
+                "d": data.DataFieldSpecification("d", bool, False, False),
+            }
+        )
         _index_field = "a"
 
     return TestClass
@@ -60,7 +63,7 @@ class TestDataFieldSpecification:
         fs = data.DataFieldSpecification("longitude", float, 0.0)
         assert fs.name == "longitude"
         assert fs.dtype == float
-        assert fs.default == 0.0  # ruff: ignore[float-equality-comparison]
+        assert np.isclose(fs.default, 0.0)
         assert fs.required is False
 
     # def test_data_field_specification_convert(self):

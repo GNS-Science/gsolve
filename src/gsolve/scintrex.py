@@ -17,6 +17,7 @@
 # Copyright (c) 2025 Earth Sciences New Zealand.
 
 import abc
+import copy
 import pathlib
 import warnings
 from collections.abc import Callable, Mapping, Sequence
@@ -125,7 +126,7 @@ class ScintrexData(abc.ABC):
         -------
         ScintrexData
         """
-        return self.__copy__()  # ruff: ignore[unnecessary-dunder-call]
+        return copy(self)
 
 
 class CG6Data(ScintrexData):
