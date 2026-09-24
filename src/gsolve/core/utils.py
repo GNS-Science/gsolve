@@ -67,7 +67,10 @@ __all__ = [
     "prepare_writable_df",
     "round_coords",
     "timestamp_to_columns",
+    "to_1d_ndarray",
+    "to_1d_ndarray_or_float",
     "to_naive_utc_datetime",
+    "to_points3d",
 ]
 
 
@@ -286,6 +289,29 @@ def to_1d_ndarray(
     extend_len_1_array: bool = False,
     dtype: DTypeLike | None = None,
 ) -> NDArray[np.float64]:
+    """Convert input to a 1D numpy array.
+
+    Replicates the functionality of numpy.atleast_1d, but with additional
+    checks for expected size and optional extension of length-1 arrays.
+
+    Parameters
+    ----------
+    a : array-like
+        The input to be converted to a 1D numpy array.
+    expected_size : int, optional
+        If specified, the function will raise a ValueError if the resulting
+        array does not have this size.
+    extend_len_1_array : bool, default False
+        If True and the input is a length-1 array, it will be extended to
+        the specified expected_size.
+    dtype : data-type, optional
+        If specified, the resulting array will be cast to this data type.
+
+    Returns
+    -------
+    numpy.ndarray
+        A 1D numpy array with the specified properties.
+    """
     a = np.atleast_1d(a)
     if a.ndim > 1:
         a = np.squeeze(a)
@@ -309,8 +335,28 @@ def to_1d_ndarray(
     return a
 
 
-def to_1d_ndarray_or_float(a: ArrayLike) -> NDArray[np.float64] | np.float64:
-    a = to_1d_ndarray(a).astype(np.float64)
+def to_1d_ndarray_or_float(
+    a: ArrayLike, dtype: DTypeLike = np.float64
+) -> NDArray[np.float64] | np.float64:
+    """Convert input to a 1D numpy array or a float.
+
+    If the input is a length-1 array, it will be converted to a float.
+
+    Parameters
+    ----------
+    a : array-like
+        The input to be converted to a 1D numpy array or a float.
+    dtype : data-type, optional
+        If specified, the resulting array will be cast to this data type.
+        If None, the default data type is np.float64.
+
+    Returns
+    -------
+    numpy.ndarray or float
+        A 1D numpy array or a float, depending on the size of the input.
+
+    """
+    a = to_1d_ndarray(a, dtype=dtype)
     return a[0] if a.size == 1 else a
 
 
