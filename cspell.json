@@ -1,6 +1,6 @@
 {
     "version": "0.2",
-    "language": "en,en-au",
+    "language": "en",
     "dictionaryDefinitions": [
         {
             "name": "project-words",
@@ -9,6 +9,11 @@
         }
     ],
     "dictionaries": [
-        "project-words"
+        "project-words",
+        "python",
+        "python-common",
+        "data-science-tools",
+        "git",
+        "en-au"
     ]
 }

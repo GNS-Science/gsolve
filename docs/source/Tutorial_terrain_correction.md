@@ -109,7 +109,7 @@ Once terrain corrections have been calculated the results can be read back in du
 from gsolve.reductions.terrain_corrections import TerrainCorrectionOutput
 
 results_reread_from_disk = TerrainCorrectionData.from_excel(
-  grid_dir / "terrain_correction_results.xlsx"
+    grid_dir / "terrain_correction_results.xlsx"
 )
 ```
 
