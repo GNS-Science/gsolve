@@ -1514,6 +1514,7 @@ class GravityObservations(GSolveTable):
                 - 'keep' : duplicates are unchanged
                 - 'drop' : drop duplicate data from ``other`` prior to merging
                 - 'rename' : rename the duplicate loops by adding suffix '_merged'.
+
         if_duplicate_obs_ids : {'error', 'drop', 'rename', 'regenerate'}, default is 'error'
             How to handle situations where duplicate 'obs_id' values exist in ``other``
 
@@ -1521,7 +1522,7 @@ class GravityObservations(GSolveTable):
                 - 'drop' : drop duplicate data from ``other`` prior to merging.
                 - 'rename' : rename the duplicate obs_id's by adding suffix '_merged'
                 - 'regenerate' : generate new obs_id's for all data in the
-                merged object.
+                  merged object.
 
         Returns
         -------
@@ -1891,6 +1892,7 @@ class GravitySurvey:
                 - 'keep' : duplicates are unchanged
                 - 'drop' : drop duplicate data from ``other`` prior to merging
                 - 'rename' : rename the duplicate loops by adding suffix '_merged'.
+
         if_duplicate_obs_ids : {'error', 'drop', 'rename', 'regenerate'}, default is 'error'
             How to handle situations where duplicate 'obs_id' values exist in ``other.obs``
 
@@ -1898,7 +1900,7 @@ class GravitySurvey:
                 - 'drop' : drop duplicate data from ``other`` prior to merging.
                 - 'rename' : rename the duplicate obs_id's by adding suffix '_merged'
                 - 'regenerate' : generate new obs_id's for all data in the
-                merged object.
+                  merged object.
 
         if_duplicate_sites : {'drop', 'error'}, default is "drop"
             How to handle duplicate site_id's in ``other.sites``.
