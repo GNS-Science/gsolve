@@ -282,7 +282,6 @@ def test_cg6data_to_gsolve_observations(sample_data: CG6Data) -> None:
 
 def test_cg6data_to_gsolve_sites(sample_data: CG6Data) -> None:
     sites_user = sample_data.to_gsolve_sites(coords_source="user")
-    sites_gps = sample_data.to_gsolve_sites(coords_source="gps")
 
     assert sites_user is not None
     assert sorted(sites_user.data.index.to_list()) == [

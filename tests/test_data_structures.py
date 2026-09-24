@@ -19,15 +19,11 @@ from types import MappingProxyType
 
 import numpy as np
 import pandas as pd
-import pandas.testing as pdt
 import pytest
 
 from gsolve.core import data
 from gsolve.core.data import (
     COMMON_FIELDS,
-    TERRAIN_DENSITY,
-    WATER_DENSITY,
-    DataFieldSpecification,
     GSolveParameters,
     GSolveTable,
 )

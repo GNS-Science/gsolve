@@ -17,7 +17,7 @@
 # Copyright (c) 2025 Earth Sciences New Zealand.
 """Functions and Classes for performing network adjustment of gravity data."""
 
-from typing import Any, Literal, TypeAlias
+from typing import Any
 
 import numpy as np
 import pandas as pd

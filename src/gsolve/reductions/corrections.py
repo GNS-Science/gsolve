@@ -471,7 +471,7 @@ def bouguer_slab_curvature_corrected(
             msg = (
                 f"Unknown ellipsoid '{ellipsoid_or_radius}': must be 'WGS84' or 'GRS80'"
             )
-            raise ValueError(msg)
+            raise ValueError(msg)  # ruff: ignore[type-check-without-type-error]
 
     elif isinstance(ellipsoid_or_radius, boule.Ellipsoid):
         Ro = float(ellipsoid_or_radius.mean_radius)
@@ -867,7 +867,7 @@ class GravityCorrectionProvider:
         return GravityCorrections(params=self.params, site_id=idx, **df_dict)
 
     def _configured_bouguer_corrections(self) -> Sequence[str]:
-        """Return bouguer correction method names required for the current parameters."""  # ruff: ignore[docstring-missing-returns]
+        """Return bouguer correction method names required for the current parameters."""
         corrections = ["normal_gravity_at_ellipsoid", "free_air_correction"]
         if self.params.use_atmospheric_correction:
             corrections.append("atmospheric_correction")

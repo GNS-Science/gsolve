@@ -113,11 +113,11 @@ class GSolveParameters:
         return deepcopy(self)
 
     def copy(self) -> Self:
-        """Return a deep copy of object."""  # ruff: ignore[docstring-missing-returns]
+        """Return a deep copy of object."""
         return copy.copy(self)
 
     def to_dict(self) -> dict:
-        """Return parameters as a dict."""  # ruff: ignore[docstring-missing-returns]
+        """Return parameters as a dict."""
         return dataclasses.asdict(self)
 
     def to_series(
@@ -206,13 +206,13 @@ class GSolveParameters:
 
     @classmethod
     def default_values(cls) -> dict:
-        """Return dict of default parameter values."""  # ruff: ignore[docstring-missing-returns]
+        """Return dict of default parameter values."""
         return {
             k: cls.__dataclass_fields__[k].default for k in cls.__dataclass_fields__
         }
 
     def non_default_values(self) -> dict:
-        """Return dict of non-default parameter values."""  # ruff: ignore[docstring-missing-returns]
+        """Return dict of non-default parameter values."""
         defaults = self.default_values()
         return {k: v for k, v in self.to_dict().items() if defaults.get(k, None) != v}
 
@@ -419,22 +419,22 @@ class GSolveTable(_HasKnownFields, abc.ABC):
         return len(self.data) if self else 0
 
     def __copy__(self) -> Self:
-        """Ensure all copies are deep copies."""  # ruff: ignore[docstring-missing-returns]
+        """Ensure all copies are deep copies."""
         return deepcopy(self)
 
     def copy(self) -> Self:
-        """Return a deep copy of object."""  # ruff: ignore[docstring-missing-returns]
+        """Return a deep copy of object."""
         return deepcopy(self)
 
     @classmethod
     def known_fields(cls) -> list[str]:
-        """Return a list of known fields in the object."""  # ruff: ignore[docstring-missing-returns]
+        """Return a list of known fields in the object."""
         fields = [str(k) for k in getattr(cls, "_known_fields", {})]
         return fields
 
     @classmethod
     def required_fields(cls) -> list[str]:
-        """Return a list of required fields in the object."""  # ruff: ignore[docstring-missing-returns]
+        """Return a list of required fields in the object."""
         if cls.known_fields():
             return [k for k, v in cls._known_fields.items() if v.required]
         return []
@@ -442,8 +442,8 @@ class GSolveTable(_HasKnownFields, abc.ABC):
     def set_column(
         self,
         label: str,
-        data: Any | None = None,  # ruff: ignore[any-type]
-        default: Any | None = None,  # ruff: ignore[any-type]
+        data: Any | None = None,
+        default: Any | None = None,
         dtype: str | type | None = None,
     ) -> None:
         """
@@ -495,7 +495,7 @@ class GSolveTable(_HasKnownFields, abc.ABC):
         self.data[label] = pd.Series(data=data_, index=self.data.index, dtype=dtype)
 
     def _data_ok(self, warn: bool = True) -> bool:
-        """Test whether data are complete according to specifications in ``obj._known_fields``."""  # ruff: ignore[docstring-missing-returns]
+        """Test whether data are complete according to specifications in ``obj._known_fields``."""
         rval = True
         for f in self.required_fields():
             if f not in self.data.columns:

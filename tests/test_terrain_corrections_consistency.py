@@ -16,15 +16,12 @@
 
 import numpy as np
 import pandas as pd
-import pytest
 import xarray as xr
 
 from gsolve.reductions.terrain_corrections import (
     TerrainCorrectionData,
     TerrainCorrectionParameters,
     TerrainCorrector,
-    _is_dataarray,
-    calculate_terrain_correction,
 )
 from gsolve.sites import GravitySites
 

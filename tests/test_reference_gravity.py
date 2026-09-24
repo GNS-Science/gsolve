@@ -16,10 +16,8 @@
 
 # test GravitySites class.
 
-from pathlib import Path
 
 import pytest
-from pandas.testing import assert_frame_equal
 
 from gsolve.sites import ReferenceGravity
 
@@ -49,9 +47,7 @@ def test_init_duplicate_site_id() -> None:
 def test_init_empty_site_id() -> None:
     site_ids = [1, 2, ""]
     gravity = [100, 200, 300]
-    with pytest.raises(
-        ValueError, match=r"site_id field contains empty values at rows"
-    ):
+    with pytest.raises(ValueError, match=r"site_id field contains empty values"):
         ReferenceGravity(site_ids, gravity)
 
 

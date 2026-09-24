@@ -14,11 +14,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # SPDX-License-Identifier: GPLv3
 
-import datetime
 from pathlib import Path
 
 import numpy as np
-import numpy.testing as npt
 import pandas as pd
 import pytest
 

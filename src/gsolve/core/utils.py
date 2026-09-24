@@ -29,11 +29,9 @@ import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike, DTypeLike, NDArray
 from pandas.api.types import (
-    is_bool_dtype,
     is_datetime64_any_dtype,
     is_dict_like,
     is_list_like,
-    is_string_dtype,
 )
 from pandas.api.typing import NaTType, NAType
 
@@ -73,7 +71,7 @@ __all__ = [
 ]
 
 
-def is_filepath_like(obj: Any) -> bool:  # ruff: ignore[any-type]
+def is_filepath_like(obj: Any) -> bool:
     """Test if object type is compatible with ``gsolve.core._typing.FilePath``.
 
     Returns
@@ -83,7 +81,7 @@ def is_filepath_like(obj: Any) -> bool:  # ruff: ignore[any-type]
     return isinstance(obj, FilePath.__value__)
 
 
-def is_in_literal(value: Any, literal_type: TypeAliasType) -> bool:  # ruff: ignore[any-type]
+def is_in_literal(value: Any, literal_type: TypeAliasType) -> bool:
     """Test if value is in a Literal type.
 
     Parameters
@@ -112,7 +110,7 @@ def is_in_literal(value: Any, literal_type: TypeAliasType) -> bool:  # ruff: ign
     raise TypeError(msg)
 
 
-def is_datetime_array(v: Any) -> bool:  # ruff: ignore[any-type]
+def is_datetime_array(v: Any) -> bool:
     """Test if the input is a datetime-like array.
 
     Returns
@@ -122,7 +120,7 @@ def is_datetime_array(v: Any) -> bool:  # ruff: ignore[any-type]
     return isinstance(v, DatetimeArray.__value__)
 
 
-def is_points3d_like(v: Any) -> bool:  # ruff: ignore[any-type]
+def is_points3d_like(v: Any) -> bool:
     """Test if value is compatible with Points3D type.
 
     Note that is not possible to test the data type of contained arrays.
@@ -292,7 +290,7 @@ def to_1d_ndarray(
     if a.ndim > 1:
         a = np.squeeze(a)
     if a.ndim != 1:
-        msg = f"input not convertible to 1d array"
+        msg = "input not convertible to 1d array"
         raise ValueError(msg)
 
     if extend_len_1_array and a.size == 1:
@@ -714,7 +712,7 @@ def expand_datetime_column(
     cols_to_split = [str(c) for c in cols_to_split if str(c) in candidate_columns]
     if not cols_to_split:
         msg = (
-            f"the specified column_name(s) are either missing or or are "
+            "the specified column_name(s) are either missing or or are "
             "not datetime-like columns"
         )
         raise ValueError(msg)

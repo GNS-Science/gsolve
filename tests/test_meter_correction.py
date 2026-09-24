@@ -295,7 +295,6 @@ def test_lacoste_romberg_dial_converter_correct_meter_id(
         converter.convert_readings([array_vals[1]], meter_id="G936"), array_results[1]
     )
     assert pd.isna(converter.convert_readings([array_vals[1]], meter_id="xxxx"))
-    dates = ["2021-01-01", "2024-01-02"]
 
 
 def test_lacoste_romberg_dial_converter_correct_meter_id_date(

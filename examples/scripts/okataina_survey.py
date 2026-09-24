@@ -122,7 +122,7 @@ generate_qtp_input(
 qtp_output_file = ocean_load_path / "okataina_qtp_input_Modified.csv"
 
 if not qtp_output_file.exists():
-    msg = f"You didn't run QuickTide Pro yet did you?"
+    msg = "You didn't run QuickTide Pro yet did you?"
     raise FileNotFoundError(msg)
 
 qtp_ocean_load_corrector = qtp_to_corrector(

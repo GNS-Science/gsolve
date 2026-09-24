@@ -82,7 +82,7 @@ def _solver_inputs(n_obs: int = 6, use_two_loops: bool = True) -> dict:
 
 def _solver_inputs_robust() -> dict:
     """Build a better-conditioned synthetic dataset for clipping tests."""
-    n_obs = 18
+
     site_ids = np.array(["A", "B", "C"] * 6)
     obs_loop = np.array((["L1"] * 6) + (["L2"] * 6) + (["L3"] * 6))
     obs_timedelta = np.array([0.0, 0.5, 1.0, 1.5, 2.0, 2.5] * 3)

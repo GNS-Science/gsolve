@@ -97,7 +97,7 @@ class GravityObservationsParameters(GSolveParameters):
     earthtide_correction_method: str = ""
     ocean_load_correction_method: str = ""
 
-    def __setattr__(self, name: str, value: Any) -> None:  # ruff: ignore[any-type]
+    def __setattr__(self, name: str, value: Any) -> None:
         if name == "timedelta_unit":
             value = pd.Timedelta(value)
         elif name == "fixed_time_datum":
@@ -777,7 +777,7 @@ class GravityObservations(GSolveTable):
             If ``corrector`` does not implement the ``OceanLoadCorrectionProvider`` protocol.
         """
         if not isinstance(corrector, OceanLoadCorrectionProvider):
-            msg = f"ocean_load_corrector must implement OceanLoadCorrectionProvider protocol"
+            msg = "ocean_load_corrector must implement OceanLoadCorrectionProvider protocol"
             raise TypeError(msg)
 
         corrections = corrector.ocean_load_correction(
@@ -1224,10 +1224,6 @@ class GravityObservations(GSolveTable):
         return fig, ax
 
     def _make_network(self, sites: GravitySites) -> pd.DataFrame:
-        df = self.data.assign(
-            group=self.data["site_id"].ne(self.data["site_id"].shift()).cumsum()
-        )
-
         station_order = (
             self.data.assign(
                 group=self.data["site_id"].ne(self.data["site_id"].shift()).cumsum()
@@ -1359,7 +1355,7 @@ class GravityObservations(GSolveTable):
         )
 
     def loop_summary(self) -> pd.DataFrame:
-        """Return a summary of the observations by loop."""  # ruff: ignore[docstring-missing-returns]
+        """Return a summary of the observations by loop."""
         from gsolve.core._summary_functions import (  # ruff: ignore[import-outside-top-level]
             duration_hr,
             endtime_utc,
@@ -1483,7 +1479,8 @@ class GravityObservations(GSolveTable):
 
         if "loop" in self.data.columns and "meter_id" in self.data.columns:
             for l in self.loop_ids:
-                m = self.data["loop", self.data["loop"].eq(l)].to_numpy()
+                # m = self.data.loc[self.data["loop"].eq(l)].to_numpy()
+                m = self.data.loc[self.data["loop"].eq(l), "meter_id"].to_numpy()
                 if not (m.shape[0] == 0 or (m[0] == m).all()):
                     warner(f"Multiple gravity meters found in loop '{l}'")
 
@@ -1649,7 +1646,7 @@ class GravitySurvey:
         return type(self)(obs=self.observations.copy(), sites=self.sites.copy())
 
     def copy(self) -> Self:
-        """Return a deep copy."""  # ruff: ignore[docstring-missing-returns]
+        """Return a deep copy."""
         return copy.copy(self)
 
     @classmethod

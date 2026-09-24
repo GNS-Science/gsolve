@@ -21,7 +21,6 @@ import copy
 import pathlib
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from copy import deepcopy
 from types import MappingProxyType
 from typing import Literal, Self
 
@@ -117,7 +116,7 @@ class ScintrexData(abc.ABC):
         return self.data["station"].unique().tolist()
 
     def __copy__(self) -> Self:
-        return deepcopy(self)
+        return copy.deepcopy(self)
 
     def copy(self) -> Self:
         """Return a deep copy of the object.
@@ -126,7 +125,7 @@ class ScintrexData(abc.ABC):
         -------
         ScintrexData
         """
-        return copy(self)
+        return copy.copy(self)
 
 
 class CG6Data(ScintrexData):
@@ -339,7 +338,7 @@ class CG6Data(ScintrexData):
         self.data = df
 
     def _strip_corrections(self) -> pd.Series:
-        """Return corrgrav values with all corrections removed."""  # ruff: ignore[docstring-missing-returns]
+        """Return corrgrav values with all corrections removed."""
         return (
             self.data["corrgrav"]
             - (self.data["driftcorr"] * self.data["correction_drift"])
@@ -726,8 +725,8 @@ class CG6Data(ScintrexData):
             Zero time for drift correction.
 
         """
-        current_drift_rate = self.metadata.get("drift_rate", 0.0)
-        current_drift_zero_time = self.metadata.get("drift_zero_time", pd.NaT)
+        # current_drift_rate = self.metadata.get("drift_rate", 0.0)
+        # current_drift_zero_time = self.metadata.get("drift_zero_time", pd.NaT)
         current_drift_corr = self.data.get(
             "driftcorr", pd.Series(0.0, index=self.data.index)
         )
@@ -737,7 +736,7 @@ class CG6Data(ScintrexData):
 
         if not isinstance(drift_zero_time, pd.Timestamp):
             msg = "drift_zero_time could not be converted to a valid Timestamp."
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         drift_corr = (
             (self.data["datetime"] - drift_zero_time)
@@ -753,7 +752,7 @@ class CG6Data(ScintrexData):
 
 
 def _slurp_scintrex_text_file(filepath: FilePath) -> list[str]:
-    """Read a Scintrex text file, fix encoding and return lines as a list."""  # ruff: ignore[docstring-missing-returns]
+    """Read a Scintrex text file, fix encoding and return lines as a list."""
     with pathlib.Path(filepath).open("r", encoding="utf-8-sig") as fh:
         return [l.strip() for l in fh]
 
@@ -763,7 +762,7 @@ def _split_header_key_val_unit(
     normalize_key: bool = True,
     extract_units: bool = True,
 ) -> tuple[str, str, str]:
-    """Split headers into key, value and units."""  # ruff: ignore[docstring-missing-returns]
+    """Split headers into key, value and units."""
     header = header.strip("/ ")
     if not header:
         return ("", "", "")
@@ -815,7 +814,7 @@ def _scintrex_header_type_conversion(
 
 
 def _extract_unit_from_keyword(header: str) -> tuple[str, str]:
-    """Get header and unit form a header string."""  # ruff: ignore[docstring-missing-returns]
+    """Get header and unit form a header string."""
     if header.endswith(")"):
         sep = "("
     elif header.endswith("]"):

@@ -18,24 +18,15 @@
 
 """Methods for loading and manipulating XArray data structures."""
 
-import warnings
-from collections.abc import Sequence
-
 import numpy as np
-import rasterio
 import xarray as xr
-from numpy.typing import ArrayLike
-from rasterio.transform import xy as rio_xy
 
 from gsolve.core._typing import (
     DatasetOrArray,
     FilePath,
-    Points2D,
-    SitesLike,
-    TCorrDistanceMaskType,
 )
-from gsolve.core.utils import GSolveDataWarning, round_coords
-from gsolve.core.xr_accessor import TCorrMethods as _TCorrMethods
+from gsolve.core.utils import GSolveDataWarning
+from gsolve.core.xr_accessor import TCorrMethods as _TCorrMethods  # ruff: ignore[unused-import]
 
 __all__ = [
     "check_dem",

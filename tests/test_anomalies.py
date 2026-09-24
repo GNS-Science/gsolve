@@ -17,10 +17,7 @@
 from __future__ import annotations
 
 import numpy as np
-import pandas as pd
 import pytest
-from scipy.constants import atm
-from tornado.routing import AnyMatches
 
 from gsolve.reductions.anomalies import (
     compute_complete_bouguer_anomaly,
@@ -42,7 +39,6 @@ def anomaly_args():
 
 
 def test_compute_complete_bouguer_anomaly_basic():
-    c = anomaly_args()
     ag = np.array([100.0, 200.0])
     ng = np.array([10.0, 20.0])
     fac = np.array([1.0, 2.0])
