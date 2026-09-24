@@ -16,7 +16,8 @@
 
 # Copyright (c) 2025 Earth Sciences New Zealand.
 
-from copy import deepcopy
+
+import copy
 from pathlib import Path
 from typing import Any, Self
 
@@ -126,11 +127,11 @@ class GSolveReport:
 
     def copy(self) -> Self:
         """Return a deep copy."""  # ruff: ignore[docstring-missing-returns]
-        return self.__copy__()  # ruff: ignore[unnecessary-dunder-call]
+        return copy.copy(self)
 
     def __copy__(self) -> Self:
         """Return a deep copy."""  # ruff: ignore[docstring-missing-returns]
-        return deepcopy(self)
+        return copy.deepcopy(self)
 
     def _set_params(
         self,
@@ -142,7 +143,7 @@ class GSolveReport:
 
         self.params["observations"] = observations.params()
         if hasattr(sites, "params"):
-            self.params["sites"] = sites.params.copy()  # ty:ignore[unresolved-attribute]
+            self.params["sites"] = sites.params.copy()
         self.params["solution"] = results.params.copy()
         if anomalies is not None:
             self.params["anomalies"] = anomalies.params.copy()

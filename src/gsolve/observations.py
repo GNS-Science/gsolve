@@ -813,10 +813,11 @@ class GravityObservations(GSolveTable):
 
         """
         c_label: str = "calibration_factor"
-
-        if self.data["meter_id"].nunique() > 1 and meter_id is None:  # ruff: ignore[pandas-nunique-constant-series-check]
-            msg = "Multiple gravity meters found in data, must specify ``meter_id``"
-            raise ValueError(msg)
+        if meter_id is None:
+            m = self.data["meter_id"].to_numpy()
+            if not (m[0] == m).all():
+                msg = "Multiple gravity meters found in data, must specify ``meter_id``"
+                raise ValueError(msg)
 
         if meter_id is None:
             self.set_column(c_label, float(calibration_factor))
@@ -978,9 +979,7 @@ class GravityObservations(GSolveTable):
         ------
         ValueError
             If any specified ``obs_id``, ``site_id`` or ``loop`` values are not found in the data.
-        TypeError
-            If any input is not a string or iterable of strings.
-        """  # ruff: ignore[docstring-extraneous-exception]
+        """
 
         def _parse_inputs(o: str | Iterable[str] | None) -> list[str]:
             if o is None:
@@ -1032,7 +1031,12 @@ class GravityObservations(GSolveTable):
         include_unknown_fields: bool | Sequence[str] = True,
         active_only: bool = False,
     ) -> pd.DataFrame:
-        """Return a DataFrame suitable for writing to an excel or csv file."""  # ruff: ignore[docstring-missing-returns]
+        """Return a DataFrame suitable for writing to an excel or csv file.
+
+        Returns
+        -------
+        Dataframe
+        """
         cols = [c for c in self.known_fields() if c in self.data.columns]
         if include_unknown_fields:
             if include_unknown_fields is True:
@@ -1479,8 +1483,8 @@ class GravityObservations(GSolveTable):
 
         if "loop" in self.data.columns and "meter_id" in self.data.columns:
             for l in self.loop_ids:
-                m = self.data["loop"].eq(l)
-                if self.data.loc[m, "meter_id"].nunique() > 1:  # ruff: ignore[pandas-nunique-constant-series-check]
+                m = self.data["loop", self.data["loop"].eq(l)].to_numpy()
+                if not (m.shape[0] == 0 or (m[0] == m).all()):
                     warner(f"Multiple gravity meters found in loop '{l}'")
 
         warner.final_msg()

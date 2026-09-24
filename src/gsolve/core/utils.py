@@ -172,32 +172,34 @@ def to_points3d(
 
 @overload
 def to_naive_utc_datetime(
-    t: DatetimeScalar, allow_nat: Literal[True], **kwargs
+    t: DatetimeScalar, allow_nat: Literal[True], **kwargs: bool | str | DatetimeScalar
 ) -> pd.Timestamp | NaTType: ...
 
 
 @overload
 def to_naive_utc_datetime(
-    t: DatetimeScalar, allow_nat: Literal[False], **kwargs
+    t: DatetimeScalar, allow_nat: Literal[False], **kwargs: bool | str | DatetimeScalar
 ) -> pd.Timestamp: ...
 
 
 @overload
-def to_naive_utc_datetime(t: pd.Series, allow_nat: bool, **kwargs) -> pd.Series: ...
+def to_naive_utc_datetime(
+    t: pd.Series, allow_nat: bool, **kwargs: bool | str | DatetimeScalar
+) -> pd.Series: ...
 
 
 @overload
 def to_naive_utc_datetime(
     t: list | tuple | NDArray | pd.Index | pd.DatetimeIndex,
     allow_nat: bool,
-    **kwargs,
+    **kwargs: bool | str | DatetimeScalar,
 ) -> pd.DatetimeIndex: ...
 
 
 def to_naive_utc_datetime(
     t: DatetimeScalar | DatetimeArray | NaTType,
     allow_nat: bool = True,
-    **kwargs,
+    **kwargs: bool | str | DatetimeScalar,
 ) -> pd.Timestamp | pd.Series | pd.DatetimeIndex | NaTType:
     """
     Convert inputs to UTC time, but with timezone information set to None.
@@ -718,12 +720,10 @@ def expand_datetime_column(
         raise ValueError(msg)
 
     if prefix is None or not prefix:
-        if len(cols_to_split) > 1:  # ruff: ignore[if-else-block-instead-of-if-exp]
-            prefixes = [f"{n}_" for n in cols_to_split]
-        else:
-            prefixes = [""]
+        prefixes = [f"{n}_" for n in cols_to_split] if len(cols_to_split) > 1 else [""]
+
     else:
-        prefixes = prefix if is_list_like(prefix) else [prefix]
+        prefixes = list(prefix) if is_list_like(prefix) else [prefix]
         if len(prefixes) != len(cols_to_split):
             msg = (
                 f"inconsistent 'column_name' and 'prefix' arg lengths: "
@@ -951,15 +951,16 @@ def identify_loop_blocks(
     if not dt.is_monotonic_increasing:
         msg = "datetimes must be sorted in increasing order."
         raise ValueError(msg)
-    # if isinstance(_datetimes, pd.DatetimeIndex):
-    #     _datetimes = _datetimes.to_series()
+
     gap = pd.to_timedelta(gap)
     gaps = dt.diff().gt(gap)
 
     one_sec = pd.Timedelta("1s")
-    gap_bounds: list[pd.Timestamp] = (
-        [dt.iloc[0] - one_sec] + dt.loc[gaps].to_list() + [dt.iloc[-1] + one_sec]  # ruff: ignore[collection-literal-concatenation]
-    )
+    gap_bounds: list[pd.Timestamp] = [
+        dt.iloc[0] - one_sec,
+        *dt.loc[gaps].to_list(),
+        dt.iloc[-1] + one_sec,
+    ]
     if as_intervals:
         return pd.IntervalIndex.from_tuples(
             list(itertools.pairwise(gap_bounds)), closed="left"

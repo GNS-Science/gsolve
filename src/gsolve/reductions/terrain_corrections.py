@@ -571,7 +571,9 @@ class TerrainCorrectionParameters(GSolveParameters):
                 "0.0 <= min_dist < max_dist: "
                 f"got min_dist={self.min_dist}, max_dist={self.max_dist}"
             )
-            raise ValueError(msg) if throw_error else warn_(msg)
+            if throw_error:
+                raise ValueError(msg)
+            warn_(msg)
 
         # check distance msk type is valid
         if not is_in_literal(self.distance_mask_type, TCorrDistanceMaskType):
@@ -579,7 +581,9 @@ class TerrainCorrectionParameters(GSolveParameters):
                 f"invalid 'distance_mask_type': {self.distance_mask_type}. "
                 f"Expected one of: {get_args(TCorrDistanceMaskType.__value__)}"
             )
-            raise ValueError(msg) if throw_error else warn_(msg)
+            if throw_error:
+                raise ValueError(msg)
+            warn_(msg)
 
         # check dem_source
         if not _is_dataarray(self.dem_source) and not is_filepath_like(self.dem_source):
@@ -587,22 +591,31 @@ class TerrainCorrectionParameters(GSolveParameters):
                 f"invalid dem_source: must be an xarray.DataArray or file path"
                 f", not {type(self.dem_source).__name__}"
             )
-            raise TypeError(msg) if throw_error else warn_(msg)
+            if throw_error:
+                raise ValueError(msg)
+            warn_(msg)
 
         if _is_dataarray(self.dem_source):
             if not self.dem_source.tcorr.is_valid_dem:
                 msg = "invalid dem_source DataArray: must be a 2D array of floats"
-                raise ValueError(msg) if throw_error else warn_(msg)
+                if throw_error:
+                    raise ValueError(msg)
+                warn_(msg)
+
         elif is_filepath_like(self.dem_source):
             if not self.dem_source:
                 msg = "invalid dem_source file-path like"
-                raise ValueError(msg) if throw_error else warn_(msg)
+                if throw_error:
+                    raise ValueError(msg)
+                warn_(msg)
         else:
             msg = (
                 f"invalid dem_source: must be an xarray.DataArray or file-path like"
                 f", not {type(self.dem_source).__name__}"
             )
-            raise TypeError(msg) if throw_error else warn_(msg)
+            if throw_error:
+                raise ValueError(msg)
+            warn_(msg)
 
         # check density_dataset_source
         if _is_dataarray(self.density_dataset_source):
@@ -611,17 +624,19 @@ class TerrainCorrectionParameters(GSolveParameters):
                     "invalid density_dataset_source DataArray: "
                     "must be a 2D array of floats"
                 )
-                raise ValueError(msg) if throw_error else warn_(msg)
+                if throw_error:
+                    raise ValueError(msg)
+                warn_(msg)
+
         elif is_filepath_like(self.density_dataset_source):
             if not self.density_dataset_source:
                 msg = ""
         elif self.density_dataset_source is not None:
             msg = (
-                "invalid density_dataset_source type: should be a file-path like, "
+                "invalid density_dataset_source: expected file-path like, "
                 f"DataArray or None, not {type(self.density_dataset_source).__name__}"
             )
             raise TypeError(msg)
-            # if throw_error else warn_(msg)
 
     def to_series(
         self,

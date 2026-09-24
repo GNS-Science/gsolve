@@ -18,8 +18,8 @@
 
 """Methods and classes for reading and applying ocean load corrections to gravity data."""
 
-import pathlib
 import warnings
+from pathlib import Path
 from typing import Any, Literal, Protocol, runtime_checkable
 
 import numpy as np
@@ -459,7 +459,7 @@ def qtp_to_corrector(
 
     if corr_type == "auto":
         # determine file type by reading first line
-        with pathlib.Path(file_path).open("r", encoding="iso-8859-1") as f:
+        with Path(file_path).open("r", encoding="iso-8859-1") as f:
             first_line = f.readline()
         if first_line.strip().startswith("Year DOY  Time"):
             corr_type = "timeseries"
@@ -506,7 +506,7 @@ def read_qtp_timeseries(file_path: FilePath) -> pd.DataFrame:
     if not all(col in df.columns for col in expected_columns):
         msg = f"Format error reading '{file_path}': expected columns {expected_columns} not found, not QTP timeseries format?"
         raise ValueError(msg)
-    if df.isna().any(axis=None):
+    if bool(df.isna().any(axis=None)):
         msg = f"Missing values detected while reading '{file_path}': not QTP timeseries format?"
         raise ValueError(msg)
 
@@ -648,10 +648,14 @@ def generate_qtp_input(  # ruff: ignore[too-many-positional-arguments]
             "Elevation": elevation,
         },
     )
-    # wrap to [-180, 180]
-    qtp_df["Longitude"] = qtp_df["Longitude"].apply(lambda x: (x + 180) % 360 - 180)
 
-    if qtp_df["Elevation"].isna().any():
+    # wrap to [-180, 180]
+    def _wrap_180(x: float) -> float:
+        return (x + 180.0) % 360 - 180.0
+
+    qtp_df["Longitude"] = qtp_df["Longitude"].apply(_wrap_180)
+
+    if any(qtp_df["Elevation"].isna()):
         msg = "Some site elevations are missing and no 'fill_elevation' was specified."
         raise ValueError(msg)
 
@@ -696,8 +700,10 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
 
     """
 
-    def __init__(self, f: FilePath, **metadata) -> None:
-        self.ocean_loading_model = pyhardisp.load_ocean_loading_coefficients(str(f))
+    def __init__(self, f: FilePath, **metadata: Any) -> None:
+        self.ocean_loading_model: dict[
+            str, tuple[NDArray[np.floating], NDArray[np.floating]]
+        ] = pyhardisp.load_ocean_loading_coefficients(str(f))
         self.metadata = metadata
         self._get_model_parameters(f)
 
@@ -717,7 +723,7 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
             "ocean_tide_model": "",
             "center_mass_correction": False,
         }
-        with pathlib.Path(f).open() as fh:  # ruff: ignore[unspecified-encoding]
+        with Path(f).open() as fh:  # ruff: ignore[unspecified-encoding]
             model_txt = [l.strip() for l in fh if l.startswith("$$")]
             for l in model_txt:
                 if l.startswith("$$ Greens function:"):
@@ -726,7 +732,7 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
                     metadata["ocean_tide_model"] = l.split(":", 1)[1].strip()
                 elif l.startswith("$$ CMC"):
                     v = l.split(":", 1)[1].strip().split()[0]
-                    metadata["center_mass_correction"] = v != "NO"
+                    metadata["center_mass_correction"] = v.upper() != "NO"
                 elif l.startswith("$$ END HEADER:"):
                     break
         self.metadata.update(metadata)
@@ -749,8 +755,12 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
         scale_factor: float = 1e-4  # convert from nm/s2 to mGal
         uniq_site_id = np.unique(site_id)
 
-        bad_site_ids = [s for s in uniq_site_id if s not in self.stations]
-        if bad_site_ids:
+        if (
+            len(
+                bad_site_ids := [str(s) for s in uniq_site_id if s not in self.stations]
+            )
+            == 0
+        ):
             msg = (
                 f"site_id(s) {bad_site_ids} not found in station loading model. "
                 f"Available stations: {self.stations}"

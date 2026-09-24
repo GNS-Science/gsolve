@@ -18,9 +18,10 @@
 import pathlib
 
 try:
-    import contextily as cx  # pyright: ignore[reportMissingImports] # ty:ignore[unresolved-import]
+    import contextily as cx  # ty:ignore[unresolved-import]
 except ImportError:
     has_contextily = False
+    cx = None
 else:
     has_contextily = True
 
@@ -78,7 +79,7 @@ fig, ax = obs.plot_network_map(
 )
 
 # add a basemap (optional)
-if has_contextily:
+if has_contextily and cx is not None:
     cx.add_basemap(ax, source=cx.providers.OpenTopoMap, crs="EPSG:4326")
     fig.savefig(str(obs_path) + "/ Okataina_network_map.png")
 
