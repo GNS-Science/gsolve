@@ -134,16 +134,13 @@ class LongmanConstants:
     c: float = 3.84399e10  # Mean distance between the centers earth-moon (cm)
     c1: float = 1.495983e13  # Mean distance between centers earth-sun (cm)
     e: float = 0.054900489  # Eccentricity of the moon's orbit
-    i: float = round(
-        deg2rad(5.145, dtype=float),
-        ndigits=9,
-    )  # = 0.08979719  Inclination of moon's orbit to the ecliptic
+    i: float = round(deg2rad(5.145, dtype=np.float64), ndigits=9)
+    # = 0.08979719  Inclination of moon's orbit to the ecliptic
     m: float = 0.074804  # Ratio of mean motion of the sun to that of the moon
     mu: float = 6.67428e-08  # Newton's gravitational constant, 6.670e-8 in orig.
     M: float = 7.3477e25  # Mass of the moon in grams
-    omega: float = round(
-        deg2rad(23.452), ndigits=9
-    )  # = 0.409315 Incl. of Earth's equator to ecliptic
+    omega: float = round(deg2rad(23.452, dtype=np.float64), ndigits=9)
+    # = 0.409315 Incl. of Earth's equator to ecliptic
     S: float = 1.98840987e33  # Mass of the sun in grams
     # https://aa.usno.navy.mil/downloads/publications/Constants_2021.pdf
 
