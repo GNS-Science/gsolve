@@ -16,7 +16,7 @@ from gsolve import (
     GravitySurvey,
     ReferenceGravity,
     DialToMgalConverter,
-    GSolveReport
+    GSolveReport,
 )
 
 from gsolve.tide.earth_tide import LongmanTidalCorrection
@@ -37,7 +37,7 @@ corr_table_file = data_path / "correction_tables" / "G106.csv"
 ## Read in observations
 
 ```{tip}
-Here we are using the old gsovle spreadsheet format so you need to supply the ```sheet_name```
+Here we are using the old gSolve spreadsheet format so you need to supply the ```sheet_name```
 
 ```python
 obs = GravityObservations.from_excel(

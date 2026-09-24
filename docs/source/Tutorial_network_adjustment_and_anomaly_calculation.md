@@ -24,7 +24,6 @@ from gsolve import (
 )
 from gsolve.tide.earth_tide import LongmanTidalCorrection, EternaPredictTidalCorrection
 from gsolve.reports import GSolveReport
-
 ```
 
 Here we assume the data are in an excel spreadsheet (xlsx) with a "Survey Data" and "locations" tab
@@ -55,7 +54,7 @@ To convert your old beta_factor to a calibration factor use  ```calibration_fact
 Note the calibration factor is used as ```gcorr = reading * calibration_factor```
 
 ```python
-calibration_factor = 1- -0.0019
+calibration_factor = 1 - -0.0019
 ```
 
 ## Read in the gravity survey data
@@ -64,7 +63,9 @@ Here we create both observation and sites objects.  Observations contain the gra
 Note we have the date time information split into separate "day", "month", "year", "hour", "minute" columns hence we use parse_split_datetime=True
 
 ```python
-obs = GravityObservations.from_excel(survey_file, sheet_name="Survey Data", parse_split_datetime=True)
+obs = GravityObservations.from_excel(
+    survey_file, sheet_name="Survey Data", parse_split_datetime=True
+)
 ```
 
 ### Read in site location information
@@ -115,14 +116,14 @@ Refer to [pygtide documentation](https://github.com/hydrogeoscience/pygtide) for
 
 ```python
 longman = LongmanTidalCorrection(amp_factor=1.2)
-obs.apply_earth_tide_correction(sites, tide_corrector = longman)
+obs.apply_earth_tide_correction(sites, tide_corrector=longman)
 ```
 
 Another option is to use pygtide for corrections which uses the more accurate ETERNA tidal model.
 
 ```python
 eterna = EternaPredictTidalCorrection(tidalpoten=8)
-obs.apply_earth_tide_correction(sites, tide_corrector = eterna)
+obs.apply_earth_tide_correction(sites, tide_corrector=eterna)
 ```
 
 Other tidal parameters for Eterna can be set through ```set_tidal_params``` once the tide correction object is initialised. e.g. ```eterna.set_tidal_params([0, 100, 1.15, 0])```
@@ -176,7 +177,9 @@ and apply a 99 percentile cutoff filter to the residuals.  As this is not a cali
 survey we do not need to calculate the calibration factor
 
 ```python
-results = survey.solve_lstsq(method=2, use_loops=True, calculate_calibration=False, percentile_clipping=95)
+results = survey.solve_lstsq(
+    method=2, use_loops=True, calculate_calibration=False, percentile_clipping=95
+)
 ```
 
 ```{tip}
@@ -196,8 +199,12 @@ print(results.obs_solution)
 Note: you can use loop="all" to plot the ```residual_cdf``` of all loops together.
 
 ```python
-results.plot_residual_drift(loop=2, filename=str(obs_path) + "/ Okataina_residual_drift.png")
-results.plot_residual_cdf(loop=2, filename=str(obs_path) + "/ Okataina_residual_cdf.png")
+results.plot_residual_drift(
+    loop=2, filename=str(obs_path) + "/ Okataina_residual_drift.png"
+)
+results.plot_residual_cdf(
+    loop=2, filename=str(obs_path) + "/ Okataina_residual_cdf.png"
+)
 ```
 
 ![residual_drift](_static/Figure_2.png)

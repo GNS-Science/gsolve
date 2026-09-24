@@ -22,8 +22,9 @@
 import datetime
 import os
 import sys
+from pathlib import Path
 
-sys.path.insert(0, os.path.abspath("../../src"))
+sys.path.insert(0, Path.resolve("../../src"))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -67,7 +68,7 @@ numpydoc_show_class_members = False
 numpydoc_show_inherited_class_members = False
 numpydoc_attributes_as_param_list = False
 # numpydoc_validation_checks = {"all", "EX01" "SA01"}
-numpydoc_validation_checks = set() # Disable all validation checks
+numpydoc_validation_checks = set()  # Disable all validation checks
 
 myst_enable_extensions = ["amsmath"]
 
