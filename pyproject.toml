@@ -27,6 +27,8 @@ classifiers = [
 dependencies = [
     "boule==0.6.*",
     "harmonica<0.8",
+    "matplotlib>=3.11.1",
+    "numpy>=2.4.6",
     "openpyxl>=3.1.5",
     "pandas[plot]<3",
     "pydata-sphinx-theme>=0.16.1",
@@ -73,6 +75,7 @@ dev = [
     "ipywidgets>=8.1.8",
     "pandas-stubs==2.3.3.260113",
     "pandas-vet>=2023.8.2",
+    "pyrefly>=1.3.1",
     "pytest>=9.0.3",
     "pytest-cov>=7.1.0",
     "pytest-datadir>=1.8.0",
@@ -119,31 +122,30 @@ line-length = 88
 select = ["ANN", "D", "DOC", "PD", "NPY"]
 preview = true
 extend-select = [
-    "ARG",  # flake8-unused-arguments
-    "B",    # flake8-bugbear
-    "C4",   # flake8-comprehensions
-    "D",    # pydocstyle
-    "EM",   # flake8-errmsg
-    "EXE",  # flake8-executable
-    "FURB", # refurb
-    "G",    # flake8-logging-format
-    "I",    # isort
-    "ICN",  # flake8-import-conventions
-    "NPY",  # NumPy specific rules
-    "PD",   # pandas-vet
-    "PGH",  # pygrep-hooks
-    "PIE",  # flake8-pie
-    "PL",   # pylint
-    "PT",   # flake8-pytest-style
-    "PTH",  # flake8-use-pathlib
-    "PYI",  # flake8-pyi
-    "RET",  # flake8-return
-    "RUF",  # Ruff-specific
-    "SIM",  # flake8-simplify
-    "T20",  # flake8-print
-    "UP",   # pyupgrade
-    "YTT",  # flake8-2020
-    # "E501",
+    "ARG",                           # flake8-unused-arguments
+    "B",                             # flake8-bugbear
+    "C4",                            # flake8-comprehensions
+    "D",                             # pydocstyle
+    "EM",                            # flake8-errmsg
+    "EXE",                           # flake8-executable
+    "FURB",                          # refurb
+    "G",                             # flake8-logging-format
+    "I",                             # isort
+    "ICN",                           # flake8-import-conventions
+    "NPY",                           # NumPy specific rules
+    "PD",                            # pandas-vet
+    "PGH",                           # pygrep-hooks
+    "PIE",                           # flake8-pie
+    "PL",                            # pylint
+    "PT",                            # flake8-pytest-style
+    "PTH",                           # flake8-use-pathlib
+    "PYI",                           # flake8-pyi
+    "RET",                           # flake8-return
+    "RUF",                           # Ruff-specific
+    "SIM",                           # flake8-simplify
+    "T20",                           # flake8-print
+    "UP",                            # pyupgrade
+    "YTT",                           # flake8-2020
     "too-many-positional-arguments", # need to make keyword args using *
 ]
 ignore = [
@@ -188,6 +190,29 @@ ignore-overlong-task-comments = true
 [tool.ruff.lint.flake8-annotations]
 allow-star-arg-any = true
 
+[tool.ty.src]
+include = ["gsolve/", "examples/scripts/"]
+
+[tool.ty.rules]
+# Strict type safety defaults with mild allowances for edge cases
+# all = "error"
+possibly-unresolved-reference = "ignore"
+division-by-zero = "ignore"
+
+[tool.numpydoc_validation]
+checks = ["all", "EX01", "SA01"]
+
+[tool.basedpyright]
+exclude = [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.venv",
+    "**/env",
+    "**/build",
+    "**/dist",
+]
+
+
 [tool.burocrata]
 notice = '''
 # gSolve - gravity processing software.
@@ -207,20 +232,3 @@ notice = '''
 # SPDX-License-Identifier: GPLv3
 '''
 exclude = ["__init__.py"]
-
-
-[tool.ty.src]
-include = ["gsolve/", "examples/scripts/"]
-
-[tool.numpydoc_validation]
-checks = ["all", "EX01", "SA01"]
-
-[tool.basedpyright]
-exclude = [
-    "**/node_modules",
-    "**/__pycache__",
-    "**/.venv",
-    "**/env",
-    "**/build",
-    "**/dist",
-]
