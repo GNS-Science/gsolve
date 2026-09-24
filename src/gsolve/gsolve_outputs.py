@@ -132,18 +132,14 @@ class GSolveResults:
         The final 'absolute_gravity' solution for each site after adjustment, with
         solution statistics.
 
-    Parameters
-    ----------
-    method : {1, 2, 3}
-        The gsolve algorithm used.
-    use_loops: bool
-        If loops were used in the solution.
-    calculate_calibration_factor : bool
-        If solution solved for gravity meter calibration factor.
-    percentile_clipping: float
-        The percentile clip applied.
+    """
 
-    """  # ruff: ignore[incorrect-section-order]
+    obs_solution: pd.DataFrame
+    site_solution: pd.DataFrame
+    loop_solution: pd.DataFrame
+    observations_input: pd.DataFrame
+    reference_sites_input: pd.DataFrame
+    params: GSolveSolutionParameters
 
     def __init__(
         self,
@@ -158,12 +154,6 @@ class GSolveResults:
             percentile_clipping=percentile_clipping,
             calculate_calibration_factor=calculate_calibration_factor,
         )
-
-        self.obs_solution: pd.DataFrame
-        self.site_solution: pd.DataFrame
-        self.loop_solution: pd.DataFrame
-        self.observations_input: pd.DataFrame
-        self.reference_sites_input: pd.DataFrame
 
     def set_inputs(self, obs: pd.DataFrame, ref_sites: pd.DataFrame) -> None:
         """Add input data used in the gsolve run."""
@@ -398,7 +388,7 @@ class GSolveResults:
         x_col: str = "timedelta"
         y_col: str = "residual"
 
-        drift = float(self.loop_solution.at[loop, "drift"])  # type: ignore[bad-argument-type]  # ruff: ignore[pandas-use-of-dot-at]
+        drift = float(self.loop_solution.loc[loop, "drift"])
         m_loop = self.obs_solution["loop"].eq(loop)
         m_active = self.obs_solution["active"].eq(True)
 

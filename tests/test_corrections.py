@@ -320,8 +320,8 @@ class TestGravityCorrectionParameters:
     def test_defaults(self):
         p = GravityCorrectionParameters()
         assert p.ellipsoid == "GRS80"
-        assert p.density_crust == 2670.0  # ruff: ignore[float-equality-comparison]
-        assert p.density_water == 1030.0  # ruff: ignore[float-equality-comparison]
+        assert np.isclose(p.density_crust, 2670.0)
+        assert np.isclose(p.density_water, 1030.0)
         assert p.use_curvature_corrected is True
         assert p.use_atmospheric_correction is True
 

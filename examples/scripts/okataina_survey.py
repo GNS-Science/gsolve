@@ -18,7 +18,7 @@
 import pathlib
 
 try:
-    import contextily as cx  # type:ignore[unresolved-import]  # ty: ignore[unresolved-import]
+    import contextily as cx  # ty:ignore[unresolved-import]
 except ImportError:
     has_contextily = False
     cx = None
