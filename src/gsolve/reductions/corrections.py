@@ -605,7 +605,7 @@ class GravityCorrections(GSolveTable):
         MappingProxyType(
             {
                 COMMON_FIELDS["site_id"].name: COMMON_FIELDS["site_id"],
-                COMMON_FIELDS["latitude"].name: COMMON_FIELDS["timestamp"],
+                COMMON_FIELDS["latitude"].name: COMMON_FIELDS["latitude"],
                 COMMON_FIELDS["longitude"].name: COMMON_FIELDS["longitude"],
                 COMMON_FIELDS["height_ellipsoidal"].name: COMMON_FIELDS[
                     "height_ellipsoidal"
