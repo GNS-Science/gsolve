@@ -594,7 +594,7 @@ class GravitySites(GSolveTable):
         """
         if is_filepath_like(dem):
             dem = load_dem(dem)
-        elif isinstance(dem, DatasetOrArray):
+        elif isinstance(dem, DatasetOrArray.__value__):
             dem = prepare_dem(dem)
         else:
             msg = "dem must be file path or an xarray Dataset/DataArray"

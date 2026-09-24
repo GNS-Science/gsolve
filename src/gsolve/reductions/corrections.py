@@ -21,7 +21,7 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Literal
+from typing import ClassVar, Literal, cast
 
 import boule
 import numpy as np
@@ -601,36 +601,41 @@ class GravityCorrections(GSolveTable):
         Parameters used to compute the gravity corrections.
     """
 
-    _known_fields: MappingProxyType[str, DataFieldSpecification] = MappingProxyType(
-        {
-            "site_id": DataFieldSpecification("site_id", str, required=True),
-            "longitude": DataFieldSpecification("longitude", float, required=False),
-            "latitude": DataFieldSpecification("latitude", float, required=False),
-            "height_ellipsoidal": DataFieldSpecification(
-                "height_ellipsoidal", float, required=False, legacy_name="height"
-            ),
-            "normal_gravity_at_stn_elevation": DataFieldSpecification(
-                "normal_gravity_at_stn_elevation", float, required=False, default=np.nan
-            ),
-            "normal_gravity_at_ellipsoid": DataFieldSpecification(
-                "normal_gravity_at_ellipsoid", float, required=False, default=np.nan
-            ),
-            "free_air_correction": DataFieldSpecification(
-                "free_air_correction", float, required=False, default=np.nan
-            ),
-            "bouguer_slab_correction": DataFieldSpecification(
-                "bouguer_slab_correction", float, required=False, default=np.nan
-            ),
-            "bouguer_slab_curvature_corrected": DataFieldSpecification(
-                "bouguer_slab_curvature_corrected",
-                float,
-                required=False,
-                default=np.nan,
-            ),
-            "atmospheric_correction": DataFieldSpecification(
-                "atmospheric_correction", float, required=False, default=np.nan
-            ),
-        }
+    _known_fields: ClassVar[MappingProxyType[str, DataFieldSpecification]] = (
+        MappingProxyType(
+            {
+                "site_id": DataFieldSpecification("site_id", str, required=True),
+                "longitude": DataFieldSpecification("longitude", float, required=False),
+                "latitude": DataFieldSpecification("latitude", float, required=False),
+                "height_ellipsoidal": DataFieldSpecification(
+                    "height_ellipsoidal", float, required=False, legacy_name="height"
+                ),
+                "normal_gravity_at_stn_elevation": DataFieldSpecification(
+                    "normal_gravity_at_stn_elevation",
+                    float,
+                    required=False,
+                    default=np.nan,
+                ),
+                "normal_gravity_at_ellipsoid": DataFieldSpecification(
+                    "normal_gravity_at_ellipsoid", float, required=False, default=np.nan
+                ),
+                "free_air_correction": DataFieldSpecification(
+                    "free_air_correction", float, required=False, default=np.nan
+                ),
+                "bouguer_slab_correction": DataFieldSpecification(
+                    "bouguer_slab_correction", float, required=False, default=np.nan
+                ),
+                "bouguer_slab_curvature_corrected": DataFieldSpecification(
+                    "bouguer_slab_curvature_corrected",
+                    float,
+                    required=False,
+                    default=np.nan,
+                ),
+                "atmospheric_correction": DataFieldSpecification(
+                    "atmospheric_correction", float, required=False, default=np.nan
+                ),
+            }
+        )
     )
 
     data: pd.DataFrame

@@ -238,7 +238,7 @@ class LaCosteRombergDialConverter:
                 msg = f"Error setting starttime: {e}"
                 raise ValueError(msg) from None
         else:
-            msg = f"invalid starttime type {type(starttime)}. Should be datetimelike or None."
+            msg = f"invalid starttime type {type(starttime)}. Should be datetime-like or None."
             raise TypeError(msg)
 
         if endtime is pd.NaT or endtime is None:
@@ -250,9 +250,7 @@ class LaCosteRombergDialConverter:
                 msg = f"Error setting endtime: {e}"
                 raise ValueError(msg) from None
         else:
-            msg = (
-                f"invalid endtime type {type(endtime)}. Should be datetimelike or None."
-            )
+            msg = f"invalid endtime type {type(endtime)}. Should be datetime-like or None."
             raise TypeError(msg)
 
         if st is not None and et is not None and st >= et:

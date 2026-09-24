@@ -218,14 +218,14 @@ def write_excel_worksheet(
     pandas.ExcelWriter
 
     """
-    if if_workbook_exists not in get_args(IfWorkbookExists):
+    if not is_in_literal(if_workbook_exists, IfWorkbookExists):
         msg = (
             f"invalid value for {if_workbook_exists=}, must be one of "
             f"{get_args(IfWorkbookExists)}"
         )
         raise ValueError(msg)
 
-    if if_sheet_exists not in get_args(IfSheetExists):
+    if not is_in_literal(if_sheet_exists, IfSheetExists):
         msg = (
             f"invalid value for {if_sheet_exists=}, must be one of "
             f"{get_args(IfSheetExists)}"
