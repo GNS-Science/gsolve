@@ -323,12 +323,12 @@ class CG6Data(ScintrexData):
             df.insert(i_date_col, "datetime", dt)  # ty:ignore[invalid-argument-type]
             df = df.drop(columns=["date", "time"])
 
-        corr_flag_colname = "corrections[drift-temp-na-tide-tilt]"
-        if corr_flag_colname in df.columns:
-            flag_labels = corr_flag_colname.rstrip("]").rpartition("[")[-1].split("-")
+        corr_flag_col_name = "corrections[drift-temp-na-tide-tilt]"
+        if corr_flag_col_name in df.columns:
+            flag_labels = corr_flag_col_name.rstrip("]").rpartition("[")[-1].split("-")
             flag_labels = [f"correction_{f}" for f in flag_labels]
 
-            flags = df.pop(corr_flag_colname).str.split("").str[1:-1].to_list()
+            flags = df.pop(corr_flag_col_name).str.split("").str[1:-1].to_list()
             flags = [[bool(int(c)) for c in row] for row in flags]
             flags_df = pd.DataFrame(
                 data=[[bool(int(c)) for c in row] for row in flags], columns=flag_labels
@@ -526,8 +526,8 @@ class CG6Data(ScintrexData):
                 )
                 raise ValueError(msg)
             if dates[-1] < self.data["datetime"].max():
-                tmax = self.data["datetime"].max() + pd.Timedelta(seconds=1)
-                dates = pd.DatetimeIndex([*dates.to_list(), tmax])
+                t_max = self.data["datetime"].max() + pd.Timedelta(seconds=1)
+                dates = pd.DatetimeIndex([*dates.to_list(), t_max])
 
             loop_intervals = generate_loop_intervals(dates)
             loop_namer = pd.Series(loop_ids, index=loop_intervals)

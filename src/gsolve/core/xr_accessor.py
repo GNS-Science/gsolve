@@ -254,8 +254,8 @@ class TCorrMethods:
         Generate a bathymetry density grid from a boolean mask grid or DEM.
 
         The output density DataArray can be used in calculating bathymetric terrain
-        corrections.  Bathymety cells are assigned a density of
-        terrain_density - water_density. Density in topography cells is set to 0.0.
+        corrections.  Bathymetry cells are assigned a density of
+        ``terrain_density - water_density``. Density in topography cells is set to 0.0.
 
         Parameters
         ----------

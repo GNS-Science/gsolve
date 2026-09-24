@@ -136,7 +136,7 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
     ) -> None:
         if isinstance(site_id, str):
             site_id = np.array([site_id] * len(date_time))
-        site_id = np.atleast_1d(site_id).astype(str)
+        site_id = to_1d_ndarray(site_id, dtype=str)
         if site_id.ndim != 1:
             msg = "site_id argument must be 1-dimensional."
             raise ValueError(msg)
@@ -636,7 +636,6 @@ def generate_qtp_input(  # ruff: ignore[too-many-positional-arguments]
 
     if not (site_id.size == datetimes.size == lat.size == lon.size == elevation.size):
         msg = "site_id, datetimes, latitude, longitude, and elevation arguments must all have the same shape."
-        raise ValueError(msg)
         raise ValueError(msg)
 
     # initial data frame with station IDs and datetimes

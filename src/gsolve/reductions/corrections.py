@@ -21,7 +21,7 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Literal
+from typing import ClassVar, Literal, cast
 
 import boule
 import numpy as np
@@ -46,12 +46,14 @@ __all__ = [
     "spherical_bouguer_cap_correction",
 ]
 
+type _EllipsoidsAtStation = Literal["WGS84", "GRS80"] | boule.Ellipsoid
+
 
 def normal_gravity_at_stn_elevation(
     longitude: ArrayLike,
     latitude: ArrayLike,
     height_ellipsoidal: ArrayLike,
-    ellipsoid: Literal["WGS84", "GRS80"] | boule.Ellipsoid = "GRS80",
+    ellipsoid: _EllipsoidsAtStation = "GRS80",
     si_units: bool = False,
 ) -> float | np.ndarray:
     """
@@ -116,9 +118,12 @@ def normal_gravity_at_stn_elevation(
     )
 
 
+type _EllipsoidsNormalGravAtEllipsoid = Literal["GRS80", "WGS84", "GRS67"]
+
+
 def normal_gravity_at_ellipsoid(
     latitude: ArrayLike,
-    ellipsoid: Literal["GRS80", "WGS84", "GRS67"] = "GRS80",
+    ellipsoid: _EllipsoidsNormalGravAtEllipsoid = "GRS80",
     si_units: bool = False,
 ) -> float | np.ndarray:
     """
@@ -408,7 +413,7 @@ def bouguer_slab_curvature_corrected(
 
     This is the function implements the analytic expression from LaFehr _[1]
 
-    This is equivalent to Bullard "A" + Bullard "B" corections.
+    This is equivalent to Bullard "A" + Bullard "B" corrections.
     .. math::
 
         g_{sbcc} = 2 \pi G \rho(\mu h - \lambda R)
@@ -591,36 +596,41 @@ class GravityCorrections(GSolveTable):
         Parameters used to compute the gravity corrections.
     """
 
-    _known_fields: MappingProxyType[str, DataFieldSpecification] = MappingProxyType(
-        {
-            "site_id": DataFieldSpecification("site_id", str, required=True),
-            "longitude": DataFieldSpecification("longitude", float, required=False),
-            "latitude": DataFieldSpecification("latitude", float, required=False),
-            "height_ellipsoidal": DataFieldSpecification(
-                "height_ellipsoidal", float, required=False, legacy_name="height"
-            ),
-            "normal_gravity_at_stn_elevation": DataFieldSpecification(
-                "normal_gravity_at_stn_elevation", float, required=False, default=np.nan
-            ),
-            "normal_gravity_at_ellipsoid": DataFieldSpecification(
-                "normal_gravity_at_ellipsoid", float, required=False, default=np.nan
-            ),
-            "free_air_correction": DataFieldSpecification(
-                "free_air_correction", float, required=False, default=np.nan
-            ),
-            "bouguer_slab_correction": DataFieldSpecification(
-                "bouguer_slab_correction", float, required=False, default=np.nan
-            ),
-            "bouguer_slab_curvature_corrected": DataFieldSpecification(
-                "bouguer_slab_curvature_corrected",
-                float,
-                required=False,
-                default=np.nan,
-            ),
-            "atmospheric_correction": DataFieldSpecification(
-                "atmospheric_correction", float, required=False, default=np.nan
-            ),
-        }
+    _known_fields: ClassVar[MappingProxyType[str, DataFieldSpecification]] = (
+        MappingProxyType(
+            {
+                "site_id": DataFieldSpecification("site_id", str, required=True),
+                "longitude": DataFieldSpecification("longitude", float, required=False),
+                "latitude": DataFieldSpecification("latitude", float, required=False),
+                "height_ellipsoidal": DataFieldSpecification(
+                    "height_ellipsoidal", float, required=False, legacy_name="height"
+                ),
+                "normal_gravity_at_stn_elevation": DataFieldSpecification(
+                    "normal_gravity_at_stn_elevation",
+                    float,
+                    required=False,
+                    default=np.nan,
+                ),
+                "normal_gravity_at_ellipsoid": DataFieldSpecification(
+                    "normal_gravity_at_ellipsoid", float, required=False, default=np.nan
+                ),
+                "free_air_correction": DataFieldSpecification(
+                    "free_air_correction", float, required=False, default=np.nan
+                ),
+                "bouguer_slab_correction": DataFieldSpecification(
+                    "bouguer_slab_correction", float, required=False, default=np.nan
+                ),
+                "bouguer_slab_curvature_corrected": DataFieldSpecification(
+                    "bouguer_slab_curvature_corrected",
+                    float,
+                    required=False,
+                    default=np.nan,
+                ),
+                "atmospheric_correction": DataFieldSpecification(
+                    "atmospheric_correction", float, required=False, default=np.nan
+                ),
+            }
+        )
     )
 
     data: pd.DataFrame
@@ -804,14 +814,14 @@ class GravityCorrectionProvider:
                 longitude=lon,
                 latitude=lat,
                 height_ellipsoidal=ht,
-                ellipsoid=self.params.ellipsoid,  # type: ignore[arg-type]
+                ellipsoid=cast(_EllipsoidsAtStation, self.params.ellipsoid),
             )
 
         k = "normal_gravity_at_ellipsoid"
         if k in corrs:
             df[k] = normal_gravity_at_ellipsoid(
                 latitude=lat,
-                ellipsoid=self.params.ellipsoid,  # type: ignore[arg-type]
+                ellipsoid=cast(_EllipsoidsNormalGravAtEllipsoid, self.params.ellipsoid),
             )
 
         k = "free_air_correction"

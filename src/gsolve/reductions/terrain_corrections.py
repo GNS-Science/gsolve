@@ -1265,18 +1265,18 @@ class TerrainCorrectionData(GSolveTable):
             )
             raise ValueError(msg_0)
 
-        tcor_prefix = "tcorr"
+        tcorr_prefix = "tcorr"
 
-        self.params[f"{tcor_prefix}:{params.name}"] = params.copy()
+        self.params[f"{tcorr_prefix}:{params.name}"] = params.copy()
 
         corrs_dict = {
             "topography_corrections": [
                 topography_corrections,
-                f"{tcor_prefix}:{params.name}:topo",
+                f"{tcorr_prefix}:{params.name}:topo",
             ],
             "bathymetry_corrections": [
                 bathymetry_corrections,
-                f"{tcor_prefix}:{params.name}:bath",
+                f"{tcorr_prefix}:{params.name}:bath",
             ],
             "elevations": [elevations, f"elev:{params.name}"],
         }
@@ -1296,7 +1296,7 @@ class TerrainCorrectionData(GSolveTable):
             self.set_column(label=col_name, data=c, dtype=float)
 
         # now set the total column
-        tcorr_total_col_name = f"{tcor_prefix}:total"
+        tcorr_total_col_name = f"{tcorr_prefix}:total"
 
         if tcorr_total_col_name in self.data.columns:
             self.data = self.data.drop(columns=[tcorr_total_col_name])
@@ -1304,7 +1304,7 @@ class TerrainCorrectionData(GSolveTable):
         existing_tcorr_cols = [
             c
             for c in self.data.columns
-            if (c.startswith(tcor_prefix) and c != tcorr_total_col_name)
+            if (c.startswith(tcorr_prefix) and c != tcorr_total_col_name)
         ]
 
         if len(existing_tcorr_cols) == 0:

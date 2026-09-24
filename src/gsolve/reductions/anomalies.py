@@ -303,7 +303,7 @@ class GravityAnomalies(GSolveTable):
 
     terrain_corrections : TerrainCorrectionData, optional
         An object providing terrain corrections at each site. These are required to
-        compute the complete Bouguer anomaly. If provided, georgraphic coordinates and
+        compute the complete Bouguer anomaly. If provided, geographic coordinates and
         terrain corrections will be copied to self.data and the associated
         TerrainCorrectionParameter objects copied to self.tcorr_params. If None,
         then a terrain correction column 'tcorr:total' will be added and set to NaN.
@@ -347,7 +347,7 @@ class GravityAnomalies(GSolveTable):
               were included in anomaly calculations.
 
     tcorr_params : dict[str, TerrainCorrectionParameters]
-        A dictionary of cpoies of the TerrainCorrectionParameters objects associated
+        A dictionary of copies of the TerrainCorrectionParameters objects associated
         with terrain corrections. The keys are the terrain correction zone ID's, and will
         partially correspond to columns in the ``self.data`` attribute.
         Will be an empty dict if no terrain corrections were provided.

@@ -183,23 +183,13 @@ def to_naive_utc_datetime(
 
 
 @overload
-def to_naive_utc_datetime(
-    t: DatetimeScalar, allow_nat: bool = True, **kwargs
-) -> pd.Timestamp | NaTType: ...
-
-
-@overload
-def to_naive_utc_datetime(
-    t: pd.Series,
-    allow_nat: bool = True,
-    **kwargs,
-) -> pd.Series: ...
+def to_naive_utc_datetime(t: pd.Series, allow_nat: bool, **kwargs) -> pd.Series: ...
 
 
 @overload
 def to_naive_utc_datetime(
     t: list | tuple | NDArray | pd.Index | pd.DatetimeIndex,
-    allow_nat: bool = True,
+    allow_nat: bool,
     **kwargs,
 ) -> pd.DatetimeIndex: ...
 
@@ -295,7 +285,7 @@ def to_1d_ndarray(
     expected_size: int | None = None,
     extend_len_1_array: bool = False,
     dtype: DTypeLike | None = None,
-) -> NDArray:
+) -> NDArray[np.float64]:
     a = np.atleast_1d(a)
     if a.ndim > 1:
         a = np.squeeze(a)
@@ -1103,7 +1093,7 @@ def dms2rad(
     return np.deg2rad(deg)
 
 
-def _convert_single_timestamp_arg(
+def convert_single_timestamp_arg(
     t: DatetimeScalar, allow_nat: bool = False, err_prefix: str | None = None, **kwargs
 ) -> pd.Timestamp:
 
