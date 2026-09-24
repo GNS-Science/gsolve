@@ -20,7 +20,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Mapping
 from types import MappingProxyType
 from typing import Literal, Self
 
@@ -767,11 +767,9 @@ class ReferenceGravity(GSolveTable):
             raise ValueError(msg)
 
         # catch empty site_id
-        if (m := idx.isna() | idx.eq("")).any():
-            empty = pd.Series(m).loc[m.tolist()].index.to_list()
+        if idx.isna().any() or (idx == "").any():  # ruff: ignore[compare-to-empty-string]
             msg = (
-                "creating ReferenceGravity object: "
-                f"site_id field contains empty values at rows: {empty}"
+                "creating ReferenceGravity object: site_id field contains empty values"
             )
             raise ValueError(msg)
 

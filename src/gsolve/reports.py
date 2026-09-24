@@ -126,11 +126,11 @@ class GSolveReport:
         self._set_terrain_correction_data(terrain_corrections=terrain_corrections)
 
     def copy(self) -> Self:
-        """Return a deep copy."""  # ruff: ignore[docstring-missing-returns]
+        """Return a deep copy."""
         return copy.copy(self)
 
     def __copy__(self) -> Self:
-        """Return a deep copy."""  # ruff: ignore[docstring-missing-returns]
+        """Return a deep copy."""
         return copy.deepcopy(self)
 
     def _set_params(
@@ -203,7 +203,7 @@ class GSolveReport:
         i_n_obs_used = df.columns.get_loc("n_obs_used")
         if not isinstance(i_n_obs_used, int):
             msg = "unexpected non-integer column index"
-            raise ValueError(msg)
+            raise TypeError(msg)
         df.insert(i_n_obs_used, "n_obs_input", n_obs_input)
 
         # add a csv string of loops each site is included in
@@ -244,7 +244,7 @@ class GSolveReport:
         i_included_in_solution = df.columns.get_loc("included_in_solution")
         if not isinstance(i_included_in_solution, int):
             msg = "unexpected non-integer column index"
-            raise ValueError(msg)
+            raise TypeError(msg)
         df.insert(
             loc=i_included_in_solution + 1,
             column="has_site_solution",
@@ -271,7 +271,7 @@ class GSolveReport:
         i_n_obs_input = df.columns.get_loc("n_obs_input")
         if not isinstance(i_n_obs_input, int):
             msg = "unexpected non-integer column index"
-            raise ValueError(msg)
+            raise TypeError(msg)
         df.insert(i_n_obs_input + 1, "n_obs_used", 0)
         df.loc[n_obs_used.index, "n_obs_used"] = n_obs_used
 
@@ -415,7 +415,7 @@ class GSolveReport:
 
         # This is a kludge - should create method on parameter objects to
         # to normalize parameter outputs for writing to excel.
-        def _format_value(x: Any) -> str | float | int | bool:  # ruff: ignore[any-type]
+        def _format_value(x: Any) -> str | float | int | bool:
             if isinstance(x, pd.Timedelta):
                 return x.total_seconds()
             if isinstance(x, Path):

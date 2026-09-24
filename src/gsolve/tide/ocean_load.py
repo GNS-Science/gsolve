@@ -152,7 +152,7 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
         self.metadata: dict[str, Any] = metadata
 
     def identifier(self) -> str:
-        """Corrector identifier string."""  # ruff: ignore[docstring-missing-returns]
+        """Corrector identifier string."""
         return f"{type(self).__name__}()"
 
     def ocean_load_correction(
@@ -296,7 +296,7 @@ class OceanLoadTimeSeries(OceanLoadCorrectionProvider):
         return f"{cname}({md})"
 
     def identifier(self) -> str:
-        """Corrector identifier string."""  # ruff: ignore[docstring-missing-returns]
+        """Corrector identifier string."""
         return f"{self.__class__.__name__}()"
 
     @property
@@ -377,7 +377,7 @@ class OceanLoadTimeSeries(OceanLoadCorrectionProvider):
 def _datetimes_to_np_datetime64(
     dt: DatetimeScalar | DatetimeArray, dtype: str = "datetime64"
 ) -> np.ndarray:
-    """Convert datetimes to numpy datetime64 array."""  # ruff: ignore[docstring-missing-returns]
+    """Convert datetimes to numpy datetime64 array."""
     dt = to_naive_utc_datetime(dt, allow_nat=False)
     if isinstance(dt, pd.Timestamp):
         return np.array([dt], dtype=dtype)
@@ -758,7 +758,7 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
             len(
                 bad_site_ids := [str(s) for s in uniq_site_id if s not in self.stations]
             )
-            == 0
+            != 0
         ):
             msg = (
                 f"site_id(s) {bad_site_ids} not found in station loading model. "
