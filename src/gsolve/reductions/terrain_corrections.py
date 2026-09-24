@@ -955,7 +955,7 @@ class TerrainCorrector:
         for zone in self.zones:
             pars = self.params[zone].copy()
             if show_progress:
-                sys.stderr.write(f"Calculating terrain corrections for zone: {zone}")
+                sys.stderr.write(f"Calculating terrain corrections for zone: {zone}\n")
 
             # get points if necessary
             if get_xyz_per_zone:
@@ -1021,12 +1021,12 @@ class TerrainCorrector:
                 indent = "    " if show_progress else ""
                 sys.stderr.write(
                     f"{indent}Warning: zone '{zone}': terrain corrections "
-                    f"not calculated for {n_missing_tc} of {len(x)} sites."
+                    f"not calculated for {n_missing_tc} of {len(x)} sites.\n"
                 )
                 if not nan_error_description_displayed:
                     nan_error_description_displayed = True
                     sys.stderr.write(
-                        f"{indent}    This is probably due to:",
+                        f"{indent}    This is probably due to:\n",
                     )
                     sys.stderr.write(
                         f"{indent}    (1) insufficient DEM coverage and/or\n"
