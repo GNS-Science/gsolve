@@ -80,15 +80,16 @@ survey = GravitySurvey(obs, sites)
 
 # %%
 """
-Run the network adjustment. As this is a calibration survey we set calculate_beta=True.
+Run the solve_calibration_factor method to calculate the calibration factor for this survey.
+This runs the gsolve network adjustment algorithm using adjusted inputs.
 
-Here we use solve method "2", as we have high confidence in our absolute stations.
+Here we use solve method "2" (the default), as we have high confidence in our absolute stations.
 
 We process each loop individually and apply a 99 percentile cutoff filter to the residuals.
 """
 
 results = survey.solve_calibration_factor(
-    method=2, use_loops=True, percentile_clipping=100
+    method=2, use_loops=True, percentile_clipping=99
 )
 
 # results.site_solution contains the adjusted gravity per station
