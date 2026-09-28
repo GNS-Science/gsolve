@@ -17,6 +17,8 @@
 # Copyright (c) 2025 Earth Sciences New Zealand.
 """Functions and Classes for performing network adjustment of gravity data."""
 
+import pathlib
+import warnings
 from typing import Any
 
 import numpy as np
@@ -27,11 +29,25 @@ from gsolve.gsolve_outputs import GSolveResults
 
 __all__ = ["GSolveSolverMethod", "call_gsolve_calibration", "call_gsolve_lstsq"]
 
+# make warnings show caller location
+
 _GSOLVE_SOLVER_METHODS: dict[int, str] = {
     1: "Unconstrained least squares",
     2: "Partially constrained least squares",
     3: "Constrained least squares",
 }
+
+
+class GSolveSolverWarning(UserWarning):
+    """Raised when gsolve may produce unreliable results."""
+
+
+def _solver_warning(message: str):
+    warnings.warn(
+        message,
+        category=GSolveSolverWarning,
+        skip_file_prefixes=(str(pathlib.Path(__file__).parent),),
+    )
 
 
 def call_gsolve_lstsq(
@@ -393,7 +409,13 @@ def g_solver_lstsq(  # ruff: ignore[too-many-positional-arguments]
 
         # Build mask of outliers
         mask = ((residuals[:n_obs] > ci_l) & (residuals[:n_obs] < ci_h)).flatten()
-
+        _check_post_clip_data_are_ok(
+            mask=mask,
+            obs_site_id=obs_site_id,
+            ties_site_id=ties_site_id,
+            obs_loop=obs_loop,
+            use_loops=use_loops,
+        )
         # Mask outliers
         A[:n_obs, :][~mask] = 0
         b[:n_obs, :][~mask] = 0
@@ -446,3 +468,56 @@ def g_solver_lstsq(  # ruff: ignore[too-many-positional-arguments]
         calibration_factor = None
 
     return gravity, residuals, gravity_var, drift, baseline, calibration_factor, mask
+
+
+def _check_post_clip_data_are_ok(
+    mask: np.ndarray[tuple[int]],
+    obs_site_id: np.ndarray[tuple[int]],
+    ties_site_id: np.ndarray[tuple[int]],
+    obs_loop: np.ndarray[tuple[int]],
+    use_loops: bool,
+) -> bool:
+    obs_site_id_remain = obs_site_id[mask]
+    obs_loop_remain = obs_loop[mask]
+    errs = 0
+
+    # warn about site removal
+    if len(dropped_sites := np.setdiff1d(obs_site_id, obs_site_id_remain)) > 0:
+        _solver_warning(
+            f"Sites were completely removed after percentile clipping: {dropped_sites}"
+        )
+        errs += 1
+
+    # ensure all tie sites made it
+    dropped_ties = np.intersect1d(ties_site_id, obs_site_id_remain)
+    if len(dropped_ties) == 0:
+        msg = (
+            "All reference sites were completely removed due to "
+            f"percentile clipping: {dropped_ties}"
+        )
+        raise ValueError(msg)
+    if len(dropped_ties) < len(ties_site_id):
+        _solver_warning(
+            f"{len(dropped_ties)} of {len(ties_site_id)} tie sites were completely"
+            f" removed after percentile clipping: {dropped_ties})"
+        )
+        errs += 1
+
+    # check that loops still have at least one observation
+    if use_loops and len(dropped_loops := np.setdiff1d(obs_loop, obs_loop_remain)) > 0:
+        _solver_warning(
+            f"Loops were completely removed after percentile clipping: {dropped_loops}"
+        )
+        errs += 1
+
+    for loop_id in np.unique(obs_loop_remain):
+        m = obs_loop_remain == loop_id
+        in_other_loops = np.intersect1d(obs_site_id_remain[m], obs_site_id_remain[~m])
+        if len(in_other_loops) == 0:
+            _solver_warning(
+                f"After percentile clipping, loop '{loop_id}' has no sites in common "
+                "with the rest of survey"
+            )
+            errs += 1
+
+    return errs == 0
