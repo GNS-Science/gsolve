@@ -1,17 +1,15 @@
 ![gSolve logo](docs/source/_static/gsolve_logo.png)
-    
+
 [![codecov](https://codecov.io/gh/GNS-Science/gsolve/branch/main/graph/badge.svg)](https://codecov.io/gh/GNS-Science/gsolve)
 [![GitHub License](https://img.shields.io/github/license/GNS-Science/gsolve)](https://github.com/GNS-Science/gsolve/blob/main/LICENSE)
 ![Publish to PyPI](https://github.com/GNS-Science/gsolve/actions/workflows/publish.yml/badge.svg)
 [![Pypi version](https://img.shields.io/pypi/v/gsolve)](https://pypi.org/project/gsolve/)
 
-
-
 # gSolve
 
-gSolve, a Python computer library by Earth Sciences New Zealand (formerly GNS Science) to transform relative gravity survey measurements to absolute gravity values and gravity anomalies and disturbances.  
+gSolve, a Python computer library by Earth Sciences New Zealand (formerly GNS Science) to transform relative gravity survey measurements to absolute gravity values and gravity anomalies and disturbances.
 
-It is suitable for time varying gravity as well as Bouguer gravity.  
+It is suitable for time varying gravity as well as Bouguer gravity.
 
 This version is a substantial re-write of the previous python version to remove the limitation of a graphical user interface and to update to python 3 with modern software management.
 
@@ -30,8 +28,10 @@ Process gravity data for time change microgravity and Bouguer surveys.
 * option to correct for ocean loading using [pyhardisp](https://github.com/craigmillernz/pyhardisp).
 * correct for drift across loops or whole survey.
 * network adjustment with three different network adjustment algorithms depending on user requirements.
-# calibrate meters to absolute values.
-* residuals can be filtered using a percentile cut filter.  
+
+# calibrate meters to absolute values
+
+* residuals can be filtered using a percentile cut filter.
 
 ## Corrections
 
@@ -42,7 +42,7 @@ Process gravity data for time change microgravity and Bouguer surveys.
 ## Plotting
 
 * plot raw observations
-* residual cumuluative probability density functions, CDF.
+* residual cumulative probability density functions, CDF.
 * drift curve
 * network map
 
@@ -65,14 +65,14 @@ Full documentation is available here. [gSolve](https://gns-science.github.io/gso
 
 # Authors and acknowledgment
 
-gSolve builds on many previous authors.  
+gSolve builds on many previous authors.
 
 The current author team is Adrian Benson, Alison Kirkby, Craig Miller, Aleksandr Spesivtsev, Vaughan Stagpoole.
 
 This version supersedes previous Gsolve versions e.g.
-McCubbine, J., Tontini, F. C., Stagpoole, V., Smith, E., & O’Brien, G. (2018). Gsolve, a Python computer program with a graphical user interface to transform relative gravity survey measurements to absolute gravity values and gravity anomalies. SoftwareX, 7, 129–137. 
+McCubbine, J., Tontini, F. C., Stagpoole, V., Smith, E., & O’Brien, G. (2018). Gsolve, a Python computer program with a graphical user interface to transform relative gravity survey measurements to absolute gravity values and gravity anomalies. SoftwareX, 7, 129–137.
 
-# How to cite gSolve  
+# How to cite gSolve
 
 Link to JOSS paper here when it is ready.
 
@@ -82,4 +82,4 @@ Python 3.12+
 
 # License
 
-Licenced with GPLv3.
+Licensed with GPLv3.
