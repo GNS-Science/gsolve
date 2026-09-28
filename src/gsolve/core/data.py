@@ -104,7 +104,9 @@ _COMMON_FIELDS: list[DataFieldSpecification] = [
     DataFieldSpecification("absolute_gravity", float, default=np.nan),
 ]
 # TODO: make this a class?
-COMMON_FIELDS: dict[str, DataFieldSpecification] = {f.name: f for f in _COMMON_FIELDS}
+COMMON_FIELDS: MappingProxyType[str, DataFieldSpecification] = MappingProxyType(
+    {f.name: f for f in _COMMON_FIELDS}
+)
 
 
 @dataclasses.dataclass

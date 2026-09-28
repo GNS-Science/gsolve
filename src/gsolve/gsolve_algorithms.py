@@ -403,6 +403,7 @@ def g_solver_lstsq(  # ruff: ignore[too-many-positional-arguments]
         residuals = b - np.dot(A, solution[:n_parameters])
 
         # Define percentile clipping interval
+        # TODO: Should this be done using residual**2 and clip upper only?
         perc = (100.0 - percentile_clipping) / 2
         ci_l = np.percentile(residuals[:n_obs], perc)
         ci_h = np.percentile(residuals[:n_obs], 100.0 - perc)
@@ -498,26 +499,34 @@ def _check_post_clip_data_are_ok(
         raise ValueError(msg)
     if len(dropped_ties) < len(ties_site_id):
         _solver_warning(
-            f"{len(dropped_ties)} of {len(ties_site_id)} tie sites were completely"
+            f"{len(dropped_ties)} of {len(ties_site_id)} reference sites were completely"
             f" removed after percentile clipping: {dropped_ties})"
         )
         errs += 1
 
-    # check that loops still have at least one observation
-    if use_loops and len(dropped_loops := np.setdiff1d(obs_loop, obs_loop_remain)) > 0:
-        _solver_warning(
-            f"Loops were completely removed after percentile clipping: {dropped_loops}"
-        )
-        errs += 1
+    # if using loops and there was actually more than 1 loop
+    # - check that loops were not completely removed
+    # - check that loops have common stations
+    # - maybe? check that still have intra loop repeats
 
-    for loop_id in np.unique(obs_loop_remain):
-        m = obs_loop_remain == loop_id
-        in_other_loops = np.intersect1d(obs_site_id_remain[m], obs_site_id_remain[~m])
-        if len(in_other_loops) == 0:
+    if use_loops and not (obs_loop[0] == obs_loop).all():
+        if len(dropped_loops := np.setdiff1d(obs_loop, obs_loop_remain)) > 0:
             _solver_warning(
-                f"After percentile clipping, loop '{loop_id}' has no sites in common "
-                "with the rest of survey"
+                f"Loops were completely removed after percentile clipping: {dropped_loops}"
             )
             errs += 1
+
+        # is this necessary?
+        for loop_id in np.unique(obs_loop_remain):
+            m = obs_loop_remain == loop_id
+            in_other_loops = np.intersect1d(
+                obs_site_id_remain[m], obs_site_id_remain[~m]
+            )
+            if len(in_other_loops) == 0:
+                _solver_warning(
+                    f"After percentile clipping, loop '{loop_id}' has no sites in common "
+                    "with the rest of survey"
+                )
+                errs += 1
 
     return errs == 0

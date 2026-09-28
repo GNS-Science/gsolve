@@ -1261,8 +1261,8 @@ class EternaPredictTidalCorrection(EarthTideCorrectionProvider):
             # of date_time for this site
             t0 = (date_time[site_mask].min() - pd.Timedelta(hours=1)).normalize()
 
-            # TODO:  need to break this up into multiple calls to time_series if the
-            # duration is too long for pygtide to handle
+            # TODO:  need to break this up into multiple calls to time_series
+            # if the duration is too long for pygtide to handle
             # e.g. sites visited days/weeks/years apart -> lots of work for nowt
             duration_hrs = (
                 int(np.ceil((date_time[site_mask].max() - t0).total_seconds() / 3600.0))
