@@ -11,7 +11,6 @@ New features:
 * Added GPLv3 licence
 * PyGTide added for ETERNA tide correction
 
-Maintenance: 
+Maintenance:
 
 * Bug fix for terrain corrections
- 
