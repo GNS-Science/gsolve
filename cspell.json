@@ -15,5 +15,9 @@
         "data-science-tools",
         "git",
         "en-au"
+    ],
+    "ignorePaths": [
+        ".git/**",
+        ".gitignore"
     ]
 }
