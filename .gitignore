@@ -186,3 +186,4 @@ docs/_build
 docs/source/api/generated
 docs/source/api/api/*
 docs/zz/*
+ARCHITECTURE.md
