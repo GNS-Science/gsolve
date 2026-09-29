@@ -489,6 +489,8 @@ def _check_post_clip_data_are_ok(
         )
         errs += 1
 
+    check_loops = use_loops and not (obs_loop[0] == obs_loop).all()
+
     # ensure all tie sites made it
     dropped_ties = np.intersect1d(ties_site_id, obs_site_id_remain)
     if len(dropped_ties) == 0:
@@ -509,20 +511,28 @@ def _check_post_clip_data_are_ok(
     # - check that loops have common stations
     # - maybe? check that still have intra loop repeats
 
-    if use_loops and not (obs_loop[0] == obs_loop).all():
+    if check_loops:
         if len(dropped_loops := np.setdiff1d(obs_loop, obs_loop_remain)) > 0:
             _solver_warning(
-                f"Loops were completely removed after percentile clipping: {dropped_loops}"
+                f"Loops completely removed after percentile clipping: {dropped_loops}"
             )
             errs += 1
 
         # is this necessary?
         for loop_id in np.unique(obs_loop_remain):
-            m = obs_loop_remain == loop_id
-            in_other_loops = np.intersect1d(
-                obs_site_id_remain[m], obs_site_id_remain[~m]
+            m_pre = obs_loop == loop_id
+            in_other_loops_pre_clip = np.intersect1d(
+                obs_site_id[m_pre], obs_site_id[~m_pre]
             )
-            if len(in_other_loops) == 0:
+            if len(in_other_loops_pre_clip) == 0:
+                continue  # nothing will have changed
+
+            m_post = obs_loop_remain == loop_id
+            in_other_loops_post_clip = np.intersect1d(
+                obs_site_id_remain[m_post], obs_site_id_remain[~m_post]
+            )
+
+            if len(in_other_loops_post_clip) == 0:
                 _solver_warning(
                     f"After percentile clipping, loop '{loop_id}' has no sites in common "
                     "with the rest of survey"
