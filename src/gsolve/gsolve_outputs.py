@@ -233,6 +233,7 @@ class GSolveResults:
         unit: _PlotGravityUnit = "mGal",
         filename: FilePath | None = None,
         show: bool = True,
+        ax: plt.Axes | None = None,
     ) -> plt.Axes:
         """
         Plot the empirical cumulative density function of residuals.
@@ -250,6 +251,8 @@ class GSolveResults:
             to the end of the filename (before suffix).
         show: bool, default True
             Show the plot in a new window.
+        ax : matplotlib.axes.Axes, optional
+            Plot data to ``ax`` if specified, otherwise instantiate a new Axes object.
 
         Returns
         -------
@@ -257,6 +260,15 @@ class GSolveResults:
             The plot axes instance.
 
         """
+        if ax is None:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+        elif isinstance(ax, plt.Axes):
+            fig = ax.get_figure()
+        else:
+            msg = f"invalid type for ax: {type(ax).__name__}"
+            raise TypeError(msg)
+
         m = self.obs_solution.active.eq(True) & self.obs_solution.residual.notna()
         df = self.obs_solution.loc[m].copy()
 
@@ -296,8 +308,6 @@ class GSolveResults:
                 raise ValueError(msg)
 
         df = df.loc[df["loop"].isin(loops)]
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
 
         for l, loop_df in df.groupby("loop"):
             residuals = loop_df["residual"].to_numpy()
@@ -360,6 +370,7 @@ class GSolveResults:
         filename: FilePath | None = None,
         show: bool = True,
         ax: plt.Axes | None = None,
+        **kwargs,
     ) -> plt.Axes:
         """
         Plot the residuals and drift curve.
@@ -371,20 +382,36 @@ class GSolveResults:
         plot_drift : bool, default True
             If True, plot the drift curve along with the residuals + drift.
             If False, plot only the residuals as stem plot.
-        unit: {'uGal', 'mGal'}, default 'mGal'
+        unit : {'uGal', 'mGal'}, default 'mGal'
             If 'uGal', plot residuals in microGal's. If 'mGal', plot residuals
             in milliGal's.
-        filename: str, default None
+        filename : str, default None
             If not None, save plot to ``filename``. The specified loop id is appended
             to the end of the filename (before suffix).
-        show: bool, default True
+        show : bool, default True
             Show the plot in a new window.
+        ax : matplotlib.axes.Axes, optional
+            Plot data to ``ax`` if specified, otherwise instantiate a new Axes object.
+        **kwargs :
+            Options to pass to the underlying matplotlib method.
+
+              - ``plt.scatter`` if ``plot_drift=True``
+              - ``plt.stem`` otherwise
 
         Returns
         -------
         matplotlib.axes.Axes
             The plot axes instance.
         """
+        if ax is None:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+        elif isinstance(ax, plt.Axes):
+            fig = ax.get_figure()
+        else:
+            msg = f"invalid type for ax: {type(ax).__name__}"
+            raise TypeError(msg)
+
         loop = str(loop)
         x_col: str = "timedelta"
         y_col: str = "residual"
@@ -410,24 +437,22 @@ class GSolveResults:
             msg = f"unrecognized unit '{unit}'. Must be 'mGal' or 'uGal'"
             raise ValueError(msg)
 
-        if ax is None:
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-        elif isinstance(ax, plt.Axes):
-            fig = ax.get_figure()
-
         x = df[x_col].to_numpy()
         y = df[y_col].to_numpy()
 
         if plot_drift:
             drift_y = drift * x
             y += drift_y
-            ax.scatter(x, y, marker=".", label="residuals")
+            _ = kwargs.setdefault("label", "residuals")
+            _ = kwargs.setdefault("marker", ".")
+
+            ax.scatter(x, y, **kwargs)
             ax.plot(
                 x,
                 drift_y,
                 c="orange",
                 label=f"drift curve ({drift:{precision}} {unit_label}/hr)",
+                **kwargs,
             )
             ax.set_ylabel(f"{y_col} + drift ({unit_label})")
             ax.set_title(
@@ -436,7 +461,9 @@ class GSolveResults:
                 f"Percentile clipping = {self.params.percentile_clipping:.1f}"
             )
         else:
-            ax.stem(x, y, label="residuals", markerfmt=".")
+            _ = kwargs.setdefault("label", "residuals")
+            _ = kwargs.setdefault("markerfmt", ".")
+            ax.stem(x, y, **kwargs)
             ax.set_ylabel(f"{y_col} ({unit_label})")
 
         ax.legend(loc="best")
