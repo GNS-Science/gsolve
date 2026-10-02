@@ -394,7 +394,7 @@ class TestCheckPostClipDataAreOk:
         # every observation of site "C" is clipped
         mask = np.array([True, True, False, True, True])
 
-        with pytest.warns(GSolveSolverWarning, match="Sites were completely removed"):
+        with pytest.warns(GSolveSolverWarning, match="sites were completely removed"):
             result = _check_post_clip_data_are_ok(
                 mask=mask,
                 obs_site_id=obs_site_id,
@@ -449,7 +449,9 @@ class TestCheckPostClipDataAreOk:
         # loop "L3" is entirely clipped while two loops remain
         mask = np.array([True, True, True, True, False, False])
 
-        with pytest.warns(GSolveSolverWarning, match="Loops completely removed"):
+        with pytest.warns(
+            GSolveSolverWarning, match="some loops were completely removed"
+        ):
             result = _check_post_clip_data_are_ok(
                 mask=mask,
                 obs_site_id=obs_site_id,
@@ -461,15 +463,45 @@ class TestCheckPostClipDataAreOk:
         assert result is False
 
     def test_loop_loses_common_sites_warns_and_returns_false(self) -> None:
-        """A surviving loop left with no sites common to the rest warns."""
-        # Pre-clip, loops L1 and L2 share sites A and B (network is connected).
+        """A surviving loop stripped of its reference anchor warns.
+
+        When a connected loop loses its only reference site after clipping
+        (while still sharing a site with the rest of the survey), the checker
+        emits the "no sites in common" warning. In the current implementation
+        this is coupled with the reference-removal warning below.
+        """
+        # L1 = {A, B, C}, L2 = {A, B, D}; the only tie site "A" is in both loops.
         obs_site_id = np.array(["A", "B", "C", "A", "B", "D"])
         obs_loop = np.array(["L1", "L1", "L1", "L2", "L2", "L2"])
-        ties_site_id = np.array(["A", "B"])
-        # Clip A and B from L2, leaving L2 with only site D -> no common sites.
-        mask = np.array([True, True, True, False, False, True])
+        ties_site_id = np.array(["A"])
+        # Clip tie "A" from L2 only; "A" survives globally via L1.
+        mask = np.array([True, True, True, False, True, True])
 
-        with pytest.warns(GSolveSolverWarning, match="no sites in common"):
+        with pytest.warns(
+            GSolveSolverWarning, match="all reference sites removed from loop"
+        ):
+            result = _check_post_clip_data_are_ok(
+                mask=mask,
+                obs_site_id=obs_site_id,
+                ties_site_id=ties_site_id,
+                obs_loop=obs_loop,
+                use_loops=True,
+            )
+
+        assert result is False
+
+    def test_all_reference_sites_removed_from_loop_warns(self) -> None:
+        """A loop that loses all its reference sites warns and returns False."""
+        # L1 = {A, B, C}, L2 = {A, B, D}; the only tie site "A" is in both loops.
+        obs_site_id = np.array(["A", "B", "C", "A", "B", "D"])
+        obs_loop = np.array(["L1", "L1", "L1", "L2", "L2", "L2"])
+        ties_site_id = np.array(["A"])
+        # Clip tie "A" from L2 only; "A" survives globally via L1.
+        mask = np.array([True, True, True, False, True, True])
+
+        with pytest.warns(
+            GSolveSolverWarning, match="all reference sites removed from loop"
+        ):
             result = _check_post_clip_data_are_ok(
                 mask=mask,
                 obs_site_id=obs_site_id,

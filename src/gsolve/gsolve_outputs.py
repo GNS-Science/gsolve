@@ -352,13 +352,14 @@ class GSolveResults:
         """Convenience property to access the calculated calibration factor."""
         return float(np.asarray(self.params.calculated_calibration_factor).item())
 
-    def plot_residual_drift(
+    def plot_residual_drift(  # ruff: ignore[too-many-positional-arguments]
         self,
         loop: str | float,
         plot_drift: bool = True,
         unit: _PlotGravityUnit = "mGal",
         filename: FilePath | None = None,
         show: bool = True,
+        ax: plt.Axes | None = None,
     ) -> plt.Axes:
         """
         Plot the residuals and drift curve.
@@ -409,11 +410,14 @@ class GSolveResults:
             msg = f"unrecognized unit '{unit}'. Must be 'mGal' or 'uGal'"
             raise ValueError(msg)
 
+        if ax is None:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+        elif isinstance(ax, plt.Axes):
+            fig = ax.get_figure()
+
         x = df[x_col].to_numpy()
         y = df[y_col].to_numpy()
-
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
 
         if plot_drift:
             drift_y = drift * x
