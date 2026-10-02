@@ -25,6 +25,8 @@ import pandas as pd
 import pytest
 
 from gsolve.gsolve_algorithms import (
+    GSolveSolverWarning,
+    _check_post_clip_data_are_ok,
     call_gsolve_calibration,
     call_gsolve_lstsq,
     g_solver_lstsq,
@@ -355,3 +357,176 @@ class TestGSolverLstsqBranches:
         assert np.sum(~mask) >= 1
         assert np.all(np.isfinite(gravity))
         assert np.all(np.isfinite(gravity_var))
+
+
+class TestCheckPostClipDataAreOk:
+    """Tests for the post-clipping sanity checker `_check_post_clip_data_are_ok`.
+
+    Inputs are plain numpy arrays. The `mask` selects observations retained
+    after percentile clipping; the checker warns (via `GSolveSolverWarning`)
+    or raises when clipping degrades the network geometry.
+    """
+
+    def test_clean_data_returns_true_without_warnings(self) -> None:
+        """Nothing dropped: returns True and issues no warnings."""
+        obs_site_id = np.array(["A", "B", "A", "B"])
+        obs_loop = np.array(["L1", "L1", "L1", "L1"])
+        ties_site_id = np.array(["A"])
+        mask = np.array([True, True, True, True])
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", GSolveSolverWarning)
+            result = _check_post_clip_data_are_ok(
+                mask=mask,
+                obs_site_id=obs_site_id,
+                ties_site_id=ties_site_id,
+                obs_loop=obs_loop,
+                use_loops=False,
+            )
+
+        assert result is True
+
+    def test_dropped_site_warns_and_returns_false(self) -> None:
+        """A site fully removed by the mask warns and returns False."""
+        obs_site_id = np.array(["A", "B", "C", "A", "B"])
+        obs_loop = np.array(["L1", "L1", "L1", "L1", "L1"])
+        ties_site_id = np.array(["A"])
+        # every observation of site "C" is clipped
+        mask = np.array([True, True, False, True, True])
+
+        with pytest.warns(GSolveSolverWarning, match="sites were completely removed"):
+            result = _check_post_clip_data_are_ok(
+                mask=mask,
+                obs_site_id=obs_site_id,
+                ties_site_id=ties_site_id,
+                obs_loop=obs_loop,
+                use_loops=False,
+            )
+
+        assert result is False
+
+    def test_all_ties_removed_raises_value_error(self) -> None:
+        """Removing every reference/tie site raises ValueError."""
+        obs_site_id = np.array(["A", "B", "A", "B"])
+        obs_loop = np.array(["L1", "L1", "L1", "L1"])
+        ties_site_id = np.array(["A"])
+        # all observations of tie site "A" are clipped
+        mask = np.array([False, True, False, True])
+
+        with pytest.raises(ValueError, match="All reference sites were completely"):
+            _check_post_clip_data_are_ok(
+                mask=mask,
+                obs_site_id=obs_site_id,
+                ties_site_id=ties_site_id,
+                obs_loop=obs_loop,
+                use_loops=False,
+            )
+
+    def test_some_ties_removed_warns_and_returns_false(self) -> None:
+        """Removing some (but not all) tie sites warns and returns False."""
+        obs_site_id = np.array(["A", "B", "C", "A", "B", "C"])
+        obs_loop = np.array(["L1", "L1", "L1", "L1", "L1", "L1"])
+        ties_site_id = np.array(["A", "B"])
+        # tie site "B" is fully clipped, tie site "A" survives
+        mask = np.array([True, False, True, True, False, True])
+
+        with pytest.warns(GSolveSolverWarning, match="reference sites were completely"):
+            result = _check_post_clip_data_are_ok(
+                mask=mask,
+                obs_site_id=obs_site_id,
+                ties_site_id=ties_site_id,
+                obs_loop=obs_loop,
+                use_loops=False,
+            )
+
+        assert result is False
+
+    def test_dropped_loop_warns_and_returns_false(self) -> None:
+        """With use_loops and >1 loop, a fully removed loop warns."""
+        obs_site_id = np.array(["A", "B", "A", "B", "A", "B"])
+        obs_loop = np.array(["L1", "L1", "L2", "L2", "L3", "L3"])
+        ties_site_id = np.array(["A", "B"])
+        # loop "L3" is entirely clipped while two loops remain
+        mask = np.array([True, True, True, True, False, False])
+
+        with pytest.warns(
+            GSolveSolverWarning, match="some loops were completely removed"
+        ):
+            result = _check_post_clip_data_are_ok(
+                mask=mask,
+                obs_site_id=obs_site_id,
+                ties_site_id=ties_site_id,
+                obs_loop=obs_loop,
+                use_loops=True,
+            )
+
+        assert result is False
+
+    def test_loop_loses_common_sites_warns_and_returns_false(self) -> None:
+        """A surviving loop stripped of its reference anchor warns.
+
+        When a connected loop loses its only reference site after clipping
+        (while still sharing a site with the rest of the survey), the checker
+        emits the "no sites in common" warning. In the current implementation
+        this is coupled with the reference-removal warning below.
+        """
+        # L1 = {A, B, C}, L2 = {A, B, D}; the only tie site "A" is in both loops.
+        obs_site_id = np.array(["A", "B", "C", "A", "B", "D"])
+        obs_loop = np.array(["L1", "L1", "L1", "L2", "L2", "L2"])
+        ties_site_id = np.array(["A"])
+        # Clip tie "A" from L2 only; "A" survives globally via L1.
+        mask = np.array([True, True, True, False, True, True])
+
+        with pytest.warns(
+            GSolveSolverWarning, match="all reference sites removed from loop"
+        ):
+            result = _check_post_clip_data_are_ok(
+                mask=mask,
+                obs_site_id=obs_site_id,
+                ties_site_id=ties_site_id,
+                obs_loop=obs_loop,
+                use_loops=True,
+            )
+
+        assert result is False
+
+    def test_all_reference_sites_removed_from_loop_warns(self) -> None:
+        """A loop that loses all its reference sites warns and returns False."""
+        # L1 = {A, B, C}, L2 = {A, B, D}; the only tie site "A" is in both loops.
+        obs_site_id = np.array(["A", "B", "C", "A", "B", "D"])
+        obs_loop = np.array(["L1", "L1", "L1", "L2", "L2", "L2"])
+        ties_site_id = np.array(["A"])
+        # Clip tie "A" from L2 only; "A" survives globally via L1.
+        mask = np.array([True, True, True, False, True, True])
+
+        with pytest.warns(
+            GSolveSolverWarning, match="all reference sites removed from loop"
+        ):
+            result = _check_post_clip_data_are_ok(
+                mask=mask,
+                obs_site_id=obs_site_id,
+                ties_site_id=ties_site_id,
+                obs_loop=obs_loop,
+                use_loops=True,
+            )
+
+        assert result is False
+
+    def test_single_loop_skips_loop_checks(self) -> None:
+        """With only one loop, loop-specific checks are skipped even if use_loops."""
+        obs_site_id = np.array(["A", "B", "A", "B"])
+        obs_loop = np.array(["L1", "L1", "L1", "L1"])
+        ties_site_id = np.array(["A", "B"])
+        mask = np.array([True, True, True, True])
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", GSolveSolverWarning)
+            result = _check_post_clip_data_are_ok(
+                mask=mask,
+                obs_site_id=obs_site_id,
+                ties_site_id=ties_site_id,
+                obs_loop=obs_loop,
+                use_loops=True,
+            )
+
+        assert result is True
