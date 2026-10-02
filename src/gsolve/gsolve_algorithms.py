@@ -50,6 +50,10 @@ def _solver_warning(message: str):
     )
 
 
+def _solver_clip_warning(message: str):
+    _solver_warning(f"After percentile clipping: {message}")
+
+
 def call_gsolve_lstsq(
     obs: pd.DataFrame,
     ref_sites: pd.DataFrame,
@@ -478,18 +482,15 @@ def _check_post_clip_data_are_ok(
     obs_loop: np.ndarray[tuple[int]],
     use_loops: bool,
 ) -> bool:
+    """Check if percentile clipping does damage."""
     obs_site_id_remain = obs_site_id[mask]
     obs_loop_remain = obs_loop[mask]
     errs = 0
 
     # warn about site removal
     if len(dropped_sites := np.setdiff1d(obs_site_id, obs_site_id_remain)) > 0:
-        _solver_warning(
-            f"Sites were completely removed after percentile clipping: {dropped_sites}"
-        )
+        _solver_clip_warning(f"sites were completely removed: {dropped_sites}")
         errs += 1
-
-    check_loops = use_loops and not (obs_loop[0] == obs_loop).all()
 
     # ensure all tie sites made it
     dropped_ties = np.intersect1d(ties_site_id, obs_site_id_remain)
@@ -499,44 +500,55 @@ def _check_post_clip_data_are_ok(
             f"percentile clipping: {dropped_ties}"
         )
         raise ValueError(msg)
+
     if len(dropped_ties) < len(ties_site_id):
-        _solver_warning(
-            f"{len(dropped_ties)} of {len(ties_site_id)} reference sites were completely"
-            f" removed after percentile clipping: {dropped_ties})"
+        _solver_clip_warning(
+            f"{len(dropped_ties)} of {len(ties_site_id)} reference sites "
+            f"were completely: {dropped_ties})"
         )
         errs += 1
 
     # if using loops and there was actually more than 1 loop
     # - check that loops were not completely removed
-    # - check that loops have common stations
-    # - maybe? check that still have intra loop repeats
+    # - check that loops have common stations or include a ref site
 
+    # if use_loops and have > 1 loops, then check_loops
+    check_loops = use_loops and not (obs_loop[0] == obs_loop).all()
     if check_loops:
         if len(dropped_loops := np.setdiff1d(obs_loop, obs_loop_remain)) > 0:
-            _solver_warning(
-                f"Loops completely removed after percentile clipping: {dropped_loops}"
-            )
+            _solver_clip_warning(f"some loops were completely removed: {dropped_loops}")
             errs += 1
 
-        # is this necessary?
+        # check if loops are now isolated from rest of survey
         for loop_id in np.unique(obs_loop_remain):
             m_pre = obs_loop == loop_id
-            in_other_loops_pre_clip = np.intersect1d(
-                obs_site_id[m_pre], obs_site_id[~m_pre]
-            )
-            if len(in_other_loops_pre_clip) == 0:
-                continue  # nothing will have changed
-
             m_post = obs_loop_remain == loop_id
-            in_other_loops_post_clip = np.intersect1d(
+
+            in_other_loops_pre = np.intersect1d(obs_site_id[m_pre], obs_site_id[~m_pre])
+            in_other_loops_pre = len(in_other_loops_pre) > 0
+            in_other_loops_post = np.intersect1d(
                 obs_site_id_remain[m_post], obs_site_id_remain[~m_post]
             )
+            in_other_loops_post = len(in_other_loops_post) > 0
 
-            if len(in_other_loops_post_clip) == 0:
+            has_ref_gravity_pre = np.isin(ties_site_id, obs_site_id[m_pre]).any()
+            has_ref_gravity_post = np.isin(
+                ties_site_id, obs_site_id_remain[m_post]
+            ).any()
+
+            isolated_loop_pre = not in_other_loops_pre and not has_ref_gravity_pre
+            isolated_loop_post = not in_other_loops_post and not has_ref_gravity_post
+
+            if isolated_loop_pre:
+                # Already isolated so, nothing will have changed
+                continue
+            if isolated_loop_post:
                 _solver_warning(
-                    f"After percentile clipping, loop '{loop_id}' has no sites in common "
-                    "with the rest of survey"
+                    f"loop '{loop_id}' has no sites in common with the rest of survey"
                 )
+                errs += 1
+            if has_ref_gravity_pre and not has_ref_gravity_post:
+                _solver_warning(f"all reference sites removed from loop '{loop_id}'")
                 errs += 1
 
     return errs == 0
