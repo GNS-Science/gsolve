@@ -22,7 +22,9 @@ from __future__ import annotations
 
 import itertools
 import sys
+import warnings
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Any, Literal, TypeAliasType, get_args, get_origin, overload
 
 import numpy as np
@@ -1158,3 +1160,71 @@ def convert_single_timestamp_arg(
         raise TypeError(msg)
 
     return t_
+
+
+class GSolveSimpleWarner:
+    """Simple class to make python warnings friendlier.
+
+    For cases where the issue is with the user's code or data.
+
+      - Ensures that a warning's trace points to the users code.
+      - Maintains a count and cache of warnings issued
+
+
+    Parameters
+    ----------
+    prefix : str, optional
+        Prepend prefix to all messages.
+    default_category : Warning, default is UserWarning
+        The category to assign warnings.
+    """
+
+    prefix: str | None
+    default_category: Warning | None
+    _count: int
+    skip_file_prefixes: tuple[str, ...]
+    _messages: list[str]
+
+    def __init__(
+        self, prefix: str | None = None, default_category: Warning = UserWarning
+    ):
+        self.prefix = prefix
+        self._count = 0
+        self.default_category = default_category
+        self.skip_file_prefixes = (str(Path(__file__).parents[1]),)
+        self._messages = []
+
+    def warn(
+        self, message: str, show_prefix: bool = True, category: Warning | None = None
+    ):
+        """
+        Issue a python warning for user errors.
+
+        Parameters
+        ----------
+        message : str
+            The warning message to issue.
+        show_prefix : bool, default True
+            Prepend message with the ``default_prefix`` set at initialisation.
+        category : Warning | None, optional
+            If specified, use ``category`` for the warning category, otherwise use
+            the category specified at initialisation (default=UserWarning).
+        """
+        if not self.prefix is None and show_prefix:
+            msg = f"{self.prefix} {message}"
+        else:
+            msg = f"{message}"
+
+        if category is None:
+            category = self.default_category
+
+        warnings.warn(
+            message=msg, category=category, skip_file_prefixes=self.skip_file_prefixes
+        )
+        self._count += 1
+        self._messages.append([msg, category])
+
+    @property
+    def count(self) -> int:
+        """The number of warnings issued by this object."""
+        return self._count
