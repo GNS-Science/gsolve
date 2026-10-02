@@ -17,19 +17,17 @@
 # Copyright (c) 2025 Earth Sciences New Zealand.
 """Functions and Classes for performing network adjustment of gravity data."""
 
-import pathlib
-import warnings
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
 from gsolve.core._typing import GSolveSolverMethod, GSolveSolverReturn
+from gsolve.core.utils import GSolveSimpleWarner
 from gsolve.gsolve_outputs import GSolveResults
 
 __all__ = ["GSolveSolverMethod", "call_gsolve_calibration", "call_gsolve_lstsq"]
 
-# make warnings show caller location
 
 _GSOLVE_SOLVER_METHODS: dict[int, str] = {
     1: "Unconstrained least squares",
@@ -40,18 +38,6 @@ _GSOLVE_SOLVER_METHODS: dict[int, str] = {
 
 class GSolveSolverWarning(UserWarning):
     """Raised when gsolve may produce unreliable results."""
-
-
-def _solver_warning(message: str):
-    warnings.warn(
-        message,
-        category=GSolveSolverWarning,
-        skip_file_prefixes=(str(pathlib.Path(__file__).parent),),
-    )
-
-
-def _solver_clip_warning(message: str):
-    _solver_warning(f"After percentile clipping: {message}")
 
 
 def call_gsolve_lstsq(
@@ -483,14 +469,15 @@ def _check_post_clip_data_are_ok(
     use_loops: bool,
 ) -> bool:
     """Check if percentile clipping does damage."""
+    warner = GSolveSimpleWarner(
+        prefix="After percentile clipping:", default_category=GSolveSolverWarning
+    )
     obs_site_id_remain = obs_site_id[mask]
     obs_loop_remain = obs_loop[mask]
-    errs = 0
 
     # warn about site removal
     if len(dropped_sites := np.setdiff1d(obs_site_id, obs_site_id_remain)) > 0:
-        _solver_clip_warning(f"sites were completely removed: {dropped_sites}")
-        errs += 1
+        warner.warn(f"sites were completely removed: {dropped_sites}")
 
     # ensure all tie sites made it
     dropped_ties = np.intersect1d(ties_site_id, obs_site_id_remain)
@@ -502,11 +489,10 @@ def _check_post_clip_data_are_ok(
         raise ValueError(msg)
 
     if len(dropped_ties) < len(ties_site_id):
-        _solver_clip_warning(
+        warner.warn(
             f"{len(dropped_ties)} of {len(ties_site_id)} reference sites "
             f"were completely: {dropped_ties})"
         )
-        errs += 1
 
     # if using loops and there was actually more than 1 loop
     # - check that loops were not completely removed
@@ -516,8 +502,7 @@ def _check_post_clip_data_are_ok(
     check_loops = use_loops and not (obs_loop[0] == obs_loop).all()
     if check_loops:
         if len(dropped_loops := np.setdiff1d(obs_loop, obs_loop_remain)) > 0:
-            _solver_clip_warning(f"some loops were completely removed: {dropped_loops}")
-            errs += 1
+            warner.warn(f"some loops were completely removed: {dropped_loops}")
 
         # check if loops are now isolated from rest of survey
         for loop_id in np.unique(obs_loop_remain):
@@ -543,12 +528,11 @@ def _check_post_clip_data_are_ok(
                 # Already isolated so, nothing will have changed
                 continue
             if isolated_loop_post:
-                _solver_warning(
+                warner.warn(
                     f"loop '{loop_id}' has no sites in common with the rest of survey"
                 )
-                errs += 1
-            if has_ref_gravity_pre and not has_ref_gravity_post:
-                _solver_warning(f"all reference sites removed from loop '{loop_id}'")
-                errs += 1
 
-    return errs == 0
+            if has_ref_gravity_pre and not has_ref_gravity_post:
+                warner.warn(f"all reference sites removed from loop '{loop_id}'")
+
+    return warner.count == 0
