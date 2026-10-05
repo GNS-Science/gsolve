@@ -934,7 +934,7 @@ class GSolveDataWarning:
     def final_msg(self) -> None:
         """Print closing summary message."""
         if self.count > 0:
-            self._display(f"{self.count} problem(s) encountered", file=sys.stderr)
+            self._display(f"{self.count} problem(s) encountered")
 
 
 def generate_loop_intervals(
