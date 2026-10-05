@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 
 from gsolve.core._typing import GSolveSolverMethod, GSolveSolverReturn
-from gsolve.core.utils import GSolveSimpleWarner
+from gsolve.core.utils import GSolveUserWarning
 from gsolve.gsolve_outputs import GSolveResults
 
 __all__ = ["GSolveSolverMethod", "call_gsolve_calibration", "call_gsolve_lstsq"]
@@ -469,7 +469,7 @@ def _check_post_clip_data_are_ok(
     use_loops: bool,
 ) -> bool:
     """Check if percentile clipping does damage."""
-    warner = GSolveSimpleWarner(
+    warner = GSolveUserWarning(
         prefix="After percentile clipping:", default_category=GSolveSolverWarning
     )
     obs_site_id_remain = obs_site_id[mask]

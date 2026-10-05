@@ -18,7 +18,6 @@
 
 """Methods and classes for reading and applying ocean load corrections to gravity data."""
 
-import warnings
 from pathlib import Path
 from typing import Any, Literal, Protocol, runtime_checkable
 
@@ -34,7 +33,7 @@ from gsolve.core._typing import (
     FloatArray,
     SiteIDArray,
 )
-from gsolve.core.utils import to_1d_ndarray, to_naive_utc_datetime
+from gsolve.core.utils import GSolveUserWarning, to_1d_ndarray, to_naive_utc_datetime
 
 
 def _read_csv_with_fallback(file_path: FilePath, **kwargs) -> pd.DataFrame:
@@ -213,7 +212,7 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
             )
             if if_not_matched == "error":
                 raise ValueError(msg)
-            warnings.warn(msg, UserWarning)
+            GSolveUserWarning().warn(msg)
 
         if any(present_mask):
             rval.loc[present_mask] = self.data.loc[
@@ -359,7 +358,7 @@ class OceanLoadTimeSeries(OceanLoadCorrectionProvider):
                 f"({self.starttime} <-> {self.endtime})"
             )
             if if_not_matched == "warn":
-                warnings.warn(msg, UserWarning)
+                GSolveUserWarning().warn(msg)
             else:
                 raise ValueError(msg)
 
@@ -418,7 +417,7 @@ def _validate_timeseries_data(df: pd.DataFrame) -> None:
     # warn if non-uniform sampling interval/rate
     sample_intervals = (df.index[1:] - df.index[:-1]).total_seconds()
     if not np.allclose(sample_intervals[1:], sample_intervals[1]):
-        warnings.warn("timeseries has non-uniform sampling interval/rate.", UserWarning)
+        GSolveUserWarning().warn("timeseries has non-uniform sampling interval/rate.")
 
 
 def qtp_to_corrector(
@@ -766,7 +765,7 @@ class HardispOceanLoadCorrector(OceanLoadCorrectionProvider):
             )
             if if_not_matched == "error":
                 raise ValueError(msg)
-            warnings.warn(msg, UserWarning)
+            GSolveUserWarning().warn(msg)
             uniq_site_id = [s for s in uniq_site_id if s not in bad_site_ids]
 
         # set up the computers for each station

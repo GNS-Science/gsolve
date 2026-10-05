@@ -45,6 +45,7 @@ from gsolve.core._typing import (
 from gsolve.core.data import DataFieldSpecification, GSolveParameters, GSolveTable
 from gsolve.core.excel_io import read_excel_worksheet, write_excel_worksheet
 from gsolve.core.utils import (
+    GSolveUserWarning,
     is_filepath_like,
     is_in_literal,
     is_list_like,
@@ -548,11 +549,7 @@ class TerrainCorrectionParameters(GSolveParameters):
             an exception. If ``'warn'``, issue a warning and continue checking.
         """
         throw_error: bool = if_errors == "error"
-        # error_count: int = 0
-
-        def warn_(m: str) -> None:
-            warnings.warn(m, category=UserWarning)
-            # error_count += 1
+        warner = GSolveUserWarning()
 
         if (
             np.isnan(self.min_dist)
@@ -567,7 +564,7 @@ class TerrainCorrectionParameters(GSolveParameters):
             )
             if throw_error:
                 raise ValueError(msg)
-            warn_(msg)
+            warner.warn(msg)
 
         # check distance msk type is valid
         if not is_in_literal(self.distance_mask_type, TCorrDistanceMaskType):
@@ -577,7 +574,7 @@ class TerrainCorrectionParameters(GSolveParameters):
             )
             if throw_error:
                 raise ValueError(msg)
-            warn_(msg)
+            warner.warn(msg)
 
         # check dem_source
         if not _is_dataarray(self.dem_source) and not is_filepath_like(self.dem_source):
@@ -587,21 +584,21 @@ class TerrainCorrectionParameters(GSolveParameters):
             )
             if throw_error:
                 raise ValueError(msg)
-            warn_(msg)
+            warner.warn(msg)
 
         if _is_dataarray(self.dem_source):
             if not self.dem_source.tcorr.is_valid_dem:
                 msg = "invalid dem_source DataArray: must be a 2D array of floats"
                 if throw_error:
                     raise ValueError(msg)
-                warn_(msg)
+                warner.warn(msg)
 
         elif is_filepath_like(self.dem_source):
             if not self.dem_source:
                 msg = "invalid dem_source file-path like"
                 if throw_error:
                     raise ValueError(msg)
-                warn_(msg)
+                warner.warn(msg)
         else:
             msg = (
                 f"invalid dem_source: must be an xarray.DataArray or file-path like"
@@ -609,7 +606,7 @@ class TerrainCorrectionParameters(GSolveParameters):
             )
             if throw_error:
                 raise ValueError(msg)
-            warn_(msg)
+            warner.warn(msg)
 
         # check density_dataset_source
         if _is_dataarray(self.density_dataset_source):
@@ -620,7 +617,7 @@ class TerrainCorrectionParameters(GSolveParameters):
                 )
                 if throw_error:
                     raise ValueError(msg)
-                warn_(msg)
+                warner.warn(msg)
 
         elif is_filepath_like(self.density_dataset_source):
             if not self.density_dataset_source:
@@ -928,7 +925,7 @@ class TerrainCorrector:
                     )
                 else:
                     x, y = None, None
-                    warnings.warn(
+                    GSolveUserWarning().warn(
                         "TerrainCorrector parameters specify variable easting "
                         "and/or northing fields. Easting and Northing will not be "
                         "written to TerrainCorrectionData output."
@@ -1746,17 +1743,18 @@ class TerrainCorrectionData(GSolveTable):
 
         err_msg = (
             f"no terrain correction data found for {len(site_id_missing)} of "
-            f"{len(site_id_idx)} site_id's "
+            f"{len(site_id_idx)} site_id's"
         )
+        warner = GSolveUserWarning(prefix=err_msg + ", ")
 
         if if_missing == "raise":
             raise ValueError(err_msg)
 
         if if_missing == "drop":
-            warnings.warn(f"{err_msg}, dropping from output")
+            warnings.warn("dropping from output")
             return tcorrs.loc[site_id_found, cols]
 
-        warnings.warn(f"{err_msg}, filling with {fill_value}")
+        warner.warn(f"filling with {fill_value}")
         rval = tcorrs.loc[site_id_found, cols].copy()
         rval_fill = pd.DataFrame(index=site_id_missing, columns=cols, data=fill_value)
         return pd.concat([rval, rval_fill]).loc[site_id_idx]
