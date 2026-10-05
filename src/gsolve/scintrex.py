@@ -19,7 +19,6 @@
 import abc
 import copy
 import pathlib
-import warnings
 from collections.abc import Callable, Mapping, Sequence
 from types import MappingProxyType
 from typing import Literal, Self
@@ -35,6 +34,7 @@ from gsolve.core._typing import (
     TimedeltaScalar,
 )
 from gsolve.core.utils import (
+    GSolveUserWarning,
     generate_loop_intervals,
     generate_loop_names,
     is_datetime_array,
@@ -305,8 +305,9 @@ class CG6Data(ScintrexData):
                     raise TypeError(msg) from err_cant_replace
                 else:
                     if on_error == "warn":
-                        msg = f"bad data encountered in column '{c}', setting to nan"
-                        warnings.warn(msg)
+                        GSolveUserWarning().warn(
+                            f"bad data encountered in column '{c}', setting to nan"
+                        )
 
         if (
             "datetime" not in df.columns
@@ -412,7 +413,7 @@ class CG6Data(ScintrexData):
             metadata_units[k] = u
 
         if not file_id_found:
-            warnings.warn(
+            GSolveUserWarning().warn(
                 f"Expected file type identifier '{cls._file_id_header}'"
                 f"not found in file {cg6_file}."
             )

@@ -40,6 +40,7 @@ from gsolve.core._typing import (
 )
 from gsolve.core.utils import (
     GSolveDataWarning,
+    GSolveUserWarning,
     convert_single_timestamp_arg,
     dms2rad,
     to_1d_ndarray,
@@ -755,7 +756,7 @@ class EternaTidalParameters:
                 .to_numpy()
             )
             if gaps.any():
-                warnings.warn(
+                GSolveUserWarning().warn(
                     message=(
                         f"some frequency {gaps.sum()} intervals separated by"
                         f"greater than {gap_threshold} "

@@ -49,6 +49,7 @@ from gsolve.core.data import (
 from gsolve.core.excel_io import write_excel_worksheet
 from gsolve.core.utils import (
     GSolveDataWarning,
+    GSolveUserWarning,
     is_list_like,
     prepare_writable_df,
     to_naive_utc_datetime,
@@ -347,10 +348,11 @@ class GravityObservations(GSolveTable):
             self.data.loc[:, ["meter_reading", "meter_reading_mgal"]].isna().all(axis=1)
         )
         if has_nan_readings.any():
-            _warnings.warn(
+            GSolveUserWarning().warn(
                 "neither 'meter_reading' or 'meter_reading_mgal' present for "
                 "1 or more records"
             )
+
         _ = self._data_ok(warn=True)
         self.set_timedelta_unit(timedelta_unit, set_tdelta=False)
         self.set_fixed_time_datum(fixed_time_datum, set_tdelta=False)
@@ -481,10 +483,12 @@ class GravityObservations(GSolveTable):
             if duplicated_obs_id == "error":
                 msg_0 = f"{msg}"
                 raise ValueError(msg_0)
+
+            warner = GSolveUserWarning()
             if duplicated_obs_id == "keep":
-                _warnings.warn(f"keeping {msg}")
+                warner.warn(f"keeping {msg}")
             elif duplicated_obs_id == "rename":
-                _warnings.warn(f"renaming {msg}")
+                warner.warn(f"renaming {msg}")
                 new_idx = self._index_deduplicator(new_idx)
 
         self.data = self.data.set_index(new_idx)
@@ -1530,6 +1534,7 @@ class GravityObservations(GSolveTable):
             The new GravityObservations object.
 
         """
+        warner = GSolveUserWarning()
         if not isinstance(other, type(self)):
             msg = (
                 f"invalid type for other: "
@@ -1569,15 +1574,15 @@ class GravityObservations(GSolveTable):
                 raise ValueError(msg)
 
             if if_duplicate_loops == "keep":
-                _warnings.warn(f"keeping {msg}")
+                warner.warn(f"keeping {msg}")
 
             elif if_duplicate_loops == "drop":
-                _warnings.warn(f"dropping {msg}")
+                warner.warn(f"dropping {msg}")
                 m = ~other.data["loop"].isin(duplicated_loops)
                 other.data = other.data.loc[m, :]
 
             elif if_duplicate_loops == "rename":
-                _warnings.warn(f"{msg}: adding suffix '{rename_suffix}' to loop id's")
+                warner.warn(f"{msg}: adding suffix '{rename_suffix}' to loop id's")
                 for l in duplicated_loops:
                     m = other.data["loop"].eq(l)
                     other.data.loc[m, "loop"] += f"_{rename_suffix}"
@@ -1592,11 +1597,11 @@ class GravityObservations(GSolveTable):
                 raise ValueError(msg)
 
             if if_duplicate_obs_ids == "drop":
-                _warnings.warn(f"dropping {msg}")
+                warner.warn(f"dropping {msg}")
                 other.data = other.data.loc[~is_duplicated_obs_id, :]
 
             elif if_duplicate_obs_ids == "rename":
-                _warnings.warn(f"adding suffix '{rename_suffix}' to {msg}")
+                warner.warn(f"adding suffix '{rename_suffix}' to {msg}")
                 rename_dict = {
                     i: f"{i}_{rename_suffix}"
                     for i in other.data.index[is_duplicated_obs_id]
@@ -1604,7 +1609,7 @@ class GravityObservations(GSolveTable):
                 other.data = other.data.rename(index=rename_dict)
 
             if if_duplicate_obs_ids == "regenerate":
-                _warnings.warn(f"{msg}: will regenerate 'obs_id for all data")
+                warner.warn(f"{msg}: will regenerate 'obs_id for all data")
                 # defer regeneration until after concat
                 regen_obs_ids = True
 

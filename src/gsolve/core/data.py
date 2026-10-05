@@ -21,7 +21,6 @@
 import abc
 import copy
 import dataclasses
-import warnings
 from collections.abc import Callable
 from copy import deepcopy
 from types import MappingProxyType
@@ -42,6 +41,7 @@ from gsolve.core.excel_io import (
     write_excel_worksheet,
 )
 from gsolve.core.utils import (
+    GSolveUserWarning,
     merge_datetime_columns,
     normalize_field_names,
     prepare_writable_df,
@@ -505,18 +505,19 @@ class GSolveTable(_HasKnownFields, abc.ABC):
 
     def _data_ok(self, warn: bool = True) -> bool:
         """Test whether data are complete according to specifications in ``obj._known_fields``."""
-        rval = True
+        all_ok = True
+        warner = GSolveUserWarning()
         for f in self.required_fields():
             if f not in self.data.columns:
                 if warn:
-                    warnings.warn(f"Missing required field: '{f}'")
-                rval = False
+                    warner.warn(f"Missing required field: '{f}'")
+                all_ok = False
             if self.data[f].isna().any() or self.data[f].eq("").any():
                 if warn:
-                    warnings.warn(f"Required field has empty records: '{f}'")
-                rval = False
+                    warner.warn(f"Required field has empty records: '{f}'")
+                all_ok = False
 
-        return rval
+        return all_ok
 
     @classmethod
     def from_dataframe(

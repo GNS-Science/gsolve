@@ -51,6 +51,7 @@ from gsolve.core._typing import (
 __all__ = [
     "DEFAULT_TIMESTAMP_COLUMNS",
     "GSolveDataWarning",
+    "GSolveUserWarning",
     "check_duplicate_index",
     "columns_to_timestamp",
     "expand_datetime_column",
@@ -928,12 +929,12 @@ class GSolveDataWarning:
     def print_msgs(self) -> None:
         """Print all stored warning messages."""
         for msg in self.messages:
-            print(f"{self.prefix}: {msg}")  # ruff: ignore[print]
+            print(f"{self.prefix}: {msg}", file=sys.stderr)  # ruff: ignore[print]
 
     def final_msg(self) -> None:
         """Print closing summary message."""
         if self.count > 0:
-            self._display(f"{self.count} problem(s) encountered")
+            self._display(f"{self.count} problem(s) encountered", file=sys.stderr)
 
 
 def generate_loop_intervals(
@@ -1162,7 +1163,7 @@ def convert_single_timestamp_arg(
     return t_
 
 
-class GSolveSimpleWarner:
+class GSolveUserWarning:
     """Simple class to make python warnings friendlier.
 
     For cases where the issue is with the user's code or data.
