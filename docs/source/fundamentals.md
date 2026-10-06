@@ -1,6 +1,6 @@
-# GSolve fundamentals
+# gSolve fundamentals
 
-[Gsolve](index.rst) has four main data objects called [`GravityObservations`](#observations), [`GravitySites`](#sites), [`ReferenceGravity`](#reference-gravity) and [`GravitySurvey`](#surveys).
+[gSolve](index.rst) has four main data objects called [`GravityObservations`](#observations), [`GravitySites`](#sites), [`ReferenceGravity`](#reference-gravity) and [`GravitySurvey`](#surveys).
 
 For processing beyond a network adjustment (i.e. to Complete Bouguer anomaly) there are [`GravityCorrections`](#gravity-corrections), [`TerrainCorrector`](terrain_corrections.md) and [`GravityAnomalies`](#gravity-anomalies) and finally a [`GSolveReports`](#output-files) class for output results files.
 
