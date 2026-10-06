@@ -54,8 +54,13 @@ Process gravity data for time change microgravity and Bouguer surveys.
 * save plot files
 
 # Installation
-
+```
 pip install gsolve
+```
+or
+```
+conda install gsolve -c conda-forge
+```
 
 # Usage
 
