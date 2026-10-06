@@ -437,8 +437,8 @@ class GSolveResults:
             msg = f"unrecognized unit '{unit}'. Must be 'mGal' or 'uGal'"
             raise ValueError(msg)
 
-        x = df[x_col].to_numpy()
-        y = df[y_col].to_numpy()
+        x = df[x_col].to_numpy(copy=True)
+        y = df[y_col].to_numpy(copy=True)
 
         if plot_drift:
             drift_y = drift * x
@@ -452,7 +452,6 @@ class GSolveResults:
                 drift_y,
                 c="orange",
                 label=f"drift curve ({drift:{precision}} {unit_label}/hr)",
-                **kwargs,
             )
             ax.set_ylabel(f"{y_col} + drift ({unit_label})")
             ax.set_title(
