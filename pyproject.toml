@@ -1,6 +1,6 @@
 [project]
 name = "gsolve"
-dynamic = ["version"] # version = "5.6.0"
+dynamic = ["version"]
 description = "A Python package for processing gravity survey data."
 requires-python = ">=3.12"
 authors = [
@@ -30,7 +30,7 @@ dependencies = [
     "matplotlib>=3.11.1",
     "numpy>=2.4.6",
     "openpyxl>=3.1.5",
-    "pandas[plot]<3",
+    "pandas[plot]>=2.2",
     "pydata-sphinx-theme>=0.16.1",
     "pygtide>=0.9.1",
     "pyhardisp>=0.2.1",
