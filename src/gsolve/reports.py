@@ -186,11 +186,11 @@ class GSolveReport:
 
         # merge in site solution
         if isinstance(results.site_solution, pd.DataFrame):
-            df = df.merge(results.site_solution, **merge_kwargs)  # type: ignore[invalid-argument-type]
+            df = df.merge(right=results.site_solution, **merge_kwargs)
 
         # merge anomalies if present
         if anomalies is not None:
-            df = df.merge(anomalies.data, **merge_kwargs)  # type: ignore[invalid-argument-type]
+            df = df.merge(right=anomalies.data, **merge_kwargs)
 
         # clean up duplicate columns
         df = df.drop(

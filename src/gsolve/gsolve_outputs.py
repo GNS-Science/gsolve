@@ -196,7 +196,7 @@ class GSolveResults:
             },
         )
 
-        site_ids = obs["site_id"][mask].value_counts().sort_index()
+        site_ids = obs.loc[mask, "site_id"].value_counts().sort_index()
         mask_gravity = ~np.isin(
             np.unique(obs["site_id"]),
             np.setdiff1d(np.unique(obs["site_id"]), site_ids.index),
@@ -437,18 +437,14 @@ class GSolveResults:
             msg = f"unrecognized unit '{unit}'. Must be 'mGal' or 'uGal'"
             raise ValueError(msg)
 
-        x = df[x_col].to_numpy(copy=True)
-        y = df[y_col].to_numpy(copy=True)
-
         if plot_drift:
-            drift_y = drift * x
-            y += drift_y
+            drift_y = drift * df[x_col]
             _ = kwargs.setdefault("label", "residuals")
             _ = kwargs.setdefault("marker", ".")
 
-            ax.scatter(x, y, **kwargs)
+            ax.scatter(df[x_col], df[y_col] + drift_y, **kwargs)
             ax.plot(
-                x,
+                df[x_col],
                 drift_y,
                 c="orange",
                 label=f"drift curve ({drift:{precision}} {unit_label}/hr)",
@@ -462,7 +458,7 @@ class GSolveResults:
         else:
             _ = kwargs.setdefault("label", "residuals")
             _ = kwargs.setdefault("markerfmt", ".")
-            ax.stem(x, y, **kwargs)
+            ax.stem(df[x_col], df[y_col], **kwargs)
             ax.set_ylabel(f"{y_col} ({unit_label})")
 
         ax.legend(loc="best")
