@@ -4,6 +4,8 @@
 [![GitHub License](https://img.shields.io/github/license/GNS-Science/gsolve)](https://github.com/GNS-Science/gsolve/blob/main/LICENSE)
 ![Publish to PyPI](https://github.com/GNS-Science/gsolve/actions/workflows/publish.yml/badge.svg)
 [![Pypi version](https://img.shields.io/pypi/v/gsolve)](https://pypi.org/project/gsolve/)
+[![Conda version](https://img.shields.io/conda/vn/conda-forge/gsolve)](https://anaconda.org/channels/conda-forge/packages/gsolve/overview)
+
 
 # gSolve
 
