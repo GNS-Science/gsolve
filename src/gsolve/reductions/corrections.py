@@ -274,10 +274,8 @@ def atmospheric_correction(
       New Zealand Journal of Geology and Geophysics, 53(4), pp. 333-340. https://doi.org/10.1080/00288306.2010.510171.
     """
     height_ellipsoidal = to_1d_ndarray_or_float(height_ellipsoidal)
-    atmospheric_correction = (
-        0.874 - 9.9e-05 * height_ellipsoidal + 3.5625e-09 * height_ellipsoidal**2
-    ) * -1
-
+    atmospheric_correction = 0.874 - 9.9e-05 * height_ellipsoidal + 3.5625e-09 * height_ellipsoidal**2
+    
     return atmospheric_correction
 
 
