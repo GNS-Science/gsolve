@@ -177,7 +177,6 @@ class GSolveReport:
             "left_index": True,
             "right_index": True,
             "how": "left",
-            "copy": True,
             "suffixes": [None, "_duplicate"],
         }
 
@@ -233,7 +232,6 @@ class GSolveReport:
             left_index=True,
             right_index=True,
             how="left",
-            copy=True,
             suffixes=[None, "_duplicate"],
         )
 
