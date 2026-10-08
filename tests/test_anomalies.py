@@ -55,7 +55,7 @@ def test_compute_complete_bouguer_anomaly_basic():
         atmospheric_correction=ac,
         spherical_bouguer_cap_correction=sbc,
     )
-    expected = ag - (ng + fac + ac + bc + sbc - tc)
+    expected = ag - (ng + fac + bc + sbc - ac - tc)
     np.testing.assert_allclose(result, expected)
 
 
@@ -71,25 +71,20 @@ def test_compute_simple_bouguer_anomaly_basic():
     ag = np.array([100.0, 200.0])
     ng = np.array([10.0, 20.0])
     fac = np.array([1.0, 2.0])
-    ac = np.array([0.5, 0.5])
     bc = np.array([5.0, 6.0])
-    sbc = np.array([0.0, 0.0])
+
     result = compute_simple_bouguer_anomaly(
         absolute_gravity=ag,
         normal_gravity=ng,
         free_air_correction=fac,
-        atmospheric_correction=ac,
         bouguer_correction=bc,
-        spherical_bouguer_cap_correction=sbc,
     )
     expected = compute_complete_bouguer_anomaly(
         absolute_gravity=ag,
         normal_gravity=ng,
         free_air_correction=fac,
         bouguer_correction=bc,
-        atmospheric_correction=ac,
-        terrain_correction=np.zeros_like(ac),
-        spherical_bouguer_cap_correction=sbc,
+        terrain_correction=np.zeros_like(bc),
     )
     np.testing.assert_allclose(result, expected)
 
@@ -98,14 +93,12 @@ def test_compute_simple_bouguer_anomaly_raises_on_nan():
     ag = np.array([100.0, np.nan])
     ng = np.array([10.0, 20.0])
     fac = np.array([1.0, 2.0])
-    ac = np.array([0.5, 0.5])
     bc = np.array([5.0, 6.0])
     with pytest.raises(ValueError):
         compute_simple_bouguer_anomaly(
             absolute_gravity=ag,
             normal_gravity=ng,
             free_air_correction=fac,
-            atmospheric_correction=ac,
             bouguer_correction=bc,
         )
 

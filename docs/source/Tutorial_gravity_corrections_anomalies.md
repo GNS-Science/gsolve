@@ -20,7 +20,7 @@ where:
 
 ## Simple Bouguer Anomaly
 
-***SBA = AG - (NG + FAC + AC + BSC + SBC)***
+***SBA = AG - (NG + FAC + BSC + SBC)***
 
 Where:
 
@@ -31,8 +31,6 @@ Where:
 - NG = Normal Gravity calculated on the ellipsoid surface
 
 - FAC = Free Air Correction
-
-- AC = Atmospheric Correction
 
 - BSC = Bouguer Slab Correction
 
@@ -42,11 +40,10 @@ The terrain correction is not included in this calculation.
 
 ## Complete Bouguer Anomaly
 
-***CBA = AG - (NG + FAC + AC + BSC + SBC - TC)***
+***CBA = AG - (NG + FAC + BSC + SBC - AC - TC)***
 
 Where:
-
-- SBA = Simple Bouguer Anomaly
+- CBA = Complete Bouguer Anomaly
 
 - AG = Absolute Gravity
 
@@ -54,10 +51,10 @@ Where:
 
 - FAC = Free Air Correction
 
-- AC = Atmospheric Correction
-
 - BSC = Bouguer Slab Correction
 
 - SBC = Spherical Bouguer Cap Correction
+
+- AC = Atmospheric Correction
 
 - TC = Terrain Correction.

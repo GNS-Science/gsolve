@@ -182,15 +182,15 @@ class TestFreeAirCorrection:
 
 class TestAtmosphericCorrection:
     def test_sea_level_value(self):
-        # at h=0: 0.874 * -1 = -0.874 mGal
+        # at h=0: 0.874 mGal
         ac = atmospheric_correction(0.0)
-        assert float(ac) == pytest.approx(-0.874, rel=1e-4)
+        assert float(ac) == pytest.approx(0.874, rel=1e-4)
 
-    def test_increases_with_height(self):
-        # atmospheric correction becomes less negative (smaller magnitude) with altitude
+    def test_decreases_with_height(self):
+        # atmospheric correction becomes smaller with altitude
         ac0 = atmospheric_correction(0.0)
         ac1000 = atmospheric_correction(1000.0)
-        assert float(ac1000) > float(ac0)
+        assert float(ac1000) < float(ac0)
 
     def test_array_input(self):
         ac = atmospheric_correction(np.array([0.0, 1000.0, 5000.0]))
