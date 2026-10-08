@@ -73,16 +73,16 @@ def compute_complete_bouguer_anomaly(
 
     .. math::
 
-        CBA = AG - (NG + FAC + AC + BSC + SBC - TC)
+        CBA = AG - (NG + FAC + BSC + SBC - AC - TC)
 
     Where:
         - CBA = Complete Bouguer Anomaly
         - AG = Absolute Gravity
         - NG = Normal Gravity on the ellipsoid surface
         - FAC = Free Air Correction
-        - AC = Atmospheric Correction
         - BSC = Bouguer Slab Correction
         - SBC = Spherical Bouguer Cap Correction
+        - AC = Atmospheric Correction
         - TC = Terrain Correction
 
     Parameters
@@ -129,9 +129,9 @@ def compute_complete_bouguer_anomaly(
         - (
             to_1d_ndarray_or_float(normal_gravity)
             + to_1d_ndarray_or_float(free_air_correction)
-            + to_1d_ndarray_or_float(atmospheric_correction)
             + to_1d_ndarray_or_float(bouguer_correction)
             + to_1d_ndarray_or_float(spherical_bouguer_cap_correction)
+            - to_1d_ndarray_or_float(atmospheric_correction)
             - to_1d_ndarray_or_float(terrain_correction)
         )
     )
@@ -143,24 +143,22 @@ def compute_simple_bouguer_anomaly(
     normal_gravity: ArrayLike,
     free_air_correction: ArrayLike,
     bouguer_correction: ArrayLike,
-    atmospheric_correction: ArrayLike = 0.0,
     spherical_bouguer_cap_correction: ArrayLike = 0.0,
 ) -> np.ndarray:
     """Calculate the Simple Bouguer anomaly from provided corrections.
 
     The Simple Bouguer anomaly differs from the Complete Bouguer anomaly
-    in that terrain corrections are not included. It is calculated using
+    in that atmosphere and terrain corrections are not included. It is calculated using
     the following formula:
 
     .. math::
-        SBA = AG - (NG + FAC + AC + BSC + SBC)
+        SBA = AG - (NG + FAC + BSC + SBC)
 
     Where:
         - SBA = Simple Bouguer Anomaly
         - AG = Absolute Gravity
         - NG = Normal Gravity on the ellipsoid surface
         - FAC = Free Air Correction
-        - AC = Atmospheric Correction
         - BSC = Bouguer Slab Correction
         - SBC = Spherical Bouguer Cap Correction
 
@@ -175,8 +173,6 @@ def compute_simple_bouguer_anomaly(
     bouguer_correction : array-like
         Bouguer correction for infinite planar slab or for curvature corrected in mGal.
         If curvature corrected, ensure ``spherical_bouguer_cap_correction`` = 0.0.
-    atmospheric_correction : array-like, default = 0.0
-        The atmospheric correction in mGal.
     spherical_bouguer_cap_correction : array-like, default = 0.0
         The spherical Bouguer cap correction in mGal. Should be zero if
         ``bouguer_correction`` is curvature corrected.
@@ -196,7 +192,6 @@ def compute_simple_bouguer_anomaly(
             absolute_gravity,
             normal_gravity,
             free_air_correction,
-            atmospheric_correction,
             bouguer_correction,
             spherical_bouguer_cap_correction,
         )
@@ -210,7 +205,7 @@ def compute_simple_bouguer_anomaly(
         free_air_correction=free_air_correction,
         bouguer_correction=bouguer_correction,
         spherical_bouguer_cap_correction=spherical_bouguer_cap_correction,
-        atmospheric_correction=atmospheric_correction,
+        atmospheric_correction=0.0,
         terrain_correction=0.0,
     )
 
