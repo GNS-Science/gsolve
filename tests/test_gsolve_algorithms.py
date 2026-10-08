@@ -319,13 +319,15 @@ class TestGSolverLstsqBranches:
         kwargs = _solver_inputs(n_obs=6)
         kwargs["obs_g"] = np.array([1000.0, 1002.0, 1001.0, 1003.0, 1001.5, 1200.0])
 
-        _, _, _, _, _, _, mask = g_solver_lstsq(
-            **kwargs,
-            method=1,
-            use_loops=True,
-            calculate_calibration_factor=False,
-            percentile_clipping=80.0,
-        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            _, _, _, _, _, _, mask = g_solver_lstsq(
+                **kwargs,
+                method=1,
+                use_loops=True,
+                calculate_calibration_factor=False,
+                percentile_clipping=80.0,
+            )
 
         assert mask.shape[0] == kwargs["obs_g"].shape[0]
         assert np.sum(~mask) >= 1
@@ -413,14 +415,16 @@ class TestCheckPostClipDataAreOk:
         # all observations of tie site "A" are clipped
         mask = np.array([False, True, False, True])
 
-        with pytest.raises(ValueError, match="All reference sites were completely"):
-            _check_post_clip_data_are_ok(
-                mask=mask,
-                obs_site_id=obs_site_id,
-                ties_site_id=ties_site_id,
-                obs_loop=obs_loop,
-                use_loops=False,
-            )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            with pytest.raises(ValueError, match="All reference sites were completely"):
+                _check_post_clip_data_are_ok(
+                    mask=mask,
+                    obs_site_id=obs_site_id,
+                    ties_site_id=ties_site_id,
+                    obs_loop=obs_loop,
+                    use_loops=False,
+                )
 
     def test_some_ties_removed_warns_and_returns_false(self) -> None:
         """Removing some (but not all) tie sites warns and returns False."""
@@ -430,7 +434,8 @@ class TestCheckPostClipDataAreOk:
         # tie site "B" is fully clipped, tie site "A" survives
         mask = np.array([True, False, True, True, False, True])
 
-        with pytest.warns(GSolveSolverWarning, match="reference sites were completely"):
+        with pytest.warns(GSolveSolverWarning) as record:
+            # , match="reference sites were completely"):
             result = _check_post_clip_data_are_ok(
                 mask=mask,
                 obs_site_id=obs_site_id,
@@ -438,7 +443,7 @@ class TestCheckPostClipDataAreOk:
                 obs_loop=obs_loop,
                 use_loops=False,
             )
-
+        assert any("reference sites were completely" in str(r.message) for r in record)
         assert result is False
 
     def test_dropped_loop_warns_and_returns_false(self) -> None:

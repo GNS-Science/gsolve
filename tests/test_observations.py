@@ -244,7 +244,7 @@ class TestObservationTimedelta:
         obj2 = GravityObservations(**dummy_data())
         obj2.set_column("loop", 2)
         obj2.set_column(
-            "datetime", pd.to_datetime(dummy_data()["datetime"]) + pd.Timedelta("1d")
+            "datetime", pd.to_datetime(dummy_data()["datetime"]) + pd.Timedelta("1D")
         )
         obj2.set_obs_id()
         obj3 = obj1.merge(obj2)
@@ -299,7 +299,7 @@ class TestObservationTimedelta:
         # test that fixed_time_datum is set correctly
         # make fixed_time_datum = datetime.min() - 1 day
         # -> survey_tdelta should be shifted by + 1 day
-        dt = pd.Timedelta("1d")
+        dt = pd.Timedelta("1D")
         dt_sec = dt.total_seconds() / obs.timedelta_unit().total_seconds()
         t0 = obs.data["datetime"].min() - dt
         obs.set_fixed_time_datum(t0)

@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+# import pytest
 from gsolve.core import data
 from gsolve.core.data import (
     COMMON_FIELDS,
@@ -29,20 +30,29 @@ from gsolve.core.data import (
 )
 
 
-@pytest.fixture
-def gsolve_table_subclass():
-    class TestClass(data.GSolveTable):
-        _known_fields = MappingProxyType(
-            {
-                "a": data.DataFieldSpecification("a", str, "", True),
-                "b": data.DataFieldSpecification("b", float, 0.0, True),
-                "c": data.DataFieldSpecification("c", "datetime", pd.NaT, False),
-                "d": data.DataFieldSpecification("d", bool, False, False),
-            }
-        )
-        _index_field = "a"
+class TestClass(GSolveTable):
+    _known_fields = MappingProxyType(
+        {
+            "a": data.DataFieldSpecification("a", str, "", True),
+            "b": data.DataFieldSpecification("b", float, 0.0, True),
+            "c": data.DataFieldSpecification("c", "datetime", pd.NaT, False),
+            "d": data.DataFieldSpecification("d", bool, False, False),
+        }
+    )
+    _index_field = "a"
 
-    return TestClass
+    def __init__(self, **kwargs) -> None:
+        self.data = pd.DataFrame(kwargs)
+        self.data = self.data.set_index(self._index_field)
+
+
+def TestClass_instance(n: int = 5) -> TestClass:
+    return TestClass(
+        a=[f"s{i}" for i in range(n)],
+        b=[float(i) for i in range(n)],
+        c=[f"2020-12-01T12:{i:02d}:00" for i in range(n)],
+        d=[i * 2 > n for i in range(n)],
+    )
 
 
 class TestDataFieldSpecification:
@@ -100,9 +110,10 @@ class TestDataFieldSpecification:
     #     )
 
 
-def test_gsolve_table_known_fields(gsolve_table_subclass):
-    assert gsolve_table_subclass.known_fields() == ["a", "b", "c", "d"]
-    assert gsolve_table_subclass.required_fields() == ["a", "b"]
+def test_gsolve_table_known_fields():
+    cl = TestClass
+    assert cl.known_fields() == ["a", "b", "c", "d"]
+    assert cl.required_fields() == ["a", "b"]
 
 
 class DummyTable(GSolveTable):
@@ -169,6 +180,27 @@ def test_gsolve_table_from_dataframe_and_csv(tmp_path):
     t2 = DummyTable.from_csv(csv_file)
     assert isinstance(t2, DummyTable)
     assert t2.data.shape[0] == 1
+
+
+def test_gsolve_table_data_ok_check():
+    obj = TestClass_instance(n=5)
+    assert obj._data_ok()
+    idx = obj.data.index.to_numpy(copy=True)
+    idx[2] = ""
+    obj.data = obj.data.set_index(pd.Index(idx, name="a"))
+    with pytest.warns(UserWarning, match="Index field"):
+        assert not obj._data_ok()
+
+    # remove field
+    obj = TestClass_instance(n=5)
+    obj.data = obj.data.drop(columns="b")
+    with pytest.warns(UserWarning, match="Missing required field"):
+        assert not obj._data_ok()
+
+    # restore with nan's
+    obj.data["b"] = np.nan
+    with pytest.warns(UserWarning, match="Required field has empty records"):
+        assert not obj._data_ok()
 
 
 class TestGSolveParameters:

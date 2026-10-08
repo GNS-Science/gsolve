@@ -387,6 +387,7 @@ def _concat_gsolvetable_dataframes_with_fill(
 class _HasKnownFields(Protocol):
     _known_fields: ClassVar[MappingProxyType[str, DataFieldSpecification]]
     _default_excel_sheet_name: ClassVar[str | tuple[str, ...]]
+    _index_field: ClassVar[str | None]
 
 
 class GSolveTable(_HasKnownFields, abc.ABC):
@@ -508,14 +509,24 @@ class GSolveTable(_HasKnownFields, abc.ABC):
         all_ok = True
         warner = GSolveUserWarning()
         for f in self.required_fields():
+            if not all_ok and not warn:
+                break  # since not issuing warnings, no need to keep testing if it is bad
+            if self.data.index.name == f:
+                if self.data.index.isna().any() or "" in self.data.index:
+                    all_ok = False
+                    if warn:
+                        warner.warn(f"Index field '{f}' has empty records")
+                continue
+
             if f not in self.data.columns:
+                all_ok = False
                 if warn:
                     warner.warn(f"Missing required field: '{f}'")
-                all_ok = False
+                continue
             if self.data[f].isna().any() or self.data[f].eq("").any():
+                all_ok = False
                 if warn:
                     warner.warn(f"Required field has empty records: '{f}'")
-                all_ok = False
 
         return all_ok
 
