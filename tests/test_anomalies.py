@@ -55,7 +55,7 @@ def test_compute_complete_bouguer_anomaly_basic():
         atmospheric_correction=ac,
         spherical_bouguer_cap_correction=sbc,
     )
-    expected = ag - (ng + fac + ac + bc + sbc - tc)
+    expected = ag - (ng + fac + bc + sbc - ac - tc)
     np.testing.assert_allclose(result, expected)
 
 
