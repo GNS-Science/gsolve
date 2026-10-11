@@ -125,6 +125,9 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
     ... )
     """
 
+    data: pd.DataFrame
+    metadata: dict[str, Any]
+
     def __init__(
         self,
         site_id: SiteIDArray,
@@ -148,7 +151,7 @@ class OceanLoadAtSiteTime(OceanLoadCorrectionProvider):
             .sort_index()
             .drop_duplicates(ignore_index=False)
         )
-        self.metadata: dict[str, Any] = metadata
+        self.metadata = metadata
 
     def identifier(self) -> str:
         """Corrector identifier string."""
@@ -267,6 +270,9 @@ class OceanLoadTimeSeries(OceanLoadCorrectionProvider):
     ... )
     """
 
+    data: pd.DataFrame
+    metadata: dict[str, Any]
+
     def __init__(
         self,
         date_time: DatetimeArray,
@@ -365,7 +371,7 @@ class OceanLoadTimeSeries(OceanLoadCorrectionProvider):
         ocean_load_corrs = np.interp(
             t.astype(np.int64),
             df_t.astype(np.int64),
-            self.data["BergerLoadCorrection"].to_numpy(),
+            self.data["correction"].to_numpy(),
             **kwargs,
         )
         if any(outside_timeseries_span):

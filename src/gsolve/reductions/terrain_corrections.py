@@ -24,7 +24,7 @@ import sys
 import warnings
 from collections.abc import Iterable, Sequence
 from types import MappingProxyType
-from typing import Any, Literal, Self, get_args
+from typing import Any, ClassVar, Literal, Self, get_args
 
 import harmonica as hm
 import numpy as np
@@ -42,7 +42,12 @@ from gsolve.core._typing import (
     SitesLike,
     TCorrDistanceMaskType,
 )
-from gsolve.core.data import DataFieldSpecification, GSolveParameters, GSolveTable
+from gsolve.core.data import (
+    COMMON_FIELDS,
+    DataFieldSpecification,
+    GSolveParameters,
+    GSolveTable,
+)
 from gsolve.core.excel_io import read_excel_worksheet, write_excel_worksheet
 from gsolve.core.utils import (
     GSolveUserWarning,
@@ -69,6 +74,29 @@ __all__ = [
 def _is_dataarray(obj: Any) -> bool:
     """Check if an object is an xarray DataArray."""
     return isinstance(obj, xr.DataArray)
+
+
+def _to_bool(value: Any) -> bool:
+    """Coerce a value to bool, interpreting serialized strings sensibly.
+
+    Unlike the builtin ``bool``, this treats the strings ``"false"``, ``"no"``,
+    ``"0"``, ``"none"`` and the empty string (case-insensitively) as ``False``.
+    This is required so that boolean parameters survive a round-trip through
+    CSV/Excel, where ``False`` is written and read back as the string
+    ``"False"`` (which ``bool("False")`` would otherwise evaluate to ``True``).
+
+    Parameters
+    ----------
+    value : Any
+        The value to coerce.
+
+    Returns
+    -------
+    bool
+    """
+    if isinstance(value, str):
+        return value.strip().lower() not in {"", "false", "no", "0", "none", "nan"}
+    return bool(value)
 
 
 def calculate_terrain_correction(
@@ -138,16 +166,15 @@ def calculate_terrain_correction(
             raise TypeError(msg)
 
         if not dem.tcorr.is_compatible(density_dataset):
-            msg_0 = (
+            msg = (
                 "Specified density_dataset is incompatible with dem. "
                 "Check that the DataArrays have the same shape and coordinates."
             )
-            raise ValueError(msg_0)
-
+            raise ValueError(msg)
     # format the points
     if len(points) != 3:
-        msg_0 = "invalid points arg: must be a list_like of form (x, y, z)"
-        raise ValueError(msg_0)
+        msg = "invalid points arg: must be a list_like of form (x, y, z)"
+        raise ValueError(msg)
 
     try:
         pts_x = to_1d_ndarray(points[0]).astype(np.float64)
@@ -521,7 +548,7 @@ class TerrainCorrectionParameters(GSolveParameters):
             return super().__setattr__(name, str(value))
 
         if name in {"compute_topography", "compute_bathymetry"}:
-            return super().__setattr__(name, bool(value))
+            return super().__setattr__(name, _to_bool(value))
 
         if name not in {"dem_source", "density_dataset_source"}:
             return super().__setattr__(name, float(value))
@@ -666,7 +693,7 @@ class TerrainCorrectionParameters(GSolveParameters):
             for f in ("density_dataset_source", "dem_source"):
                 if _is_dataarray(pars_dict[f]):
                     pars_dict[f] = "xarray.DataArray"
-        ds = pd.Series(data=self.to_dict(), name=series_name).rename_axis(index_name)
+        ds = pd.Series(data=pars_dict, name=series_name).rename_axis(index_name)
 
         if index_prefix is not None:
             ds = ds.to_frame().reset_index()
@@ -781,11 +808,13 @@ class TerrainCorrector:
         A dictionary of TerrainCorrectionParameter objects defining the "zones" to be computed.
     """
 
+    params: dict[str, TerrainCorrectionParameters]
+
     def __init__(
         self,
         params: TerrainCorrectionParameters | Sequence[TerrainCorrectionParameters],
     ) -> None:
-        self.params: dict[str, TerrainCorrectionParameters] = {}
+        self.params = {}
 
         if isinstance(params, TerrainCorrectionParameters):
             params = [params]
@@ -1093,23 +1122,23 @@ class TerrainCorrectionData(GSolveTable):
 
     _known_fields: MappingProxyType[str, DataFieldSpecification] = MappingProxyType(
         {
-            "site_id": DataFieldSpecification(
-                "site_id", str, required=True, legacy_name="station"
-            ),
-            "easting": DataFieldSpecification("easting", float, required=False),
-            "northing": DataFieldSpecification("northing", float, required=False),
-            "latitude": DataFieldSpecification("latitude", float, required=False),
-            "longitude": DataFieldSpecification("longitude", float, required=False),
-            "height_ellipsoidal": DataFieldSpecification(
-                "height_ellipsoidal", float, required=False
-            ),
+            "site_id": COMMON_FIELDS["site_id"],
+            "easting": COMMON_FIELDS["easting"],
+            "northing": COMMON_FIELDS["northing"],
+            "latitude": COMMON_FIELDS["latitude"],
+            "longitude": COMMON_FIELDS["longitude"],
+            "height_ellipsoidal": COMMON_FIELDS["height_ellipsoidal"],
             "height_orthometric": DataFieldSpecification(
                 "height_orthometric", float, required=False
             ),
         }
     )
-    _index_field: str | None = "site_id"
-    _default_excel_sheet_name = "terrain_corrections"
+
+    _index_field: ClassVar[str] = "site_id"
+    _default_excel_sheet_name: ClassVar[str] = "terrain_corrections"
+
+    params: dict[str, TerrainCorrectionParameters]
+    data: pd.DataFrame
 
     def __init__(
         self,
@@ -1124,7 +1153,7 @@ class TerrainCorrectionData(GSolveTable):
         | None = None,
         **kwargs,
     ) -> None:
-        self.params: dict[str, TerrainCorrectionParameters] = {}
+        self.params = {}
 
         if params is not None and terrain_corrections is None:
             msg = (
@@ -1140,14 +1169,16 @@ class TerrainCorrectionData(GSolveTable):
             raise ValueError(msg)
 
         # initialise data frame with site_id's as index
-        sids = to_1d_ndarray(site_id).astype(str)
-        if sids.ndim != 1:
-            msg = f"site_id must be a 1D array, not {sids.ndim}D"
-            raise ValueError(msg)
-        n_tcorr = len(sids)
+        try:
+            site_ids = to_1d_ndarray(site_id, dtype=str)
+        except Exception as e:
+            msg = f"error parsing site_id: {e}"
+            raise ValueError(msg) from e
+
+        n_tcorr = len(site_ids)
         if n_tcorr == 0:
-            msg_0 = "terrain_correction arg must not be empty"
-            raise ValueError(msg_0)
+            msg = "site_id arg must not be empty"
+            raise ValueError(msg)
 
         self.data = pd.DataFrame(index=pd.RangeIndex(n_tcorr), data=None)
         self.set_column("site_id", site_id)
@@ -1156,7 +1187,6 @@ class TerrainCorrectionData(GSolveTable):
         for k in self._known_fields:
             if k not in self.data.columns and k in kwargs:
                 self.set_column(k, data=kwargs.pop(k))
-
         for k, v in kwargs.items():
             self.set_column(k, v)
         self.set_column("tcorr:total", 0.0)
@@ -1169,16 +1199,16 @@ class TerrainCorrectionData(GSolveTable):
         elif isinstance(params, (list, tuple)):
             params_list = list(params)
             if not all(isinstance(p, TerrainCorrectionParameters) for p in params_list):
-                msg_0 = (
+                msg = (
                     "if params is a list or tuple, all items must be "
                     "TerrainCorrectionParameters objects"
                 )
-                raise TypeError(msg_0)
+                raise TypeError(msg)
         else:
             msg = (
                 "params arg must be a TerrainCorrectionParameters object, None or a "
                 "list or tuple of TerrainCorrectionParameters objects, "
-                f"not '{type(params)}'"
+                f"not '{type(params).__name__}'"
             )
             raise TypeError(msg)
 
@@ -1189,11 +1219,11 @@ class TerrainCorrectionData(GSolveTable):
         elif isinstance(terrain_corrections, (list, tuple)):
             tc_list = list(terrain_corrections)
             if not all(isinstance(tc, FloatArray) for tc in tc_list):
-                msg_0 = (
+                msg = (
                     "if terrain_corrections is a list or tuple, all items must be "
                     "array-like (e.g. numpy arrays or pandas Series)"
                 )
-                raise TypeError(msg_0)
+                raise TypeError(msg)
         else:
             msg = (
                 "terrain_corrections arg must be an array-like, None or a list or tuple "

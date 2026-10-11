@@ -840,7 +840,7 @@ def prepare_writable_df(
         See ``expand_datetime_column`` for explanation.
     datetime_prefix : str, default ""
         Prefix to prepend to expanded datetime column names.
-    drop_datetime : bool, default True
+    drop_datetime : bool, default False
         If True and ``expand_datetime`` is not None, drop the expanded
         datetime column from output DataFrame.
     bool_to_int : bool, default True
@@ -902,14 +902,18 @@ class GSolveDataWarning:
 
     """
 
+    prefix: str
+    show: bool
+    messages: list[str]
+
     def __init__(
         self,
         prefix: str,
         show: bool = True,
     ) -> None:
-        self.prefix: str = prefix
-        self.show: bool = bool(show)
-        self.messages: list[str] = []
+        self.prefix = prefix
+        self.show = bool(show)
+        self.messages = []
 
     @property
     def count(self) -> int:

@@ -21,7 +21,7 @@ import copy
 import pathlib
 from collections.abc import Callable, Mapping, Sequence
 from types import MappingProxyType
-from typing import Literal, Self
+from typing import ClassVar, Literal, Self
 
 import numpy as np
 import numpy.typing as npt
@@ -55,17 +55,17 @@ type _ScintrexOnErrorOptions = Literal["raise", "warn", "ignore"]
 class ScintrexData(abc.ABC):
     """Base class for classes that read and manipulate Scintrex data."""
 
+    data: pd.DataFrame
+    metadata: dict[str, _ScintrexMetadataDataTypes]
+    metadata_units: dict[str, str]
+
     def __init__(
         self,
         data: pd.DataFrame,
         metadata: dict[str, _ScintrexMetadataDataTypes],
         metadata_units: dict[str, str] | None = None,
-        on_error: Literal["raise", "warn", "ignore"] = "raise",
+        on_error: _ScintrexOnErrorOptions = "raise",
     ) -> None:
-        self.data: pd.DataFrame
-        self.metadata: dict[str, _ScintrexMetadataDataTypes]
-        self.metadata_units: dict[str, str]
-
         self._set_metadata(metadata, metadata_units)
         self._set_data(data, on_error)
 
@@ -173,8 +173,8 @@ class CG6Data(ScintrexData):
         How to handle errors arising from null values in some output fields:
     """
 
-    _file_id_header: str = "cg-6_calibration"
-    _metadata_fields: MappingProxyType[str, type] = MappingProxyType(
+    _file_id_header: ClassVar[str] = "cg-6_calibration"
+    _metadata_fields: ClassVar[MappingProxyType[str, type]] = MappingProxyType(
         {
             "survey_name": str,
             "instrument_serial_number": str,
@@ -194,7 +194,7 @@ class CG6Data(ScintrexData):
             "firmware_version": str,
         }
     )
-    _data_fields: MappingProxyType[str, type] = MappingProxyType(
+    _data_fields: ClassVar[MappingProxyType[str, type]] = MappingProxyType(
         {
             "station": str,
             "date": str,
@@ -222,7 +222,7 @@ class CG6Data(ScintrexData):
             "corrections[drift-temp-na-tide-tilt]": str,
         }
     )
-    _extra_data_fields: MappingProxyType[str, type] = MappingProxyType(
+    _extra_data_fields: ClassVar[MappingProxyType[str, type]] = MappingProxyType(
         {
             "datetime": pd.Timestamp,
             "meter_id": str,
