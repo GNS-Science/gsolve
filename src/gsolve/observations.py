@@ -24,7 +24,7 @@ import pathlib
 import warnings as _warnings
 from collections.abc import Iterable, Sequence
 from types import MappingProxyType
-from typing import Any, Literal, Self
+from typing import Any, ClassVar, Literal, Self
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -238,45 +238,59 @@ class GravityObservations(GSolveTable):
 
     """
 
-    _known_fields: MappingProxyType[str, DataFieldSpecification] = MappingProxyType(
-        {
-            "site_id": COMMON_FIELDS["site_id"],
-            "datetime": COMMON_FIELDS["datetime"],
-            "meter_id": DataFieldSpecification(
-                "meter_id", str, "", True, legacy_name="meter"
-            ),
-            "loop": COMMON_FIELDS["loop"],
-            "active": COMMON_FIELDS["active"],
-            "meter_reading": DataFieldSpecification(
-                "meter_reading", float, np.nan, False, legacy_name="reading"
-            ),
-            "meter_reading_mgal": DataFieldSpecification(
-                "meter_reading_mgal", float, np.nan, False
-            ),
-            "loop_tdelta": DataFieldSpecification("loop_tdelta", float, np.nan, False),
-            "survey_tdelta": DataFieldSpecification(
-                "survey_tdelta", float, np.nan, False
-            ),
-            "calibration_factor": DataFieldSpecification(
-                "calibration_factor", float, 1.0, False
-            ),
-            "earth_tide_corr": DataFieldSpecification(
-                "earth_tide_corr", float, 0.0, False
-            ),
-            "ocean_load_corr": DataFieldSpecification(
-                "ocean_load_corr", float, 0.0, False
-            ),
-            "custom_corr": DataFieldSpecification("custom_corr", float, 0.0, False),
-            "gravity_corr": DataFieldSpecification(
-                "gravity_corr", float, np.nan, False
-            ),
-            "meter_reading_converter_id": DataFieldSpecification(
-                "meter_reading_converter_id", str, "NA", False
-            ),
-        }
+    _known_fields: ClassVar[MappingProxyType[str, DataFieldSpecification]] = (
+        MappingProxyType(
+            {
+                "site_id": COMMON_FIELDS["site_id"],
+                "datetime": COMMON_FIELDS["datetime"],
+                "meter_id": DataFieldSpecification(
+                    "meter_id", str, "", True, legacy_name="meter"
+                ),
+                "loop": COMMON_FIELDS["loop"],
+                "active": COMMON_FIELDS["active"],
+                "meter_reading": DataFieldSpecification(
+                    "meter_reading", float, np.nan, False, legacy_name="reading"
+                ),
+                "meter_reading_mgal": DataFieldSpecification(
+                    "meter_reading_mgal", float, np.nan, False
+                ),
+                "loop_tdelta": DataFieldSpecification(
+                    "loop_tdelta", float, np.nan, False
+                ),
+                "survey_tdelta": DataFieldSpecification(
+                    "survey_tdelta", float, np.nan, False
+                ),
+                "calibration_factor": DataFieldSpecification(
+                    "calibration_factor", float, 1.0, False
+                ),
+                "earth_tide_corr": DataFieldSpecification(
+                    "earth_tide_corr", float, 0.0, False
+                ),
+                "ocean_load_corr": DataFieldSpecification(
+                    "ocean_load_corr", float, 0.0, False
+                ),
+                "custom_corr": DataFieldSpecification("custom_corr", float, 0.0, False),
+                "gravity_corr": DataFieldSpecification(
+                    "gravity_corr", float, np.nan, False
+                ),
+                "meter_reading_converter_id": DataFieldSpecification(
+                    "meter_reading_converter_id", str, "NA", False
+                ),
+            }
+        )
     )
-    _index_field: str = "obs_id"
-    _default_excel_sheet_name: str | tuple[str, ...] = ("observations", "Survey Data")
+    _index_field: ClassVar[str] = "obs_id"
+    _default_excel_sheet_name: ClassVar[tuple[str, ...]] = (
+        "observations",
+        "Survey Data",
+    )
+
+    data: pd.DataFrame
+    params: GravityObservationsParameters
+    _timedelta_unit: pd.Timedelta
+    _fixed_time_datum: pd.Timestamp | None
+    _earthtide_correction_method: str
+    _ocean_load_correction_method: str
 
     def __init__(
         self,
@@ -293,12 +307,9 @@ class GravityObservations(GSolveTable):
         fixed_time_datum: DatetimeScalar | None = None,
         **kwargs,
     ) -> None:
-        self.data: pd.DataFrame
-        self._timedelta_unit: pd.Timedelta
-        self._fixed_time_datum: pd.Timestamp | None
 
-        self._earthtide_correction_method: str = ""
-        self._ocean_load_correction_method: str = ""
+        self._earthtide_correction_method = ""
+        self._ocean_load_correction_method = ""
 
         n_readings = -1
         if meter_reading is not None:

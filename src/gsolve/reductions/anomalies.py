@@ -20,6 +20,7 @@
 """Functions and classes to compute standard gravity anomalies."""
 
 from types import MappingProxyType
+from typing import ClassVar
 
 import numpy as np
 import pandas as pd
@@ -349,45 +350,53 @@ class GravityAnomalies(GSolveTable):
 
     """
 
-    _known_fields: MappingProxyType[str, DataFieldSpecification] = MappingProxyType(
-        {
-            "site_id": DataFieldSpecification("site_id", str, required=True),
-            "height_ellipsoidal": DataFieldSpecification(
-                "height_ellipsoidal", float, required=True, legacy_name="height"
-            ),
-            "normal_gravity_at_stn_elevation": DataFieldSpecification(
-                "normal_gravity_at_stn_elevation", float, required=False, default=np.nan
-            ),
-            "normal_gravity_at_ellipsoid": DataFieldSpecification(
-                "normal_gravity_at_ellipsoid", float, required=False, default=np.nan
-            ),
-            "free_air_correction": DataFieldSpecification(
-                "free_air_correction", float, required=False, default=np.nan
-            ),
-            "bouguer_slab_correction": DataFieldSpecification(
-                "bouguer_slab_correction", float, required=False, default=np.nan
-            ),
-            "bouguer_slab_curvature_corrected": DataFieldSpecification(
-                "bouguer_slab_curvature_corrected",
-                float,
-                required=False,
-                default=np.nan,
-            ),
-            "atmospheric_correction": DataFieldSpecification(
-                "atmospheric_correction", float, required=False, default=0.0
-            ),
-            "spherical_bouguer_cap_correction": DataFieldSpecification(
-                "spherical_bouguer_cap_correction",
-                float,
-                required=False,
-                default=np.nan,
-            ),
-            "tcorr:total": DataFieldSpecification(
-                "terrain_correction", float, required=False, default=0.0
-            ),
-        }
+    _known_fields: ClassVar[MappingProxyType[str, DataFieldSpecification]] = (
+        MappingProxyType(
+            {
+                "site_id": DataFieldSpecification("site_id", str, required=True),
+                "height_ellipsoidal": DataFieldSpecification(
+                    "height_ellipsoidal", float, required=True, legacy_name="height"
+                ),
+                "normal_gravity_at_stn_elevation": DataFieldSpecification(
+                    "normal_gravity_at_stn_elevation",
+                    float,
+                    required=False,
+                    default=np.nan,
+                ),
+                "normal_gravity_at_ellipsoid": DataFieldSpecification(
+                    "normal_gravity_at_ellipsoid", float, required=False, default=np.nan
+                ),
+                "free_air_correction": DataFieldSpecification(
+                    "free_air_correction", float, required=False, default=np.nan
+                ),
+                "bouguer_slab_correction": DataFieldSpecification(
+                    "bouguer_slab_correction", float, required=False, default=np.nan
+                ),
+                "bouguer_slab_curvature_corrected": DataFieldSpecification(
+                    "bouguer_slab_curvature_corrected",
+                    float,
+                    required=False,
+                    default=np.nan,
+                ),
+                "atmospheric_correction": DataFieldSpecification(
+                    "atmospheric_correction", float, required=False, default=0.0
+                ),
+                "spherical_bouguer_cap_correction": DataFieldSpecification(
+                    "spherical_bouguer_cap_correction",
+                    float,
+                    required=False,
+                    default=np.nan,
+                ),
+                "tcorr:total": DataFieldSpecification(
+                    "terrain_correction", float, required=False, default=0.0
+                ),
+            }
+        )
     )
-    _default_excel_sheet_name: str = "gravity_anomalies"
+    _default_excel_sheet_name: ClassVar[str] = "gravity_anomalies"
+    data: pd.DataFrame
+    params: GravityCorrectionParameters
+    tcorr_params: dict[str, TerrainCorrectionParameters]
 
     def __init__(
         self,
@@ -398,9 +407,7 @@ class GravityAnomalies(GSolveTable):
         ),
         terrain_corrections: TerrainCorrectionData | None = None,
     ) -> None:
-        self.params: GravityCorrectionParameters
         self.tcorr_params: dict[str, TerrainCorrectionParameters] = {}
-        self.data: pd.DataFrame
 
         precomputed_corrections: GravityCorrections | None = None
 
@@ -435,7 +442,6 @@ class GravityAnomalies(GSolveTable):
         if isinstance(corrections_parameters, GravityCorrectionParameters):
             self.params = corrections_parameters.copy()
             corr_provider = GravityCorrectionProvider(params=self.params)
-            # self.params = corrections_parameters.copy()
 
             corrections_parameters = GravityCorrectionProvider(
                 params=corrections_parameters
@@ -444,7 +450,6 @@ class GravityAnomalies(GSolveTable):
             self.params = corrections_parameters.params.copy()
             corr_provider = GravityCorrectionProvider(params=self.params)
             precomputed_corrections = corrections_parameters.copy()
-            # self.params = corrections_parameters.params.copy()
 
         elif isinstance(corrections_parameters, GravityCorrectionProvider):
             self.params = corrections_parameters.params.copy()

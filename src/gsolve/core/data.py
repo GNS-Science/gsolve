@@ -98,6 +98,8 @@ _COMMON_FIELDS: list[DataFieldSpecification] = [
     DataFieldSpecification("active", bool, default=True, required=False),
     DataFieldSpecification("latitude", float, required=False),
     DataFieldSpecification("longitude", float, required=False),
+    DataFieldSpecification("easting", float, required=False),
+    DataFieldSpecification("northing", float, required=False),
     DataFieldSpecification(
         "height_ellipsoidal", float, legacy_name="height", default=np.nan
     ),

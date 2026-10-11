@@ -406,8 +406,8 @@ def spherical_bouguer_cap_correction(
 
 def bouguer_slab_curvature_corrected(
     height_ellipsoidal: ArrayLike,
-    density_water: float,
-    density_crust: float,
+    density_crust: float = 2670.0,
+    density_water: float = 1030.0,
     cap_extent: float = 166735.0,
     ellipsoid_or_radius: float | str | boule.Ellipsoid = "GRS80",
 ) -> float | np.ndarray:
@@ -433,11 +433,11 @@ def bouguer_slab_curvature_corrected(
     ----------
     height_ellipsoidal : array or :class:`pandas.DataFrame`
         Station height in meters referenced to the ellipsoid.
-    density_crust : float
+    density_crust : float, default = 2670.0
         Density of the crust in :math:`kg/m^3`.
         Used as the density of topography on land and the density of the normal
         Earth's crust in the oceans.
-    density_water : float
+    density_water : float, default = 1030.0
         Density of water in :math:`kg/m^3`.
     cap_extent : float, default 166735.0
         The width of the cap correction in m. The default value corresponds to
@@ -602,12 +602,10 @@ class GravityCorrections(GSolveTable):
     _known_fields: ClassVar[MappingProxyType[str, DataFieldSpecification]] = (
         MappingProxyType(
             {
-                COMMON_FIELDS["site_id"].name: COMMON_FIELDS["site_id"],
-                COMMON_FIELDS["latitude"].name: COMMON_FIELDS["latitude"],
-                COMMON_FIELDS["longitude"].name: COMMON_FIELDS["longitude"],
-                COMMON_FIELDS["height_ellipsoidal"].name: COMMON_FIELDS[
-                    "height_ellipsoidal"
-                ],
+                "site_id": COMMON_FIELDS["site_id"],
+                "latitude": COMMON_FIELDS["latitude"],
+                "longitude": COMMON_FIELDS["longitude"],
+                "height_ellipsoidal": COMMON_FIELDS["height_ellipsoidal"],
                 "normal_gravity_at_stn_elevation": DataFieldSpecification(
                     "normal_gravity_at_stn_elevation", float, default=np.nan
                 ),
@@ -626,13 +624,11 @@ class GravityCorrections(GSolveTable):
                 "atmospheric_correction": DataFieldSpecification(
                     "atmospheric_correction", float, default=np.nan
                 ),
-                COMMON_FIELDS["absolute_gravity"].name: COMMON_FIELDS[
-                    "absolute_gravity"
-                ],
+                "absolute_gravity": COMMON_FIELDS["absolute_gravity"],
             }
         )
     )
-    _default_excel_sheet_name: str = "gravity_corrections"
+    _default_excel_sheet_name: ClassVar[str] = "gravity_corrections"
 
     data: pd.DataFrame
     params: GravityCorrectionParameters
@@ -647,16 +643,16 @@ class GravityCorrections(GSolveTable):
             params.copy() if params is not None else GravityCorrectionParameters()
         )
 
-        sids = to_1d_ndarray(site_id, dtype=str)
-        if len(sids.shape) != 1:
-            msg = f"site_id must be a 1D array, not {len(sids.shape)}D"
+        site_ids = to_1d_ndarray(site_id, dtype=str)
+        if len(site_ids.shape) != 1:
+            msg = f"site_id must be a 1D array, not {len(site_ids.shape)}D"
             raise ValueError(msg)
 
-        if sids.shape[0] == 0:
+        if site_ids.shape[0] == 0:
             msg_0 = "site_id must not be empty"
             raise ValueError(msg_0)
 
-        self.data = pd.DataFrame(index=pd.Index(sids, name="site_id"), data=None)
+        self.data = pd.DataFrame(index=pd.Index(site_ids, name="site_id"), data=None)
 
         for k, v in kwargs.items():
             if k in self._known_fields:
@@ -693,14 +689,15 @@ class GravityCorrectionProvider:
         Parameters used to compute the gravity corrections.
     """
 
+    params: GravityCorrectionParameters
+
     def __init__(
         self, params: GravityCorrectionParameters | None = None, **kwargs
     ) -> None:
-        self.params: GravityCorrectionParameters
         if params is None:
             self.params = GravityCorrectionParameters(**kwargs)
         elif isinstance(params, GravityCorrectionParameters):
-            self.params = params
+            self.params = params.copy()
             for k, v in kwargs.items():
                 setattr(self.params, k, v)
         else:

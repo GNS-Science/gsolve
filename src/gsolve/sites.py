@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from types import MappingProxyType
-from typing import Literal, Self
+from typing import ClassVar, Literal, Self
 
 import numpy as np
 import numpy.typing as npt
@@ -158,8 +158,8 @@ class GravitySites(GSolveTable):
         }
     )
 
-    _index_field: str = "site_id"
-    _default_excel_sheet_name: str | tuple[str, ...] = ("sites", "Locations")
+    _index_field: ClassVar[str] = "site_id"
+    _default_excel_sheet_name: ClassVar[str | tuple[str, ...]] = ("sites", "Locations")
 
     data: pd.DataFrame
 
@@ -732,15 +732,22 @@ class ReferenceGravity(GSolveTable):
         be ignored by gsolve.
     """
 
-    _known_fields: MappingProxyType[str, DataFieldSpecification] = MappingProxyType(
-        {
-            "site_id": DataFieldSpecification("site_id", str, "", True),
-            "gravity": DataFieldSpecification("gravity", float, np.nan, True),
-            "active": DataFieldSpecification("active", bool, True, False),
-        }
+    _known_fields: ClassVar[MappingProxyType[str, DataFieldSpecification]] = (
+        MappingProxyType(
+            {
+                "site_id": DataFieldSpecification("site_id", str, "", True),
+                "gravity": DataFieldSpecification("gravity", float, np.nan, True),
+                "active": DataFieldSpecification("active", bool, True, False),
+            }
+        )
     )
-    _index_field: str = "site_id"
-    _default_excel_sheet_name: str | tuple[str, ...] = ("reference_sites", "Tie_Data")
+    _index_field: ClassVar[str] = "site_id"
+    _default_excel_sheet_name: ClassVar[tuple[str, ...]] = (
+        "reference_sites",
+        "Tie_Data",
+    )
+
+    data: pd.DataFrame
 
     def __init__(
         self,

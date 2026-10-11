@@ -21,7 +21,7 @@
 import pathlib
 from collections.abc import Sequence
 from io import StringIO
-from typing import Protocol, Self, TextIO, runtime_checkable
+from typing import ClassVar, Protocol, Self, TextIO, runtime_checkable
 
 import numpy as np
 import numpy.typing as npt
@@ -89,8 +89,16 @@ class LaCosteRombergDialConverter:
     possible to minimize loss of precision.
     """
 
-    _table_header_keys = ("meter_id", "starttime", "endtime")
-    _table_column_labels = ("counter_reading", "value_mgal", "interval_factor")
+    _table_header_keys: ClassVar[tuple[str, ...]] = ("meter_id", "starttime", "endtime")
+    _table_column_label: ClassVar[tuple[str, ...]] = (
+        "counter_reading",
+        "value_mgal",
+        "interval_factor",
+    )
+    table: pd.DataFrame
+    _meter_id: str
+    _starttime: pd.Timestamp | None
+    _endtime: pd.Timestamp | None
 
     def __init__(
         self,
@@ -102,11 +110,7 @@ class LaCosteRombergDialConverter:
         starttime: DatetimeScalar | NaTType | None = None,
         endtime: DatetimeScalar | NaTType | None = None,
     ) -> None:
-        self.table: pd.DataFrame
-        self.meter_id: str = meter_id
-        self._starttime: pd.Timestamp | None
-        self._endtime: pd.Timestamp | None
-
+        self.meter_id = meter_id
         self.set_datetime_range(starttime, endtime)
 
         c_reading = np.atleast_1d(np.array(counter_reading, dtype=np.float64))
