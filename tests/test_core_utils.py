@@ -14,7 +14,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # SPDX-License-Identifier: GPLv3
 
+import warnings
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -26,15 +28,36 @@ from pandas.testing import (
 )
 
 from gsolve.core import utils
+from gsolve.core._typing import (
+    AllowedTimestampResolution,
+    AllowedTimestampRoundingMethods,
+    FilePath,
+    GSolveSolverMethod,
+)
 from gsolve.core.utils import (
     DEFAULT_TIMESTAMP_COLUMNS,
+    GSolveDataWarning,
+    GSolveUserWarning,
     check_duplicate_index,
     columns_to_timestamp,
+    convert_single_timestamp_arg,
+    dms2rad,
     expand_datetime_column,
+    generate_loop_intervals,
+    generate_loop_names,
+    identify_loop_blocks,
+    is_datetime_array,
+    is_filepath_like,
+    is_in_literal,
+    is_points3d_like,
+    loops_from_gaps,
     merge_datetime_columns,
     normalize_field_names,
+    normalize_str,
+    prepare_writable_df,
     timestamp_to_columns,
     to_naive_utc_datetime,
+    to_points3d,
 )
 
 
@@ -397,3 +420,319 @@ def test_round_coords():
     a = np.arange(-5.5, 6.0)
     b = np.arange(-5.0, 6.5)
     assert np.all(utils.round_coords(a) == b)
+
+
+# ---------------------------------------------------------------------------
+# Type-predicate helpers
+# ---------------------------------------------------------------------------
+
+
+def test_is_filepath_like() -> None:
+    assert is_filepath_like("some/path.txt") is True
+    assert is_filepath_like(Path("some/path.txt")) is True
+    assert is_filepath_like(5) is False
+    assert is_filepath_like(None) is False
+    assert is_filepath_like(["a", "b"]) is False
+
+
+def test_is_in_literal() -> None:
+    # str-based Literal alias
+    assert is_in_literal("day", AllowedTimestampResolution) is True
+    assert is_in_literal("round", AllowedTimestampRoundingMethods) is True
+    assert is_in_literal("not-a-member", AllowedTimestampResolution) is False
+
+    # int-based Literal alias
+    assert is_in_literal(1, GSolveSolverMethod) is True
+    assert is_in_literal(99, GSolveSolverMethod) is False
+
+    # not a TypeAliasType
+    with pytest.raises(TypeError, match=r"is not a TypeAliasType"):
+        is_in_literal("x", 5)  # type: ignore[arg-type]
+
+    # a TypeAliasType, but does not resolve to a Literal
+    with pytest.raises(TypeError, match=r"is not a Literal type"):
+        is_in_literal("x", FilePath)
+
+
+def test_is_datetime_array() -> None:
+    assert is_datetime_array(pd.date_range("2022-01-01", periods=3)) is True
+    assert is_datetime_array(pd.Series(pd.date_range("2022-01-01", periods=2))) is True
+    assert is_datetime_array(np.arange(3)) is True
+    # The DatetimeArray alias also admits plain list/tuple containers.
+    assert is_datetime_array([1, 2, 3]) is True
+    # Scalars are not array-like.
+    assert is_datetime_array(5) is False
+    assert is_datetime_array("2022-01-01") is False
+
+
+def test_is_points3d_like() -> None:
+    assert is_points3d_like(([1], [2], [3])) is True
+    assert is_points3d_like([[1, 2], [3, 4], [5, 6]]) is True
+    # wrong number of components
+    assert is_points3d_like(([1], [2])) is False
+    assert is_points3d_like(([1], [2], [3], [4])) is False
+    # not list-like
+    assert is_points3d_like(5) is False
+    # components not list-like
+    assert is_points3d_like((1, 2, 3)) is False
+
+
+def test_to_points3d() -> None:
+    x, y, z = to_points3d(([1, 2], [3, 4], [5, 6]))
+    assert x.dtype == np.float64
+    assert np.array_equal(x, np.array([1.0, 2.0]))
+    assert np.array_equal(y, np.array([3.0, 4.0]))
+    assert np.array_equal(z, np.array([5.0, 6.0]))
+
+    # not Points3D-like
+    with pytest.raises(TypeError, match=r"not Points3D-like"):
+        to_points3d(5)  # type: ignore[arg-type]
+
+    # mismatched component sizes propagate a ValueError from to_1d_ndarray
+    with pytest.raises(ValueError, match=r"expected array of size"):
+        to_points3d(([1, 2], [3], [5, 6]))
+
+
+# ---------------------------------------------------------------------------
+# normalize_str
+# ---------------------------------------------------------------------------
+
+
+def test_normalize_str() -> None:
+    assert normalize_str("  Hello World ") == "hello_world"
+    assert normalize_str("UPPER") == "upper"
+    assert normalize_str("a b c") == "a_b_c"
+    assert normalize_str(5) == "5"
+    assert normalize_str(True) == "true"
+    assert normalize_str(None) is None
+
+
+# ---------------------------------------------------------------------------
+# prepare_writable_df
+# ---------------------------------------------------------------------------
+
+
+def test_prepare_writable_df() -> None:
+    df = pd.DataFrame(
+        {
+            "My Col": [True, False],
+            "dt": pd.to_datetime(["2022-01-01", "2022-01-02"]),
+        }
+    )
+
+    # defaults: normalize names + bool -> int
+    out = prepare_writable_df(df)
+    assert out.columns.tolist() == ["my_col", "dt"]
+    assert out["my_col"].dtype == np.int64
+    assert out["my_col"].tolist() == [1, 0]
+    # input not mutated
+    assert df["My Col"].dtype == bool
+
+    # expand datetime and drop the source column
+    out2 = prepare_writable_df(df, expand_datetime="dt", drop_datetime=True)
+    assert "dt" not in out2.columns
+    assert {"year", "month", "day"}.issubset(out2.columns)
+
+    # disable transforms
+    out3 = prepare_writable_df(df, bool_to_int=False, normalize_column_names=False)
+    assert out3.columns.tolist() == ["My Col", "dt"]
+    assert out3["My Col"].dtype == bool
+
+
+# ---------------------------------------------------------------------------
+# dms2rad
+# ---------------------------------------------------------------------------
+
+
+def test_dms2rad() -> None:
+    # 90 degrees == pi/2
+    assert np.isclose(dms2rad(90, 0, 0), np.pi / 2)
+    # scalar input returns a numpy float scalar
+    assert isinstance(dms2rad(90, 0, 0), np.float64)
+
+    # minutes and seconds accumulate (1 deg 30 min = 1.5 deg)
+    assert np.isclose(dms2rad(1, 30, 0), np.deg2rad(1.5))
+
+    # sign is taken from the degrees argument
+    assert np.isclose(dms2rad(-1, 30, 0), -np.deg2rad(1.5))
+
+    # array input
+    out = dms2rad(np.array([0, 90]), np.array([0, 0]), np.array([0, 0]))
+    assert np.allclose(out, np.array([0.0, np.pi / 2]))
+
+
+# ---------------------------------------------------------------------------
+# convert_single_timestamp_arg
+# ---------------------------------------------------------------------------
+
+
+def test_convert_single_timestamp_arg() -> None:
+    ts = convert_single_timestamp_arg("2022-01-01")
+    assert isinstance(ts, pd.Timestamp)
+    assert ts == pd.Timestamp("2022-01-01")
+
+    # NaT allowed
+    assert convert_single_timestamp_arg(pd.NaT, allow_nat=True) is pd.NaT
+
+    # NaT not allowed -> ValueError from to_naive_utc_datetime
+    with pytest.raises(ValueError):
+        convert_single_timestamp_arg(pd.NaT, allow_nat=False)
+
+    # unparseable input, with error prefix prepended to the message
+    with pytest.raises(ValueError, match=r"^PFX: "):
+        convert_single_timestamp_arg("not a date", err_prefix="PFX")
+
+    # array-like input converts to an index, which is not a scalar Timestamp
+    with pytest.raises(TypeError, match=r"not convertible to a TimeStamp"):
+        convert_single_timestamp_arg(["2022-01-01", "2022-01-02"])
+
+
+# ---------------------------------------------------------------------------
+# Loop helpers
+# ---------------------------------------------------------------------------
+
+
+def test_generate_loop_names() -> None:
+    assert generate_loop_names(3) == ["1", "2", "3"]
+    assert generate_loop_names(3, start=2, step=2) == ["2", "4", "6"]
+    assert generate_loop_names(2, format_str="L{LOOP}") == ["L1", "L2"]
+    assert generate_loop_names(0) == []
+
+
+def test_generate_loop_intervals() -> None:
+    dts = pd.to_datetime(["2022-01-01", "2022-01-02", "2022-01-03"])
+    ii = generate_loop_intervals(dts)
+    assert isinstance(ii, pd.IntervalIndex)
+    assert len(ii) == 2
+    assert ii.closed == "left"
+
+    # fewer than two elements
+    with pytest.raises(ValueError, match=r"at least two elements"):
+        generate_loop_intervals(pd.to_datetime(["2022-01-01"]))
+
+    # not sorted
+    with pytest.raises(ValueError, match=r"sorted in increasing order"):
+        generate_loop_intervals(pd.to_datetime(["2022-01-03", "2022-01-01"]))
+
+
+@pytest.fixture
+def gapped_datetimes() -> pd.DatetimeIndex:
+    # two blocks separated by a ~2 hour gap
+    return pd.to_datetime(
+        [
+            "2022-01-01 00:00",
+            "2022-01-01 00:01",
+            "2022-01-01 02:00",
+            "2022-01-01 02:01",
+        ]
+    )
+
+
+def test_identify_loop_blocks(gapped_datetimes: pd.DatetimeIndex) -> None:
+    di = identify_loop_blocks(gapped_datetimes, gap="30min")
+    assert isinstance(di, pd.DatetimeIndex)
+    # bounds: start-1s, the gap point, end+1s
+    assert len(di) == 3
+
+    bi = identify_loop_blocks(gapped_datetimes, gap="30min", as_intervals=True)
+    assert isinstance(bi, pd.IntervalIndex)
+    assert len(bi) == 2
+    assert bi.closed == "left"
+
+    with pytest.raises(ValueError, match=r"at least two elements"):
+        identify_loop_blocks(pd.to_datetime(["2022-01-01"]), gap="30min")
+
+    with pytest.raises(ValueError, match=r"sorted in increasing order"):
+        identify_loop_blocks(
+            pd.to_datetime(["2022-01-01 02:00", "2022-01-01 00:00"]), gap="30min"
+        )
+
+
+def test_loops_from_gaps(gapped_datetimes: pd.DatetimeIndex) -> None:
+    loops = loops_from_gaps(gapped_datetimes, gap="30min")
+    assert np.array_equal(loops, np.array(["1", "1", "2", "2"]))
+
+    loops_fmt = loops_from_gaps(gapped_datetimes, gap="30min", loop_format="L{LOOP}")
+    assert np.array_equal(loops_fmt, np.array(["L1", "L1", "L2", "L2"]))
+
+    # a gap large enough to merge everything into a single loop
+    loops_single = loops_from_gaps(gapped_datetimes, gap="1D")
+    assert np.array_equal(loops_single, np.array(["1", "1", "1", "1"]))
+
+    with pytest.raises(ValueError, match=r"at least two elements"):
+        loops_from_gaps(pd.to_datetime(["2022-01-01"]), gap="30min")
+
+
+# ---------------------------------------------------------------------------
+# GSolveDataWarning
+# ---------------------------------------------------------------------------
+
+
+def test_gsolve_data_warning_collects_and_prints(capsys) -> None:
+    warner = GSolveDataWarning(prefix="oops", show=True)
+    warner("something bad")
+    warner("another problem")
+    assert warner.count == 2
+    assert warner.messages == ["something bad", "another problem"]
+
+    warner.final_msg()
+    captured = capsys.readouterr()
+    assert "oops: something bad" in captured.err
+    assert "oops: another problem" in captured.err
+    assert "oops: 2 problem(s) encountered" in captured.err
+
+
+def test_gsolve_data_warning_silent(capsys) -> None:
+    warner = GSolveDataWarning(prefix="p", show=False)
+    warner("silent message")
+    captured = capsys.readouterr()
+    # messages are still collected, but nothing is printed
+    assert warner.count == 1
+    assert warner.messages == ["silent message"]
+    assert not captured.err
+
+
+def test_gsolve_data_warning_final_msg_empty(capsys) -> None:
+    warner = GSolveDataWarning(prefix="p", show=True)
+    warner.final_msg()
+    captured = capsys.readouterr()
+    assert not captured.err
+
+    # print_msgs replays all stored messages
+    warner("one")
+    capsys.readouterr()  # clear the immediate display
+    warner.print_msgs()
+    captured = capsys.readouterr()
+    assert "p: one" in captured.err
+
+
+# ---------------------------------------------------------------------------
+# GSolveUserWarning
+# ---------------------------------------------------------------------------
+
+
+def test_gsolve_user_warning() -> None:
+    uw = GSolveUserWarning(prefix="PRE")
+    with warnings.catch_warnings(record=True) as rec:
+        warnings.simplefilter("always")
+        uw.warn("hello")
+        uw.warn("no prefix", show_prefix=False)
+        uw.warn("custom cat", category=DeprecationWarning)
+
+    assert uw.count == 3
+    messages = [str(r.message) for r in rec]
+    assert messages == ["PRE hello", "no prefix", "PRE custom cat"]
+
+    categories = [r.category for r in rec]
+    assert categories[0] is UserWarning
+    assert categories[1] is UserWarning
+    assert categories[2] is DeprecationWarning
+
+
+def test_gsolve_user_warning_default_no_prefix() -> None:
+    uw = GSolveUserWarning()
+    with warnings.catch_warnings(record=True) as rec:
+        warnings.simplefilter("always")
+        uw.warn("bare message")
+    assert uw.count == 1
+    assert str(rec[0].message) == "bare message"

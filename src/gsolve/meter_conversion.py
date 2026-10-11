@@ -90,7 +90,7 @@ class LaCosteRombergDialConverter:
     """
 
     _table_header_keys: ClassVar[tuple[str, ...]] = ("meter_id", "starttime", "endtime")
-    _table_column_label: ClassVar[tuple[str, ...]] = (
+    _table_column_labels: ClassVar[tuple[str, ...]] = (
         "counter_reading",
         "value_mgal",
         "interval_factor",
