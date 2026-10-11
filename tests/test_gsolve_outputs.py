@@ -19,11 +19,19 @@
 
 from __future__ import annotations
 
+import matplotlib as mpl
+
+mpl.use("Agg")  # headless backend; no display required for tests
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
 
-from gsolve.gsolve_outputs import GSolveResults, GSolveSolutionParameters
+from gsolve.gsolve_outputs import (
+    GSolveResults,
+    GSolveSolutionParameters,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -242,3 +250,265 @@ class TestCalibrationFactor:
         solver_return = _make_solver_return(calibration_factor=None)
         with pytest.raises(ValueError, match="calibration factor was not calculated"):
             r.set_solutions(solver_return)
+
+
+# ---------------------------------------------------------------------------
+# obs_solution / site_solution / loop_solution values
+# ---------------------------------------------------------------------------
+
+
+class TestSolutionValues:
+    """Verify the values (not just columns) propagated into the solution frames."""
+
+    def test_obs_solution_residuals_and_timedelta(self):
+        r = GSolveResults(
+            method=1,
+            use_loops=True,
+            calculate_calibration_factor=False,
+            percentile_clipping=95.0,
+        )
+        r.set_inputs(_make_obs_df(), _make_ref_df())
+        residuals = np.array([0.01, -0.02, 0.03, 0.0, -0.01])
+        solver_return = (
+            np.array([980150.0, 980250.0]),
+            residuals,
+            np.ones(2) * 0.01,
+            np.array([0.1, 0.2]),
+            np.array([1.0, 2.0]),
+            None,
+            np.ones(5, dtype=bool),
+        )
+        r.set_solutions(solver_return)
+        np.testing.assert_allclose(r.obs_solution["residual"].to_numpy(), residuals)
+        np.testing.assert_allclose(
+            r.obs_solution["timedelta"].to_numpy(), [0.0, 0.5, 1.0, 0.0, 0.5]
+        )
+        assert r.obs_solution["active"].all()
+
+    def test_obs_solution_active_mask_propagated(self):
+        r = GSolveResults(
+            method=1,
+            use_loops=True,
+            calculate_calibration_factor=False,
+            percentile_clipping=95.0,
+        )
+        r.set_inputs(_make_obs_df(), _make_ref_df())
+        mask = np.array([True, True, True, False, True])
+        solver_return = (
+            np.array([980150.0, 980250.0]),
+            np.zeros(5),
+            np.ones(2) * 0.01,
+            np.array([0.1, 0.2]),
+            np.array([1.0, 2.0]),
+            None,
+            mask,
+        )
+        r.set_solutions(solver_return)
+        np.testing.assert_array_equal(r.obs_solution["active"].to_numpy(), mask)
+
+    def test_site_solution_stats(self):
+        r = GSolveResults(
+            method=1,
+            use_loops=True,
+            calculate_calibration_factor=False,
+            percentile_clipping=95.0,
+        )
+        r.set_inputs(_make_obs_df(), _make_ref_df())
+        site_var = np.array([0.04, 0.09])
+        solver_return = (
+            np.array([980150.0, 980250.0]),
+            np.zeros(5),
+            site_var,
+            np.array([0.1, 0.2]),
+            np.array([1.0, 2.0]),
+            None,
+            np.ones(5, dtype=bool),
+        )
+        r.set_solutions(solver_return)
+        # stdev == sqrt(variance)
+        np.testing.assert_allclose(
+            r.site_solution["stdev"].to_numpy(), np.sqrt(site_var)
+        )
+        # variance column stored as-is
+        np.testing.assert_allclose(r.site_solution["variance"].to_numpy(), site_var)
+        # stderr == sqrt(var) / sqrt(n_obs)
+        n_obs = r.site_solution["n_obs"].to_numpy()
+        np.testing.assert_allclose(
+            r.site_solution["stderr"].to_numpy(),
+            np.sqrt(site_var) / np.sqrt(n_obs),
+        )
+
+    def test_loop_solution_values(self):
+        r = GSolveResults(
+            method=1,
+            use_loops=True,
+            calculate_calibration_factor=False,
+            percentile_clipping=95.0,
+        )
+        r.set_inputs(_make_obs_df(), _make_ref_df())
+        drift = np.array([0.1, 0.2])
+        baseline = np.array([1.0, 2.0])
+        solver_return = (
+            np.array([980150.0, 980250.0]),
+            np.zeros(5),
+            np.ones(2) * 0.01,
+            drift,
+            baseline,
+            None,
+            np.ones(5, dtype=bool),
+        )
+        r.set_solutions(solver_return)
+        np.testing.assert_allclose(r.loop_solution["drift"].to_numpy(), drift)
+        np.testing.assert_allclose(r.loop_solution["baseline"].to_numpy(), baseline)
+        # n_obs per loop: L1 has 3, L2 has 2
+        assert r.loop_solution.loc["L1", "n_obs"] == 3
+        assert r.loop_solution.loc["L2", "n_obs"] == 2
+
+
+# ---------------------------------------------------------------------------
+# Plotting: plot_residual_cdf
+# ---------------------------------------------------------------------------
+
+
+def _make_plot_results() -> GSolveResults:
+    """Results object with non-trivial residuals/drift suitable for plotting."""
+    r = GSolveResults(
+        method=2,
+        use_loops=True,
+        calculate_calibration_factor=False,
+        percentile_clipping=90.0,
+    )
+    r.set_inputs(_make_obs_df(), _make_ref_df())
+    solver_return = (
+        np.array([980150.0, 980250.0]),
+        np.array([0.01, -0.02, 0.03, 0.0, -0.01]),
+        np.ones(2) * 0.01,
+        np.array([0.1, 0.2]),
+        np.array([1.0, 2.0]),
+        None,
+        np.ones(5, dtype=bool),
+    )
+    r.set_solutions(solver_return)
+    return r
+
+
+class TestPlotResidualCDF:
+    def teardown_method(self):
+        plt.close("all")
+
+    def test_default_plots_each_loop(self):
+        r = _make_plot_results()
+        ax = r.plot_residual_cdf(show=False)
+        assert isinstance(ax, plt.Axes)
+        assert ax.get_title() == "Distribution of residuals for each loop"
+
+    def test_single_loop_title(self):
+        r = _make_plot_results()
+        ax = r.plot_residual_cdf(loop="L1", show=False)
+        assert ax.get_title() == "Distribution of residuals for loop L1"
+
+    def test_list_of_loops(self):
+        r = _make_plot_results()
+        ax = r.plot_residual_cdf(loop=["L1", "L2"], show=False)
+        assert isinstance(ax, plt.Axes)
+        # at least one series drawn
+        assert ax.get_legend() is not None
+
+    def test_ugal_unit_label(self):
+        r = _make_plot_results()
+        ax = r.plot_residual_cdf(unit="uGal", show=False)
+        assert "μGal" in ax.get_xlabel()
+
+    def test_mgal_unit_label(self):
+        r = _make_plot_results()
+        ax = r.plot_residual_cdf(unit="mGal", show=False)
+        assert "mGal" in ax.get_xlabel()
+
+    def test_invalid_unit_raises(self):
+        r = _make_plot_results()
+        with pytest.raises(ValueError, match="unrecognized unit"):
+            r.plot_residual_cdf(unit="furlongs", show=False)
+
+    def test_unknown_loop_raises(self):
+        r = _make_plot_results()
+        with pytest.raises(ValueError, match="not found in observation residuals"):
+            r.plot_residual_cdf(loop="DOES_NOT_EXIST", show=False)
+
+    def test_invalid_ax_type_raises(self):
+        r = _make_plot_results()
+        with pytest.raises(TypeError, match="invalid type for ax"):
+            r.plot_residual_cdf(ax="not an axes", show=False)
+
+    def test_plots_onto_supplied_ax(self):
+        r = _make_plot_results()
+        _fig, ax = plt.subplots()
+        returned = r.plot_residual_cdf(ax=ax, show=False)
+        assert returned is ax
+
+    def test_filename_appends_loop_suffix(self, tmp_path):
+        r = _make_plot_results()
+        target = tmp_path / "cdf.png"
+        r.plot_residual_cdf(loop="L1", filename=str(target), show=False)
+        assert (tmp_path / "cdf_loop_L1.png").exists()
+
+    def test_filename_multiple_loops_suffix(self, tmp_path):
+        r = _make_plot_results()
+        target = tmp_path / "cdf.png"
+        r.plot_residual_cdf(loop=["L1", "L2"], filename=str(target), show=False)
+        assert (tmp_path / "cdf_loops_L1_L2.png").exists()
+
+
+# ---------------------------------------------------------------------------
+# Plotting: plot_residual_drift
+# ---------------------------------------------------------------------------
+
+
+class TestPlotResidualDrift:
+    def teardown_method(self):
+        plt.close("all")
+
+    def test_default_drift_plot(self):
+        r = _make_plot_results()
+        ax = r.plot_residual_drift(loop="L1", show=False)
+        assert isinstance(ax, plt.Axes)
+        assert "drift" in ax.get_ylabel()
+        assert "mGal" in ax.get_ylabel()
+
+    def test_stem_plot_without_drift(self):
+        r = _make_plot_results()
+        ax = r.plot_residual_drift(loop="L1", plot_drift=False, show=False)
+        assert ax.get_ylabel() == "residual (mGal)"
+
+    def test_ugal_unit(self):
+        r = _make_plot_results()
+        ax = r.plot_residual_drift(loop="L1", unit="uGal", show=False)
+        assert "μGal" in ax.get_ylabel()
+
+    def test_invalid_unit_raises(self):
+        r = _make_plot_results()
+        with pytest.raises(ValueError, match="unrecognized unit"):
+            r.plot_residual_drift(loop="L1", unit="furlongs", show=False)
+
+    def test_invalid_ax_type_raises(self):
+        r = _make_plot_results()
+        with pytest.raises(TypeError, match="invalid type for ax"):
+            r.plot_residual_drift(loop="L1", ax=123, show=False)
+
+    def test_plots_onto_supplied_ax(self):
+        r = _make_plot_results()
+        _fig, ax = plt.subplots()
+        returned = r.plot_residual_drift(loop="L1", ax=ax, show=False)
+        assert returned is ax
+
+    def test_loop_accepts_non_string(self):
+        # loop is coerced to str internally; passing a value that matches the
+        # string loop id should work.
+        r = _make_plot_results()
+        ax = r.plot_residual_drift(loop="L2", show=False)
+        assert "L2" in ax.get_title()
+
+    def test_filename_appends_loop_suffix(self, tmp_path):
+        r = _make_plot_results()
+        target = tmp_path / "drift.png"
+        r.plot_residual_drift(loop="L1", filename=str(target), show=False)
+        assert (tmp_path / "drift_loop_L1.png").exists()
