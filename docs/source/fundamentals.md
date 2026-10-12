@@ -4,8 +4,6 @@
 
 For processing beyond a network adjustment (i.e. to Complete Bouguer anomaly) there are [`GravityCorrections`](#gravity-corrections), [`TerrainCorrector`](terrain_corrections.md) and [`GravityAnomalies`](#gravity-anomalies) and finally a [`GSolveReports`](#output-files) class for output results files.
 
-A [command line interface](gsolve_cli_manual.md) is available for network adjustment processing.
-
 (observations)=
 
 ## Observations

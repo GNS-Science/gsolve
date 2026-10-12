@@ -30,7 +30,7 @@ Gsolve is underdevelopment
 
 X.X.2026 gSolve version 5.6.0
 
- * Released on pypi
+* Released on pypi
 
 7.10.2026 gSolve version 5.7.0
 

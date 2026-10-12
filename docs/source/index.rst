@@ -121,7 +121,6 @@ It includes common processing steps, like drift, tide and network adjustment, as
     :includehidden:
 
     gsolve_algorithms
-    gsolve_cli_manual
     terrain_corrections
 
 .. toctree::
