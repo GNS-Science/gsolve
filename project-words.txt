@@ -78,6 +78,7 @@ horizontalalignment
 IERS
 ifac
 ifactor
+includehidden
 instrheight
 interp
 isactive
@@ -118,6 +119,7 @@ NIWA
 nlevels
 nparam
 numpydoc
+octicon
 olmpp
 otide
 perc
