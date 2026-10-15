@@ -17,7 +17,6 @@
 # Copyright (c) 2025 Earth Sciences New Zealand.
 """Functions and classes for computing gravity terrain corrections."""
 
-import dataclasses
 import operator
 import pathlib
 import sys
@@ -31,6 +30,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import xarray as xr
+from pydantic import ValidationInfo, field_validator, model_validator
 from tqdm import tqdm as _tqdm
 
 from gsolve.core._typing import (
@@ -444,7 +444,6 @@ def tcorr_harmonica_bathymetry(
     )
 
 
-@dataclasses.dataclass()
 class TerrainCorrectionParameters(GSolveParameters):
     """Class to store parameters for computing terrain corrections for a single "zone".
 
@@ -529,42 +528,57 @@ class TerrainCorrectionParameters(GSolveParameters):
     site_northing_field: str = "northing"
     method: Literal["harmonica"] = "harmonica"
 
-    def __post_init__(self) -> None:
+    @field_validator(
+        "name",
+        "site_height_field",
+        "site_easting_field",
+        "site_northing_field",
+        "distance_mask_type",
+        "method",
+        mode="before",
+    )
+    @classmethod
+    def _coerce_str_fields(cls, value: Any) -> str:
+        return str(value)
+
+    @field_validator("compute_topography", "compute_bathymetry", mode="before")
+    @classmethod
+    def _coerce_bool_fields(cls, value: Any) -> bool:
+        return _to_bool(value)
+
+    @field_validator(
+        "min_dist",
+        "max_dist",
+        "terrain_density",
+        "water_density",
+        "sea_level_elevation",
+        mode="before",
+    )
+    @classmethod
+    def _coerce_float_fields(cls, value: Any) -> float:
+        return float(value)
+
+    @field_validator("dem_source", "density_dataset_source", mode="before")
+    @classmethod
+    def _coerce_source_fields(cls, value: Any, info: ValidationInfo) -> Any:
+        if _is_dataarray(obj=value):
+            return value
+        if is_filepath_like(value):
+            return str(value)
+        # density_dataset_source is optional: None / NaN / empty are treated
+        # as "no custom density model" and normalised to an empty string,
+        # matching the historical dataclass round-trip behaviour.
+        if info.field_name == "density_dataset_source" and (
+            value is None or (np.isscalar(value) and pd.isna(value))
+        ):
+            return ""
+        msg = f"invalid type for {info.field_name} field: {type(value).__name__}"
+        raise TypeError(msg)
+
+    @model_validator(mode="after")
+    def _validate_parameters(self) -> Self:
         self._sanity_check(if_errors="warn")
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        if name not in (n.name for n in dataclasses.fields(self)):
-            msg = f"unrecognized field name {name}"
-            raise ValueError(msg)
-
-        if name in {
-            "method",
-            "name",
-            "site_height_field",
-            "site_easting_field",
-            "site_northing_field",
-            "distance_mask_type",
-        }:
-            return super().__setattr__(name, str(value))
-
-        if name in {"compute_topography", "compute_bathymetry"}:
-            return super().__setattr__(name, _to_bool(value))
-
-        if name not in {"dem_source", "density_dataset_source"}:
-            return super().__setattr__(name, float(value))
-
-        if name in {"dem_source", "density_dataset_source"}:
-            if _is_dataarray(obj=value):
-                return super().__setattr__(name, value)
-            if is_filepath_like(value):
-                return super().__setattr__(name, str(value))
-            if name == "density_dataset_source" and value is None:
-                return super().__setattr__(name, "")
-
-            msg = f"invalid type for {name} field: {type(value).__name__}"
-            raise TypeError(msg)
-
-        return super().__setattr__(name, bool(value))
+        return self
 
     def _sanity_check(self, if_errors: Literal["warn", "error"] = "error") -> None:
         """Check that all parameters are valid.
@@ -729,7 +743,7 @@ class TerrainCorrectionParameters(GSolveParameters):
         dict[str, Any]
             A dictionary of parameter names and their values.
         """
-        rval = dataclasses.asdict(self)
+        rval = super().to_dict()
         if path2str:
             to_str = lambda x: str(x) if x is not None else None
             rval["dem_source"] = to_str(rval["dem_source"])

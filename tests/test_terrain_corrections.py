@@ -27,6 +27,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
+from pydantic import ValidationError
 
 from gsolve.reductions.terrain_corrections import (
     TerrainCorrectionData,
@@ -114,7 +115,8 @@ def test_parameters_basic_coercion(flat_dem: xr.DataArray) -> None:
 
 def test_parameters_setattr_rejects_unknown_field(flat_dem: xr.DataArray) -> None:
     p = make_params(flat_dem)
-    with pytest.raises(ValueError, match=r"unrecognized field name"):
+    # pydantic rejects assignment to an attribute that is not a model field.
+    with pytest.raises(ValidationError, match=r"not_a_real_field|no_such_attribute"):
         p.not_a_real_field = 3
 
 

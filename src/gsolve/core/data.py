@@ -19,7 +19,6 @@
 """Base class and function definitions for Gsolve data structures."""
 
 import abc
-import copy
 import dataclasses
 from collections.abc import Callable
 from copy import deepcopy
@@ -29,6 +28,8 @@ from typing import Any, ClassVar, Protocol, Self
 import numpy as np
 import pandas as pd
 from pandas.api.types import is_bool_dtype, is_string_dtype
+from pydantic import BaseModel, ConfigDict
+from pydantic_core import PydanticUndefined
 
 from gsolve.core._typing import (
     FilePath,
@@ -48,7 +49,12 @@ from gsolve.core.utils import (
     to_naive_utc_datetime,
 )
 
-__all__ = ["COMMON_FIELDS", "DataFieldSpecification", "GSolveParameters", "GSolveTable"]
+__all__ = [
+    "COMMON_FIELDS",
+    "DataFieldSpecification",
+    "GSolveParameters",
+    "GSolveTable",
+]
 
 ## constants
 TERRAIN_DENSITY: float = 2670.0
@@ -111,9 +117,25 @@ COMMON_FIELDS: MappingProxyType[str, DataFieldSpecification] = MappingProxyType(
 )
 
 
-@dataclasses.dataclass
-class GSolveParameters:
-    """Base class to store parameters related to GSolveTable derived classes."""
+class GSolveParameters(BaseModel):
+    """Base class to store parameters related to GSolveTable derived classes.
+
+    This is a :class:`pydantic.BaseModel`. Subclasses declare their parameters as
+    annotated class attributes; validation and type coercion are handled by
+    pydantic. The class retains the historical ``GSolveParameters`` API
+    (``to_dict``, ``to_series``, ``from_series``, ``default_values``,
+    ``non_default_values``, ``copy``, ``summary`` and ``to_excel``) so existing
+    callers are unaffected.
+    """
+
+    model_config = ConfigDict(
+        # Preserve the previous dataclass behaviour of coercing inputs (e.g.
+        # ints to floats) rather than rejecting them.
+        arbitrary_types_allowed=True,
+        # Validate values assigned after construction, mirroring the custom
+        # ``__setattr__`` coercion the dataclass subclasses relied on.
+        validate_assignment=True,
+    )
 
     def _param_str(self) -> str:
         # Return a string representation of the parameters
@@ -123,13 +145,13 @@ class GSolveParameters:
         # Ensure all copies are deep copies.
         return deepcopy(self)
 
-    def copy(self) -> Self:
+    def copy(self) -> Self:  # type: ignore[override]
         """Return a deep copy of object."""
-        return copy.copy(self)
+        return deepcopy(self)
 
     def to_dict(self) -> dict:
         """Return parameters as a dict."""
-        return dataclasses.asdict(self)
+        return {name: getattr(self, name) for name in type(self).model_fields}
 
     def to_series(
         self,
@@ -197,16 +219,15 @@ class GSolveParameters:
             msg = "MultiIndex series not supported."
             raise ValueError(msg)
 
-        args: dict[str, Any] = {
-            str(k): v for k, v in ds.items() if k in cls.__dataclass_fields__
-        }
+        field_names = cls.model_fields
+        args: dict[str, Any] = {str(k): v for k, v in ds.items() if k in field_names}
 
-        missing_args = [k for k in cls.__dataclass_fields__ if k not in args]
+        missing_args = [k for k in field_names if k not in args]
         if not skip_missing and missing_args:
             msg = f"skip_missing=False: missing required parameters: {missing_args}"
             raise TypeError(msg)
 
-        extra_args = [k for k in ds.index if k not in cls.__dataclass_fields__]
+        extra_args = [k for k in ds.index if k not in field_names]
         if extra_args and not skip_unknown_parameters:
             msg = (
                 f"series contains unknown parameters: {ds.index[extra_args].to_list()}"
@@ -219,7 +240,8 @@ class GSolveParameters:
     def default_values(cls) -> dict:
         """Return dict of default parameter values."""
         return {
-            k: cls.__dataclass_fields__[k].default for k in cls.__dataclass_fields__
+            name: (field.default if field.default is not PydanticUndefined else None)
+            for name, field in cls.model_fields.items()
         }
 
     def non_default_values(self) -> dict:
