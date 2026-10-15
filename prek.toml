@@ -6,6 +6,8 @@ hooks = [
     { id = "check-added-large-files" },
     { id = "check-case-conflict" },
     { id = "detect-private-key" },
+    { id = "check-yaml" },
+    { id = "check-toml" },
 ]
 
 [[repos]]
@@ -29,8 +31,19 @@ hooks = [
     ] },
 ]
 
-
 [[repos]]
 repo = "https://github.com/astral-sh/ty-pre-commit"
 rev = "v0.0.80"                                     # ty version.
 hooks = [{ id = "ty" }]
+
+[[repos]]
+repo = "https://github.com/astral-sh/uv-pre-commit"
+rev = "0.13.1"
+hooks = [
+    { id = "uv-lock" },
+    { id = "uv-export", args = [
+        "--frozen",
+        "--output-file=requirements-custom.txt",
+        "--quiet",
+    ] },
+]
