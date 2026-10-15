@@ -16,16 +16,16 @@
 
 # Copyright (c) 2025 Earth Sciences New Zealand.
 
-import dataclasses
 import importlib.metadata
 import pathlib
 import warnings
 from collections.abc import Sequence
-from typing import Literal
+from typing import Any, Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from pydantic import model_validator
 
 from gsolve.core._typing import FilePath, GSolveSolverMethod, GSolveSolverReturn
 from gsolve.core.data import GSolveParameters
@@ -36,7 +36,6 @@ __all__ = ["GSolveResults", "GSolveSolutionParameters"]
 type _PlotGravityUnit = Literal["uGal", "mGal", "mgal", "ugal"]
 
 
-@dataclasses.dataclass
 class GSolveSolutionParameters(GSolveParameters):
     """Class to store input parameters and solution metadata for a Gsolve solution.
 
@@ -71,21 +70,24 @@ class GSolveSolutionParameters(GSolveParameters):
     gsolve_run_datetime: pd.Timestamp | None = None
     gsolve_version: str | None = None
 
-    def __post_init__(self) -> None:
-        if self.gsolve_run_datetime is None:
-            self.gsolve_run_datetime = to_naive_utc_datetime(
-                pd.Timestamp.now("UTC"), allow_nat=False
-            )
-        else:
-            self.gsolve_run_datetime = to_naive_utc_datetime(
-                self.gsolve_run_datetime, allow_nat=False
-            )
+    @model_validator(mode="before")
+    @classmethod
+    def _apply_defaults(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
 
-        if self.gsolve_version is None:
+        run_dt = data.get("gsolve_run_datetime")
+        if run_dt is None:
+            run_dt = pd.Timestamp.now("UTC")
+        data["gsolve_run_datetime"] = to_naive_utc_datetime(run_dt, allow_nat=False)
+
+        if data.get("gsolve_version") is None:
             try:
-                self.gsolve_version = importlib.metadata.version("gsolve")
+                data["gsolve_version"] = importlib.metadata.version("gsolve")
             except importlib.metadata.PackageNotFoundError:
-                self.gsolve_version = "unknown"
+                data["gsolve_version"] = "unknown"
+
+        return data
 
 
 class GSolveResults:

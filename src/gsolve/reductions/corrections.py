@@ -19,14 +19,14 @@
 """Classes and functions to compute normal gravity and gravity corrections."""
 
 from collections.abc import Sequence
-from dataclasses import dataclass
 from types import MappingProxyType
-from typing import ClassVar, Literal, cast
+from typing import Annotated, ClassVar, Literal, cast
 
 import boule
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
+from pydantic import Field
 from scipy.constants import G
 
 from gsolve.core.data import (
@@ -510,7 +510,6 @@ def bouguer_slab_curvature_corrected(
     return bouguer_slab_curvature_corrected
 
 
-@dataclass
 class GravityCorrectionParameters(GSolveParameters):
     """Class to store parameters for normal gravity and anomaly calculations.
 
@@ -537,10 +536,10 @@ class GravityCorrectionParameters(GSolveParameters):
         The free air gradient in mGal/m.
     """
 
-    ellipsoid: str = "GRS80"
+    ellipsoid: Literal["GRS80", "WGS84"] = "GRS80"
     density_crust: float = 2670.0
     density_water: float = 1030.0
-    spherical_cap_radius: float = 166735.0
+    spherical_cap_radius: Annotated[float, Field(gt=0)] = 166735.0
     use_curvature_corrected: bool = True
     use_atmospheric_correction: bool = True
     free_air_gradient: float = 0.3087691

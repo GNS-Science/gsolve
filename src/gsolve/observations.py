@@ -19,7 +19,6 @@
 """Classes for handling gravity observations and pre-processing."""
 
 import copy
-import dataclasses
 import pathlib
 import warnings as _warnings
 from collections.abc import Iterable, Sequence
@@ -31,6 +30,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+from pydantic import field_validator
 
 from gsolve.core._typing import (
     DatetimeScalar,
@@ -74,9 +74,8 @@ __all__ = [
 ]
 
 
-@dataclasses.dataclass
 class GravityObservationsParameters(GSolveParameters):
-    """Dataclass to hold parameters for pre-processing gravity observations.
+    """Pydantic model to hold parameters for pre-processing gravity observations.
 
     This class is not intended to be instantiated directly, but rather exists
     to store parameters in a consistent way.
@@ -93,20 +92,22 @@ class GravityObservationsParameters(GSolveParameters):
         The method used for ocean load correction, e.g. "Longman".
     """
 
-    timedelta_unit: TimedeltaScalar = "1h"
+    timedelta_unit: pd.Timedelta = pd.Timedelta("1h")
     fixed_time_datum: pd.Timestamp | None = None
     earthtide_correction_method: str = ""
     ocean_load_correction_method: str = ""
 
-    def __setattr__(self, name: str, value: Any) -> None:
-        if name == "timedelta_unit":
-            value = pd.Timedelta(value)
-        elif name == "fixed_time_datum":
-            if value is None or pd.isna(value):
-                value = pd.NaT
-            else:
-                value = to_naive_utc_datetime(value)
-        super().__setattr__(name, value)
+    @field_validator("timedelta_unit", mode="before")
+    @classmethod
+    def _coerce_timedelta_unit(cls, value: Any) -> pd.Timedelta:
+        return pd.Timedelta(value)
+
+    @field_validator("fixed_time_datum", mode="before")
+    @classmethod
+    def _coerce_fixed_time_datum(cls, value: Any) -> pd.Timestamp | None:
+        if value is None or pd.isna(value):
+            return None
+        return to_naive_utc_datetime(value)
 
     def to_excel(
         self,

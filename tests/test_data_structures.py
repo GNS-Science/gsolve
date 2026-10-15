@@ -14,7 +14,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # SPDX-License-Identifier: GPLv3
 
-from dataclasses import dataclass
 from types import MappingProxyType
 
 import numpy as np
@@ -205,7 +204,6 @@ def test_gsolve_table_data_ok_check():
 
 class TestGSolveParameters:
     def _dummy_params_class(self):
-        @dataclass
         class MyParams(GSolveParameters):
             a: int = 1
             b: float = 2.0
