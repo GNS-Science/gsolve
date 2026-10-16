@@ -56,6 +56,7 @@ from gsolve.core.utils import (
     normalize_str,
     prepare_writable_df,
     timestamp_to_columns,
+    to_bool,
     to_naive_utc_datetime,
     to_points3d,
 )
@@ -736,3 +737,22 @@ def test_gsolve_user_warning_default_no_prefix() -> None:
         uw.warn("bare message")
     assert uw.count == 1
     assert str(rec[0].message) == "bare message"
+
+
+def test_to_bool() -> None:
+    # genuine booleans and numbers behave like builtin bool
+    assert to_bool(True) is True
+    assert to_bool(False) is False
+    assert to_bool(1) is True
+    assert to_bool(0) is False
+    assert to_bool(1.0) is True
+
+    # serialized string forms are interpreted sensibly (the key fix: "False")
+    assert to_bool("True") is True
+    assert to_bool("true") is True
+    assert to_bool("False") is False
+    assert to_bool("false") is False
+    assert to_bool("no") is False
+    assert to_bool("0") is False
+    assert to_bool("") is False
+    assert to_bool("none") is False

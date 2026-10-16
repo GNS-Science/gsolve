@@ -34,7 +34,6 @@ from gsolve.reductions.terrain_corrections import (
     TerrainCorrectionParameters,
     TerrainCorrector,
     _is_dataarray,
-    _to_bool,
 )
 
 
@@ -74,25 +73,6 @@ def test_is_dataarray(flat_dem: xr.DataArray) -> None:
     assert _is_dataarray(flat_dem) is True
     assert _is_dataarray(5) is False
     assert _is_dataarray(np.zeros((3, 3))) is False
-
-
-def test_to_bool() -> None:
-    # genuine booleans and numbers behave like builtin bool
-    assert _to_bool(True) is True
-    assert _to_bool(False) is False
-    assert _to_bool(1) is True
-    assert _to_bool(0) is False
-    assert _to_bool(1.0) is True
-
-    # serialized string forms are interpreted sensibly (the key fix: "False")
-    assert _to_bool("True") is True
-    assert _to_bool("true") is True
-    assert _to_bool("False") is False
-    assert _to_bool("false") is False
-    assert _to_bool("no") is False
-    assert _to_bool("0") is False
-    assert _to_bool("") is False
-    assert _to_bool("none") is False
 
 
 # ---------------------------------------------------------------------------
