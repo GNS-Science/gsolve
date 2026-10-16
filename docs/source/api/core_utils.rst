@@ -26,6 +26,7 @@ Data Conversion
    to_1d_ndarray_or_float
    to_naive_utc_datetime
    to_points3d
+   to_bool
    normalize_field_names
    normalize_str
    check_duplicate_index
