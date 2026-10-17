@@ -333,6 +333,10 @@ def to_1d_ndarray(
         the specified expected_size.
     dtype : data-type, optional
         If specified, the resulting array will be cast to this data type.
+        A boolean ``dtype`` is coerced via :func:`to_bool` (so serialized
+        strings such as ``"False"``/``"no"``/``"0"`` become ``False``) rather
+        than ``astype(bool)``, which would treat every non-empty string as
+        ``True``.
 
     Returns
     -------
@@ -357,7 +361,13 @@ def to_1d_ndarray(
         raise ValueError(msg)
 
     if dtype is not None:
-        a = a.astype(dtype=dtype)
+        if np.dtype(dtype) == np.bool_ and a.dtype != bool:
+            # Coerce via ``to_bool`` rather than ``astype(bool)`` so serialized
+            # text such as "False"/"no"/"0" is interpreted correctly instead of
+            # every non-empty string becoming True. See issue #64.
+            a = np.array([to_bool(v) for v in a], dtype=bool)
+        else:
+            a = a.astype(dtype=dtype)
 
     return a
 

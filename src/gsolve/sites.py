@@ -946,9 +946,14 @@ class ReferenceGravity(GSolveTable):
         data : dict of float or dict of (float, bool)
             Reference site data as a dictionary where keys are ``'site_id'``
             and values are either the reference gravity (float) or a sequence
-            of (reference gravity, active) where active is a boolean
+            of (reference gravity, active) where active is a boolean. The
+            ``active`` value is coerced via :func:`to_bool`, so serialized
+            strings such as ``"False"``/``"no"``/``"0"`` are interpreted as
+            ``False`` rather than treated as truthy non-empty strings.
         set_active : bool, default True
-            If a ``data`` value is a float, then set the "active" field to this value.
+            If a ``data`` value is a float, then set the "active" field to this
+            value. Coerced via :func:`to_bool`, so a string such as ``"False"``
+            is interpreted as ``False``.
 
         Returns
         -------
