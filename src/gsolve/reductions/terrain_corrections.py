@@ -57,6 +57,7 @@ from gsolve.core.utils import (
     is_points3d_like,
     prepare_writable_df,
     to_1d_ndarray,
+    to_bool,
     to_points3d,
 )
 
@@ -74,29 +75,6 @@ __all__ = [
 def _is_dataarray(obj: Any) -> bool:
     """Check if an object is an xarray DataArray."""
     return isinstance(obj, xr.DataArray)
-
-
-def _to_bool(value: Any) -> bool:
-    """Coerce a value to bool, interpreting serialized strings sensibly.
-
-    Unlike the builtin ``bool``, this treats the strings ``"false"``, ``"no"``,
-    ``"0"``, ``"none"`` and the empty string (case-insensitively) as ``False``.
-    This is required so that boolean parameters survive a round-trip through
-    CSV/Excel, where ``False`` is written and read back as the string
-    ``"False"`` (which ``bool("False")`` would otherwise evaluate to ``True``).
-
-    Parameters
-    ----------
-    value : Any
-        The value to coerce.
-
-    Returns
-    -------
-    bool
-    """
-    if isinstance(value, str):
-        return value.strip().lower() not in {"", "false", "no", "0", "none", "nan"}
-    return bool(value)
 
 
 def calculate_terrain_correction(
@@ -544,7 +522,7 @@ class TerrainCorrectionParameters(GSolveParameters):
     @field_validator("compute_topography", "compute_bathymetry", mode="before")
     @classmethod
     def _coerce_bool_fields(cls, value: Any) -> bool:
-        return _to_bool(value)
+        return to_bool(value)
 
     @field_validator(
         "min_dist",

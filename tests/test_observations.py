@@ -83,6 +83,34 @@ class TestObservationsInit:
         obj = GravityObservations(**data)
         n = len(data["site_id"])
         assert obj.data["loop"].to_list() == [str(data["loop"])] * n
+
+    def test_active_string_bool_coercion(self) -> None:
+        # Issue #64: serialized string booleans (e.g. read from CSV/Excel) must
+        # be interpreted sensibly for boolean known-fields. Previously the
+        # non-empty strings "False"/"no" coerced to True via astype(bool).
+        data = dummy_data()
+        data["active"] = ["True", "False", "no"]
+        obj = GravityObservations(**data)
+        assert obj.data["active"].dtype == bool
+        assert obj.data["active"].to_list() == [True, False, False]
+
+    def test_active_mixed_case_and_numeric_strings(self) -> None:
+        data = dummy_data()
+        data["active"] = ["FALSE", "Yes", "0"]
+        obj = GravityObservations(**data)
+        assert obj.data["active"].to_list() == [False, True, False]
+
+    def test_active_scalar_string_bool(self) -> None:
+        data = dummy_data()
+        data["active"] = "False"
+        obj = GravityObservations(**data)
+        assert obj.data["active"].to_list() == [False, False, False]
+
+    def test_active_genuine_bools_unchanged(self) -> None:
+        data = dummy_data()
+        data["active"] = [True, False, True]
+        obj = GravityObservations(**data)
+        assert obj.data["active"].to_list() == [True, False, True]
         assert obj.data["comment"].to_list() == data["comment"]
 
     def test_gravity_observations_init_no_meter_readings(self) -> None:

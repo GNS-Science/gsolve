@@ -72,6 +72,7 @@ __all__ = [
     "timestamp_to_columns",
     "to_1d_ndarray",
     "to_1d_ndarray_or_float",
+    "to_bool",
     "to_naive_utc_datetime",
     "to_points3d",
 ]
@@ -145,6 +146,29 @@ def is_points3d_like(v: Any) -> bool:
     if len(v) != 3:
         return False
     return all(is_list_like(c) for c in v)
+
+
+def to_bool(value: Any) -> bool:
+    """Coerce a value to bool, interpreting serialized strings sensibly.
+
+    Unlike the builtin ``bool``, this treats the strings ``"false"``, ``"no"``,
+    ``"0"``, ``"none"`` and the empty string (case-insensitively) as ``False``.
+    This is required so that boolean parameters survive a round-trip through
+    CSV/Excel, where ``False`` is written and read back as the string
+    ``"False"`` (which ``bool("False")`` would otherwise evaluate to ``True``).
+
+    Parameters
+    ----------
+    value : Any
+        The value to coerce.
+
+    Returns
+    -------
+    bool
+    """
+    if isinstance(value, str):
+        return value.strip().lower() not in {"", "false", "no", "0", "none", "nan"}
+    return bool(value)
 
 
 def to_points3d(
@@ -309,6 +333,10 @@ def to_1d_ndarray(
         the specified expected_size.
     dtype : data-type, optional
         If specified, the resulting array will be cast to this data type.
+        A boolean ``dtype`` is coerced via :func:`to_bool` (so serialized
+        strings such as ``"False"``/``"no"``/``"0"`` become ``False``) rather
+        than ``astype(bool)``, which would treat every non-empty string as
+        ``True``.
 
     Returns
     -------
@@ -333,7 +361,13 @@ def to_1d_ndarray(
         raise ValueError(msg)
 
     if dtype is not None:
-        a = a.astype(dtype=dtype)
+        if np.dtype(dtype) == np.bool_ and a.dtype != bool:
+            # Coerce via ``to_bool`` rather than ``astype(bool)`` so serialized
+            # text such as "False"/"no"/"0" is interpreted correctly instead of
+            # every non-empty string becoming True. See issue #64.
+            a = np.array([to_bool(v) for v in a], dtype=bool)
+        else:
+            a = a.astype(dtype=dtype)
 
     return a
 

@@ -43,9 +43,11 @@ from gsolve.core.excel_io import (
 )
 from gsolve.core.utils import (
     GSolveUserWarning,
+    is_list_like,
     merge_datetime_columns,
     normalize_field_names,
     prepare_writable_df,
+    to_bool,
     to_naive_utc_datetime,
 )
 
@@ -59,6 +61,34 @@ __all__ = [
 ## constants
 TERRAIN_DENSITY: float = 2670.0
 WATER_DENSITY: float = 1030.0
+
+
+def _coerce_bool_data(data: Any) -> Any:
+    """Coerce column data to boolean using :func:`to_bool` element-wise.
+
+    Unlike pandas' ``astype(bool)`` (which treats every non-empty string as
+    ``True``), this interprets serialized text such as ``"False"``, ``"no"`` and
+    ``"0"`` correctly. Scalars are returned as a single coerced bool (left for
+    pandas to broadcast); array-like data is returned as a list of bools. Data
+    that is already a boolean-typed numpy/pandas array is passed through
+    unchanged.
+
+    Parameters
+    ----------
+    data : Any
+        The scalar or array-like value to coerce.
+
+    Returns
+    -------
+    bool or list of bool
+    """
+    if isinstance(data, pd.Series):
+        data = data.to_numpy()
+    if isinstance(data, np.ndarray) and data.dtype == bool:
+        return data
+    if is_list_like(data):
+        return [to_bool(v) for v in data]
+    return to_bool(data)
 
 
 @dataclasses.dataclass
@@ -370,7 +400,7 @@ def _concat_gsolvetable_dataframes_with_fill(
 
     do_bool_fill = fill_bool is not None
     if do_bool_fill:
-        fill_bool = bool(fill_bool)
+        fill_bool = to_bool(fill_bool)
 
     combined_df = pd.concat([df1, df2], **kwargs)
     if not use_known_fields and not do_str_fill and not do_bool_fill:
@@ -501,7 +531,12 @@ class GSolveTable(_HasKnownFields, abc.ABC):
                 as the default value.
               - if ``label`` is not a "known field", then raise a ValueError.
         dtype : Any, default None
-            The data type of the column. Defaults to None, do
+            The data type of the column. Defaults to None, meaning no
+            conversion is applied (unless a known-field dtype is resolved).
+            A boolean dtype is coerced element-wise via :func:`to_bool`, so
+            serialized text such as ``"False"``/``"no"``/``"0"`` (e.g. read
+            from CSV/Excel) becomes ``False`` rather than being treated as a
+            truthy non-empty string.
         """
         for attr_name in ("_custom_fields", "_known_fields"):
             fields = getattr(self, attr_name, {})
@@ -525,6 +560,14 @@ class GSolveTable(_HasKnownFields, abc.ABC):
                 raise ValueError(msg)
         else:
             data_ = data
+
+        if dtype is bool or dtype == "bool":
+            # Route boolean coercion through ``to_bool`` so serialized text such
+            # as "False"/"no"/"0" (common in CSV/Excel input) is interpreted
+            # correctly, instead of pandas' ``astype(bool)`` which treats every
+            # non-empty string as True. See issue #64.
+            data_ = _coerce_bool_data(data_)
+            dtype = None
 
         self.data[label] = pd.Series(data=data_, index=self.data.index, dtype=dtype)
 
