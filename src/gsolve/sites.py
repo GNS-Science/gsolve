@@ -49,6 +49,7 @@ from gsolve.core.utils import (
     is_list_like,
     prepare_writable_df,
     to_1d_ndarray,
+    to_bool,
 )
 from gsolve.core.xr_methods import load_dem, prepare_dem
 
@@ -959,13 +960,13 @@ class ReferenceGravity(GSolveTable):
         ref_grav = []
         active = []
 
-        set_active = bool(set_active)
+        set_active = to_bool(set_active)
         for k, v in data.items():
             site_ids.append(str(k))
             if is_list_like(v):
                 ref_grav.append(float(v[0]))
                 if len(v) >= 2:
-                    active.append(bool(v[1]))
+                    active.append(to_bool(v[1]))
                 else:
                     active.append(set_active)
             else:
