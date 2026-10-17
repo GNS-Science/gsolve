@@ -333,6 +333,28 @@ class TestReferenceGravityInit:
         assert ref.data.loc["X", "active"]
         assert not ref.data.loc["Y", "active"]
 
+    def test_from_dict_string_bool_values(self):
+        # Issue #64: serialized string booleans (e.g. from CSV/Excel) must be
+        # interpreted sensibly, not via bool() which makes "False" -> True.
+        ref = ReferenceGravity.from_dict(
+            {
+                "X": (980000.0, "True"),
+                "Y": (980050.0, "False"),
+                "Z": (980100.0, "no"),
+            }
+        )
+        assert ref.data.loc["X", "active"]
+        assert not ref.data.loc["Y", "active"]
+        assert not ref.data.loc["Z", "active"]
+
+    def test_from_dict_set_active_string(self):
+        # Issue #64: a string set_active default must coerce correctly.
+        ref = ReferenceGravity.from_dict(
+            {"X": 980000.0, "Y": 980050.0}, set_active="False"
+        )
+        assert not ref.data.loc["X", "active"]
+        assert not ref.data.loc["Y", "active"]
+
     def test_from_dataframe(self):
         df = pd.DataFrame(
             {"gravity": [980000.0], "active": [True]},
