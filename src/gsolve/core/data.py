@@ -531,7 +531,12 @@ class GSolveTable(_HasKnownFields, abc.ABC):
                 as the default value.
               - if ``label`` is not a "known field", then raise a ValueError.
         dtype : Any, default None
-            The data type of the column. Defaults to None, do
+            The data type of the column. Defaults to None, meaning no
+            conversion is applied (unless a known-field dtype is resolved).
+            A boolean dtype is coerced element-wise via :func:`to_bool`, so
+            serialized text such as ``"False"``/``"no"``/``"0"`` (e.g. read
+            from CSV/Excel) becomes ``False`` rather than being treated as a
+            truthy non-empty string.
         """
         for attr_name in ("_custom_fields", "_known_fields"):
             fields = getattr(self, attr_name, {})

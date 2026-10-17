@@ -168,6 +168,18 @@ def test_to_1d_ndarray() -> None:
         _ = utils.to_1d_ndarray(1, extend_len_1_array=True)
 
 
+def test_to_1d_ndarray_bool_string_coercion() -> None:
+    # Issue #64: casting serialized text to bool must interpret "False"/"no"/"0"
+    # correctly, not via astype(bool) which makes every non-empty string True.
+    out = utils.to_1d_ndarray(["True", "False", "no", "0"], dtype=bool)
+    assert out.dtype == bool
+    assert out.tolist() == [True, False, False, False]
+
+    # genuine bool / numeric inputs are unaffected
+    assert utils.to_1d_ndarray([True, False], dtype=bool).tolist() == [True, False]
+    assert utils.to_1d_ndarray([1, 0, 2], dtype=bool).tolist() == [True, False, True]
+
+
 def test_to_1d_ndarray_or_float():
     v1 = utils.to_1d_ndarray_or_float(1.0)
     assert isinstance(v1, np.float64)
