@@ -1,10 +1,56 @@
 ![gSolve logo](docs/source/_static/gsolve_logo.png)
 
-[![codecov](https://codecov.io/gh/GNS-Science/gsolve/branch/main/graph/badge.svg)](https://codecov.io/gh/GNS-Science/gsolve)
-[![GitHub License](https://img.shields.io/github/license/GNS-Science/gsolve)](https://github.com/GNS-Science/gsolve/blob/main/LICENSE)
-![Publish to PyPI](https://github.com/GNS-Science/gsolve/actions/workflows/publish.yml/badge.svg)
-[![Pypi version](https://img.shields.io/pypi/v/gsolve)](https://pypi.org/project/gsolve/)
-[![Conda version](https://img.shields.io/conda/vn/conda-forge/gsolve)](https://anaconda.org/channels/conda-forge/packages/gsolve/overview)
+<table>
+<tr>
+  <td>Latest Release</td>
+  <td>
+    <a href="https://pypi.org/project/gsolve/">
+    <img src="https://img.shields.io/pypi/v/gsolve" alt="latest release" />
+    </a>
+    <a href="https://anaconda.org/channels/conda-forge/packages/gsolve/overview">
+    <img src="https://img.shields.io/conda/vn/conda-forge/gsolve" />
+    </a>
+    <a href="https://anaconda.org/channels/conda-forge/packages/gsolve/overview">
+    <img src="https://anaconda.org/conda-forge/gsolve/badges/latest_release_date.svg" />
+    </a>
+</tr>
+
+<tr>
+  <td>License</td>
+  <td>
+    <a href="https://github.com/gns-science/gsolve/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/GNS-Science/gsolve" alt="license" />
+    </a>
+</td>
+</tr>
+
+<tr>
+  <td>Build Status</td>
+  <td>
+    <a href="https://gns-science.github.io/gsolve/">
+    <img src="https://github.com/GNS-Science/gsolve/actions/workflows/sphinx-docs.yml/badge.svg" alt="documentation build status" />
+    </a>
+    <a href="https://github.com/GNS-Science/gsolve/actions/workflows/test_and_build.yml">
+      <img src="https://github.com/GNS-Science/gsolve/actions/workflows/test_and_build.yml/badge.svg" alt="GitHub Actions Testing Status" />
+    </a>
+    <a href="https://codecov.io/gh/GNS-Science/gsolve">
+    <img src="https://codecov.io/gh/GNS-Science/gsolve/branch/main/graph/badge.svg" alt="codecov coverage" />
+    </a>
+  </td>
+</tr>
+
+<tr>
+  <td>Publications</td>
+  <td>
+    <!--<a href="https://doi.org/">-->
+    <!--<img src="https://zenodo.org/badge/DOI/" alt="zenodo reference">-->
+    </a>
+    <!--<a style="border-width:0" href="https://doi.org/">
+    <!--<img src="https://joss.theoj.org/papers/status.svg" alt="DOI badge" >-->
+    </a>
+  </td>
+</tr>
+</table>
 
 
 # gSolve
