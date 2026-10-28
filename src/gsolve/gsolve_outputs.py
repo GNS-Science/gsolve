@@ -20,12 +20,12 @@ import importlib.metadata
 import pathlib
 import warnings
 from collections.abc import Sequence
-from typing import Any, Literal, Self
+from typing import Any, Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 
 from gsolve.core._typing import FilePath, GSolveSolverMethod, GSolveSolverReturn
 from gsolve.core.data import GSolveParameters
@@ -89,6 +89,20 @@ class GSolveSolutionParameters(GSolveParameters):
 
         return data
 
+    @field_validator("method", mode="before")
+    @classmethod
+    def _coerce_method(
+        cls, value: GSolveSolverMethod | float | str
+    ) -> GSolveSolverMethod:
+        """Normalise ``method`` on every ingestion path via ``from_value``.
+
+        This applies to direct construction and to ``from_series`` /
+        ``from_excel`` alike, so an ``int``, an integral ``float`` (including
+        numpy scalars), a numeric string such as ``"2"``, or a member name are
+        all accepted and stored as a :class:`GSolveSolverMethod` member.
+        """
+        return GSolveSolverMethod.from_value(value)
+
     def to_dict(self) -> dict:
         """Return parameters as a dict, with ``method`` as a plain ``int``.
 
@@ -99,30 +113,6 @@ class GSolveSolutionParameters(GSolveParameters):
         data = super().to_dict()
         data["method"] = GSolveSolverMethod.to_int(self.method)
         return data
-
-    @classmethod
-    def from_series(
-        cls,
-        ds: pd.Series,
-        skip_missing: bool = False,
-        skip_unknown_parameters: bool = False,
-    ) -> Self:
-        """Build from a Series, parsing ``method`` back into the enum.
-
-        Normalises the ``method`` cell via
-        :meth:`GSolveSolverMethod.from_value` so a value re-read from Excel or
-        CSV -- an ``int``, an integral ``float``, a numeric string such as
-        ``"2"``, or a member name -- is restored to the correct member before
-        the base parser runs.
-        """
-        if "method" in ds.index:
-            ds = ds.copy()
-            ds["method"] = GSolveSolverMethod.from_value(ds["method"])
-        return super().from_series(
-            ds,
-            skip_missing=skip_missing,
-            skip_unknown_parameters=skip_unknown_parameters,
-        )
 
 
 class GSolveResults:

@@ -28,6 +28,7 @@ import numpy as np
 import openpyxl
 import pandas as pd
 import pytest
+from pydantic import ValidationError
 
 from gsolve.core._typing import GSolveSolverMethod
 from gsolve.gsolve_outputs import (
@@ -621,3 +622,37 @@ class TestSolverMethodDeserialization:
         read = pd.read_excel(target, sheet_name="params", index_col=0)["value"]
         restored = GSolveSolutionParameters.from_series(read)
         assert restored.method is GSolveSolverMethod.CONSTRAINED
+
+
+class TestSolverMethodConstructionCoercion:
+    """Direct construction routes ``method`` through ``from_value`` too."""
+
+    @pytest.mark.parametrize(
+        ("method_value", "expected"),
+        [
+            (2, GSolveSolverMethod.PARTIALLY_CONSTRAINED),
+            ("2", GSolveSolverMethod.PARTIALLY_CONSTRAINED),
+            ("PARTIALLY_CONSTRAINED", GSolveSolverMethod.PARTIALLY_CONSTRAINED),
+            ("constrained", GSolveSolverMethod.CONSTRAINED),
+            (GSolveSolverMethod.UNCONSTRAINED, GSolveSolverMethod.UNCONSTRAINED),
+        ],
+    )
+    def test_construction_stores_member(
+        self, method_value: object, expected: GSolveSolverMethod
+    ) -> None:
+        params = GSolveSolutionParameters(
+            method=method_value,  # type: ignore[arg-type]
+            use_loops=True,
+            percentile_clipping=100.0,
+            calculate_calibration_factor=False,
+        )
+        assert params.method is expected
+
+    def test_construction_rejects_invalid_method(self) -> None:
+        with pytest.raises(ValidationError):
+            GSolveSolutionParameters(
+                method="not-a-method",  # type: ignore[arg-type]
+                use_loops=True,
+                percentile_clipping=100.0,
+                calculate_calibration_factor=False,
+            )
