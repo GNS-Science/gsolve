@@ -2,7 +2,7 @@
 inclusion: always
 ---
 
-## Hello LLMS and Devs
+## Hello LLMs and Devs
 
 This is the single source of truth for all AI coding tools and developers. Kiro loads this via the `.kiro/steering/AGENTS.md` symlink; the `inclusion: always` frontmatter above is for Kiro and is ignored by other tools.
 
