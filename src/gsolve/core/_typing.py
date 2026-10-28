@@ -83,6 +83,31 @@ class GSolveSolverMethod(IntEnum):
     PARTIALLY_CONSTRAINED = 2
     CONSTRAINED = 3
 
+    @classmethod
+    def to_int(cls, method: GSolveSolverMethod | int) -> int:
+        """Return a plain ``int`` for a member or an equivalent integer.
+
+        Use this at serialization boundaries (e.g. writing to Excel) so the
+        stored value is a bare integer rather than an enum object, while still
+        validating that the input is a known method.
+
+        Parameters
+        ----------
+        method : GSolveSolverMethod | int
+            A member or its equivalent integer value.
+
+        Returns
+        -------
+        int
+            The method's integer value.
+
+        Raises
+        ------
+        ValueError
+            If ``method`` is not a valid :class:`GSolveSolverMethod` value.
+        """
+        return int(cls(method))
+
 
 type GSolveSolverReturn = tuple[
     NDArray, NDArray, NDArray, NDArray, NDArray, float | np.float64 | None, NDArray

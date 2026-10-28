@@ -89,6 +89,17 @@ class GSolveSolutionParameters(GSolveParameters):
 
         return data
 
+    def to_dict(self) -> dict:
+        """Return parameters as a dict, with ``method`` as a plain ``int``.
+
+        The ``method`` field is a :class:`GSolveSolverMethod` member. It is
+        coerced to its integer value here so serialized forms (Series, Excel)
+        store a bare integer rather than the enum object.
+        """
+        data = super().to_dict()
+        data["method"] = GSolveSolverMethod.to_int(self.method)
+        return data
+
 
 class GSolveResults:
     """Class to store the results from a gsolve network adjustment.

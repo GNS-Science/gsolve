@@ -25,9 +25,11 @@ mpl.use("Agg")  # headless backend; no display required for tests
 
 import matplotlib.pyplot as plt
 import numpy as np
+import openpyxl
 import pandas as pd
 import pytest
 
+from gsolve.core._typing import GSolveSolverMethod
 from gsolve.gsolve_outputs import (
     GSolveResults,
     GSolveSolutionParameters,
@@ -512,3 +514,63 @@ class TestPlotResidualDrift:
         target = tmp_path / "drift.png"
         r.plot_residual_drift(loop="L1", filename=str(target), show=False)
         assert (tmp_path / "drift_loop_L1.png").exists()
+
+
+class TestSolverMethodSerialization:
+    """`GSolveSolverMethod.to_int` and int-on-export of the ``method`` field."""
+
+    def test_to_int_accepts_member_and_int(self) -> None:
+        assert GSolveSolverMethod.to_int(GSolveSolverMethod.CONSTRAINED) == 3
+        assert GSolveSolverMethod.to_int(2) == 2
+
+    def test_to_int_returns_plain_int(self) -> None:
+        result = GSolveSolverMethod.to_int(GSolveSolverMethod.UNCONSTRAINED)
+        assert type(result) is int
+
+    def test_to_int_rejects_invalid_value(self) -> None:
+        with pytest.raises(ValueError, match="not a valid GSolveSolverMethod"):
+            GSolveSolverMethod.to_int(99)
+
+    def test_to_dict_exports_method_as_plain_int(self) -> None:
+        params = GSolveSolutionParameters(
+            method=GSolveSolverMethod.PARTIALLY_CONSTRAINED,
+            use_loops=True,
+            percentile_clipping=100.0,
+            calculate_calibration_factor=False,
+        )
+        exported = params.to_dict()["method"]
+        assert exported == 2
+        assert type(exported) is int
+
+    def test_to_series_round_trips_method(self) -> None:
+        params = GSolveSolutionParameters(
+            method=GSolveSolverMethod.CONSTRAINED,
+            use_loops=True,
+            percentile_clipping=100.0,
+            calculate_calibration_factor=False,
+        )
+        series = params.to_series()
+        assert type(series["method"]) is int
+        assert series["method"] == 3
+
+        restored = GSolveSolutionParameters.from_series(series)
+        assert restored.method == GSolveSolverMethod.CONSTRAINED
+
+    def test_excel_stores_method_as_integer(self, tmp_path) -> None:
+        params = GSolveSolutionParameters(
+            method=GSolveSolverMethod.PARTIALLY_CONSTRAINED,
+            use_loops=True,
+            percentile_clipping=100.0,
+            calculate_calibration_factor=False,
+        )
+        target = tmp_path / "params.xlsx"
+        params.to_excel(target, sheet_name="params")
+
+        worksheet = openpyxl.load_workbook(target)["params"]
+        method_cells = [
+            row for row in worksheet.iter_rows(values_only=True) if row[0] == "method"
+        ]
+        assert len(method_cells) == 1
+        value = method_cells[0][1]
+        assert value == 2
+        assert isinstance(value, int)
