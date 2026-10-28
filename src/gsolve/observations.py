@@ -1784,7 +1784,7 @@ class GravitySurvey:
 
     def solve_lstsq(
         self,
-        method: GSolveSolverMethod,
+        method: GSolveSolverMethod | int,
         percentile_clipping: float = 100,
         use_loops: bool = True,
     ) -> GSolveResults:
@@ -1829,7 +1829,7 @@ class GravitySurvey:
 
     def solve_calibration_factor(
         self,
-        method: GSolveSolverMethod = 2,
+        method: GSolveSolverMethod | int = GSolveSolverMethod.PARTIALLY_CONSTRAINED,
         percentile_clipping: float = 100,
         use_loops: bool = True,
     ) -> GSolveResults:
@@ -1837,7 +1837,7 @@ class GravitySurvey:
 
         Parameters
         ----------
-        method : {1, 2, 3}
+        method : GSolveSolverMethod | {1, 2, 3}
             The solver method to use for the least squares adjustment.
             Method 2 - 'Partially constrained least squares' is the appropriate strategy
             for determining calibrations.

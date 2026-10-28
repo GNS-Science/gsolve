@@ -30,9 +30,9 @@ __all__ = ["GSolveSolverMethod", "call_gsolve_calibration", "call_gsolve_lstsq"]
 
 
 _GSOLVE_SOLVER_METHODS: dict[int, str] = {
-    1: "Unconstrained least squares",
-    2: "Partially constrained least squares",
-    3: "Constrained least squares",
+    GSolveSolverMethod.UNCONSTRAINED: "Unconstrained least squares",
+    GSolveSolverMethod.PARTIALLY_CONSTRAINED: "Partially constrained least squares",
+    GSolveSolverMethod.CONSTRAINED: "Constrained least squares",
 }
 
 
@@ -43,7 +43,7 @@ class GSolveSolverWarning(UserWarning):
 def call_gsolve_lstsq(
     obs: pd.DataFrame,
     ref_sites: pd.DataFrame,
-    method: GSolveSolverMethod,
+    method: GSolveSolverMethod | int,
     percentile_clipping: float = 100,
     use_loops: bool = True,
 ) -> GSolveResults:
@@ -57,7 +57,7 @@ def call_gsolve_lstsq(
         Other columns are ignored.
     ref_sites : DataFrame
         The reference sites that gravity will be 'tied' to after drift
-    method : {1, 2, 3}
+    method : GSolveSolverMethod | {1, 2, 3}
         The gsolve solution method to use. Available methods are:
 
             - ``1`` : Unconstrained least squares
@@ -130,7 +130,7 @@ def call_gsolve_lstsq(
 def call_gsolve_calibration(
     obs: pd.DataFrame,
     ref_sites: pd.DataFrame,
-    method: GSolveSolverMethod,
+    method: GSolveSolverMethod | int,
     percentile_clipping: float = 100,
     use_loops: bool = True,
 ) -> GSolveResults:
@@ -144,7 +144,7 @@ def call_gsolve_calibration(
         ``gravity_not_detided``. Other columns are ignored.
     ref_sites : DataFrame
         The reference sites that gravity will be 'tied' to after drift
-    method : {1, 2, 3}
+    method : GSolveSolverMethod | {1, 2, 3}
         The gsolve solution method to use. Available methods are:
 
             - ``1`` : Unconstrained least squares
@@ -221,7 +221,7 @@ def g_solver_lstsq(  # ruff: ignore[too-many-positional-arguments]
     ties_g: np.ndarray,
     obs_loop: np.ndarray,
     use_loops: bool,
-    method: GSolveSolverMethod,
+    method: GSolveSolverMethod | int,
     calculate_calibration_factor: bool,
     obs_g_not_detided: np.ndarray | None = None,
     percentile_clipping: float = 100.0,
@@ -246,7 +246,7 @@ def g_solver_lstsq(  # ruff: ignore[too-many-positional-arguments]
         Control how survey loops are treated in the solution.
         If ``True``, drift curves are fit to each loop.
         If ``False``, a single drift curve is fit to all observations.
-    method : {1, 2, 3}
+    method : GSolveSolverMethod | {1, 2, 3}
         The gsolve solution method to use. Available methods are:
 
             - ``1`` : Unconstrained least squares
@@ -289,10 +289,12 @@ def g_solver_lstsq(  # ruff: ignore[too-many-positional-arguments]
     gsolve.GravitySurvey.solve_calibration_factor :
 
     """
-    if method not in _GSOLVE_SOLVER_METHODS:
-        valid_methods = tuple(_GSOLVE_SOLVER_METHODS.keys())
+    try:
+        method = GSolveSolverMethod(method)
+    except ValueError:
+        valid_methods = tuple(int(m) for m in GSolveSolverMethod)
         msg = f"invalid method '{method}', must be one of {valid_methods}"
-        raise ValueError(msg)
+        raise ValueError(msg) from None
 
     percentile_clipping = float(percentile_clipping)
     if percentile_clipping < 0.0 or percentile_clipping > 100.0:

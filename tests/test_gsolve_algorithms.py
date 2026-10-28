@@ -24,6 +24,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from gsolve.core._typing import GSolveSolverMethod
 from gsolve.gsolve_algorithms import (
     GSolveSolverWarning,
     _check_post_clip_data_are_ok,
@@ -535,3 +536,74 @@ class TestCheckPostClipDataAreOk:
             )
 
         assert result is True
+
+
+class TestGSolveSolverMethodEnum:
+    """The solver method enum and its interchangeability with plain ints."""
+
+    def test_members_have_expected_values(self) -> None:
+        assert GSolveSolverMethod.UNCONSTRAINED == 1
+        assert GSolveSolverMethod.PARTIALLY_CONSTRAINED == 2
+        assert GSolveSolverMethod.CONSTRAINED == 3
+
+    def test_int_coerces_to_member(self) -> None:
+        assert GSolveSolverMethod(2) is GSolveSolverMethod.PARTIALLY_CONSTRAINED
+
+    def test_member_behaves_as_int_in_comparisons(self) -> None:
+        # Guards the solver's `method == 2` / `method in {1, 2}` branches.
+        assert GSolveSolverMethod.CONSTRAINED not in {1, 2}
+        assert GSolveSolverMethod.PARTIALLY_CONSTRAINED in {1, 2}
+
+    def test_invalid_int_raises_value_error(self) -> None:
+        with pytest.raises(ValueError, match="not a valid GSolveSolverMethod"):
+            GSolveSolverMethod(99)
+
+    @pytest.mark.parametrize(
+        ("as_int", "as_member"),
+        [
+            (1, GSolveSolverMethod.UNCONSTRAINED),
+            (2, GSolveSolverMethod.PARTIALLY_CONSTRAINED),
+            (3, GSolveSolverMethod.CONSTRAINED),
+        ],
+    )
+    def test_enum_and_int_produce_identical_solution(
+        self, as_int: int, as_member: GSolveSolverMethod
+    ) -> None:
+        kwargs = _solver_inputs(use_two_loops=True)
+
+        int_result = g_solver_lstsq(
+            **kwargs,
+            method=as_int,
+            use_loops=True,
+            calculate_calibration_factor=False,
+            percentile_clipping=100.0,
+        )
+        enum_result = g_solver_lstsq(
+            **kwargs,
+            method=as_member,
+            use_loops=True,
+            calculate_calibration_factor=False,
+            percentile_clipping=100.0,
+        )
+
+        # gravity, residuals, gravity_var, drift, baseline, cal, mask
+        for a, b in zip(int_result, enum_result, strict=True):
+            if a is None or b is None:
+                assert a is b
+            else:
+                np.testing.assert_array_equal(np.asarray(a), np.asarray(b))
+
+    def test_call_gsolve_lstsq_accepts_enum_member(self) -> None:
+        obs = _obs_df()
+        ref = _ref_df()
+
+        result = call_gsolve_lstsq(
+            obs=obs,
+            ref_sites=ref,
+            method=GSolveSolverMethod.PARTIALLY_CONSTRAINED,
+            use_loops=True,
+            percentile_clipping=100.0,
+        )
+
+        assert isinstance(result, GSolveResults)
+        assert result.params.method == GSolveSolverMethod.PARTIALLY_CONSTRAINED

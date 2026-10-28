@@ -19,8 +19,9 @@
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 from collections.abc import Callable, Hashable, Mapping, Sequence
+from enum import IntEnum
 from os import PathLike
 from typing import Any, Literal, Protocol, runtime_checkable
 
@@ -60,7 +61,28 @@ type AllowedTimestampRoundingMethods = Literal["round", "floor", "ceil"]
 type IfWorkbookExists = Literal["error", "replace", "append"]
 type IfSheetExists = Literal["error", "replace", "new"]
 
-type GSolveSolverMethod = Literal[1, 2, 3]
+
+class GSolveSolverMethod(IntEnum):
+    """The least-squares solution method used by the gsolve solver.
+
+    Members are ``IntEnum`` so existing integer call sites (``method == 2``,
+    ``method in {1, 2}``, dict-key lookups) and callers passing a plain ``int``
+    continue to work unchanged.
+
+    Members
+    -------
+    UNCONSTRAINED
+        ``1`` -- Unconstrained least squares.
+    PARTIALLY_CONSTRAINED
+        ``2`` -- Partially constrained least squares (the default).
+    CONSTRAINED
+        ``3`` -- Constrained least squares.
+    """
+
+    UNCONSTRAINED = 1
+    PARTIALLY_CONSTRAINED = 2
+    CONSTRAINED = 3
+
 
 type GSolveSolverReturn = tuple[
     NDArray, NDArray, NDArray, NDArray, NDArray, float | np.float64 | None, NDArray
@@ -75,14 +97,14 @@ type Renamer = Mapping[Any, Hashable] | Callable[[Any], Hashable]
 
 
 type DateTimeConvertibleTypes = (
-    str | int | float | datetime.timedelta | list | tuple | ArrayLike | Index | Series
+    str | int | float | dt.timedelta | list | tuple | ArrayLike | Index | Series
 )
-type DatetimeScalar = int | float | str | datetime.date | np.datetime64 | pd.Timestamp
+type DatetimeScalar = int | float | str | dt.date | np.datetime64 | pd.Timestamp
 
 type DatetimeArray = list | tuple | Series | Index | DatetimeIndex | np.ndarray
 type DatetimeScalarOrArray = DatetimeScalar | DatetimeArray
 
-type TimedeltaScalar = str | int | float | pd.Timedelta | datetime.timedelta
+type TimedeltaScalar = str | int | float | pd.Timedelta | dt.timedelta
 
 type SiteIDArray = Sequence[str] | Series | Index | NDArray[np.str_]
 type FloatArray = Sequence[float] | Series | Index | NDArray[np.floating]

@@ -17,6 +17,7 @@
 import warnings
 from datetime import datetime
 from pathlib import Path
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -32,7 +33,6 @@ from gsolve.core._typing import (
     AllowedTimestampResolution,
     AllowedTimestampRoundingMethods,
     FilePath,
-    GSolveSolverMethod,
 )
 from gsolve.core.utils import (
     DEFAULT_TIMESTAMP_COLUMNS,
@@ -454,9 +454,11 @@ def test_is_in_literal() -> None:
     assert is_in_literal("round", AllowedTimestampRoundingMethods) is True
     assert is_in_literal("not-a-member", AllowedTimestampResolution) is False
 
-    # int-based Literal alias
-    assert is_in_literal(1, GSolveSolverMethod) is True
-    assert is_in_literal(99, GSolveSolverMethod) is False
+    # int-based Literal alias (local fixture: GSolveSolverMethod is now an
+    # IntEnum, not a Literal alias, so it is no longer valid here).
+    type IntChoice = Literal[1, 2, 3]
+    assert is_in_literal(1, IntChoice) is True
+    assert is_in_literal(99, IntChoice) is False
 
     # not a TypeAliasType
     with pytest.raises(TypeError, match=r"is not a TypeAliasType"):

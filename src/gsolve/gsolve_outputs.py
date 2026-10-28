@@ -44,7 +44,7 @@ class GSolveSolutionParameters(GSolveParameters):
 
     Attributes
     ----------
-    method : {1, 2, 3}
+    method : GSolveSolverMethod | {1, 2, 3}
         The gsolve algorithm method used.
     use_loops: bool
         If loops were used in the solution.
@@ -98,7 +98,7 @@ class GSolveResults:
 
     Parameters
     ----------
-    method : {1, 2, 3}
+    method : GSolveSolverMethod | {1, 2, 3}
         The gsolve algorithm used.
     use_loops: bool
         If loops were used in the solution.
@@ -145,7 +145,7 @@ class GSolveResults:
 
     def __init__(
         self,
-        method: GSolveSolverMethod,
+        method: GSolveSolverMethod | int,
         use_loops: bool,
         calculate_calibration_factor: bool,
         percentile_clipping: float,
