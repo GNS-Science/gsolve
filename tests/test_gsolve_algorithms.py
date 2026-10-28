@@ -607,3 +607,46 @@ class TestGSolveSolverMethodEnum:
 
         assert isinstance(result, GSolveResults)
         assert result.params.method == GSolveSolverMethod.PARTIALLY_CONSTRAINED
+
+
+class TestGSolveSolverMethodFromValue:
+    """`GSolveSolverMethod.from_value` parsing of read-back values."""
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            (GSolveSolverMethod.CONSTRAINED, GSolveSolverMethod.CONSTRAINED),
+            (2, GSolveSolverMethod.PARTIALLY_CONSTRAINED),
+            (2.0, GSolveSolverMethod.PARTIALLY_CONSTRAINED),
+            (np.int64(1), GSolveSolverMethod.UNCONSTRAINED),
+            (np.float64(3.0), GSolveSolverMethod.CONSTRAINED),
+            ("2", GSolveSolverMethod.PARTIALLY_CONSTRAINED),
+            ("  2  ", GSolveSolverMethod.PARTIALLY_CONSTRAINED),
+            ("2.0", GSolveSolverMethod.PARTIALLY_CONSTRAINED),
+            ("PARTIALLY_CONSTRAINED", GSolveSolverMethod.PARTIALLY_CONSTRAINED),
+            ("constrained", GSolveSolverMethod.CONSTRAINED),
+        ],
+    )
+    def test_from_value_parses_known_forms(
+        self, value: object, expected: GSolveSolverMethod
+    ) -> None:
+        result = GSolveSolverMethod.from_value(value)  # type: ignore[arg-type]
+        assert result is expected
+
+    def test_from_value_round_trips_to_int(self) -> None:
+        for member in GSolveSolverMethod:
+            assert GSolveSolverMethod.from_value(GSolveSolverMethod.to_int(member)) is (
+                member
+            )
+
+    @pytest.mark.parametrize("value", [99, "99", 2.5, "nope", ""])
+    def test_from_value_rejects_invalid(self, value: object) -> None:
+        with pytest.raises(
+            ValueError, match=r"invalid method|not an integer|not a valid"
+        ):
+            GSolveSolverMethod.from_value(value)  # type: ignore[arg-type]
+
+    @pytest.mark.parametrize("value", [True, None, [1]])
+    def test_from_value_rejects_wrong_type(self, value: object) -> None:
+        with pytest.raises(TypeError):
+            GSolveSolverMethod.from_value(value)  # type: ignore[arg-type]

@@ -20,7 +20,7 @@ import importlib.metadata
 import pathlib
 import warnings
 from collections.abc import Sequence
-from typing import Any, Literal
+from typing import Any, Literal, Self
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -99,6 +99,30 @@ class GSolveSolutionParameters(GSolveParameters):
         data = super().to_dict()
         data["method"] = GSolveSolverMethod.to_int(self.method)
         return data
+
+    @classmethod
+    def from_series(
+        cls,
+        ds: pd.Series,
+        skip_missing: bool = False,
+        skip_unknown_parameters: bool = False,
+    ) -> Self:
+        """Build from a Series, parsing ``method`` back into the enum.
+
+        Normalises the ``method`` cell via
+        :meth:`GSolveSolverMethod.from_value` so a value re-read from Excel or
+        CSV -- an ``int``, an integral ``float``, a numeric string such as
+        ``"2"``, or a member name -- is restored to the correct member before
+        the base parser runs.
+        """
+        if "method" in ds.index:
+            ds = ds.copy()
+            ds["method"] = GSolveSolverMethod.from_value(ds["method"])
+        return super().from_series(
+            ds,
+            skip_missing=skip_missing,
+            skip_unknown_parameters=skip_unknown_parameters,
+        )
 
 
 class GSolveResults:

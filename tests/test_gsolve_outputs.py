@@ -574,3 +574,50 @@ class TestSolverMethodSerialization:
         value = method_cells[0][1]
         assert value == 2
         assert isinstance(value, int)
+
+
+class TestSolverMethodDeserialization:
+    """`GSolveSolutionParameters.from_series` normalises the method cell."""
+
+    @staticmethod
+    def _series(method_value: object) -> pd.Series:
+        return pd.Series(
+            {
+                "method": method_value,
+                "use_loops": True,
+                "percentile_clipping": 100.0,
+                "calculate_calibration_factor": False,
+                "calculated_calibration_factor": float("nan"),
+                "gsolve_run_datetime": pd.Timestamp.now("UTC"),
+                "gsolve_version": "x",
+            }
+        )
+
+    @pytest.mark.parametrize(
+        ("method_value", "expected"),
+        [
+            (2, GSolveSolverMethod.PARTIALLY_CONSTRAINED),
+            ("2", GSolveSolverMethod.PARTIALLY_CONSTRAINED),
+            ("PARTIALLY_CONSTRAINED", GSolveSolverMethod.PARTIALLY_CONSTRAINED),
+            ("constrained", GSolveSolverMethod.CONSTRAINED),
+        ],
+    )
+    def test_from_series_restores_member(
+        self, method_value: object, expected: GSolveSolverMethod
+    ) -> None:
+        params = GSolveSolutionParameters.from_series(self._series(method_value))
+        assert params.method is expected
+
+    def test_excel_write_read_round_trip(self, tmp_path) -> None:
+        original = GSolveSolutionParameters(
+            method=GSolveSolverMethod.CONSTRAINED,
+            use_loops=True,
+            percentile_clipping=100.0,
+            calculate_calibration_factor=False,
+        )
+        target = tmp_path / "params.xlsx"
+        original.to_excel(target, sheet_name="params")
+
+        read = pd.read_excel(target, sheet_name="params", index_col=0)["value"]
+        restored = GSolveSolutionParameters.from_series(read)
+        assert restored.method is GSolveSolverMethod.CONSTRAINED

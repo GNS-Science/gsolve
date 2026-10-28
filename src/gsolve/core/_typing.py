@@ -20,10 +20,11 @@
 from __future__ import annotations
 
 import datetime as dt
+import numbers
 from collections.abc import Callable, Hashable, Mapping, Sequence
 from enum import IntEnum
 from os import PathLike
-from typing import Any, Literal, Protocol, runtime_checkable
+from typing import Any, Literal, Protocol, Self, runtime_checkable
 
 import numpy as np
 import pandas as pd
@@ -107,6 +108,67 @@ class GSolveSolverMethod(IntEnum):
             If ``method`` is not a valid :class:`GSolveSolverMethod` value.
         """
         return int(cls(method))
+
+    @classmethod
+    def from_value(cls, value: GSolveSolverMethod | float | str) -> Self:
+        """Parse a value read from Excel/CSV/text back into a member.
+
+        Round-trips the serialized forms this enum produces or that readers
+        hand back, and returns the matching :class:`GSolveSolverMethod`.
+        Accepted inputs:
+
+        - a member (returned unchanged);
+        - an integer, or an integral float (e.g. ``2`` or ``2.0``);
+        - a numeric string (e.g. ``"2"`` -- CSV reads a mixed column as text);
+        - a member name, case-insensitive (e.g. ``"PARTIALLY_CONSTRAINED"``).
+
+        Parameters
+        ----------
+        value : GSolveSolverMethod | int | float | str
+            The value to interpret.
+
+        Returns
+        -------
+        GSolveSolverMethod
+            The matching member.
+
+        Raises
+        ------
+        ValueError
+            If ``value`` cannot be interpreted as a known method.
+        TypeError
+            If ``value`` is not an int, float, str or member.
+        """
+        if isinstance(value, cls):
+            return value
+
+        if isinstance(value, bool):
+            # bool is an int subclass but is never a valid method.
+            msg = f"invalid method {value!r}: bool is not a valid GSolveSolverMethod"
+            raise TypeError(msg)
+
+        if isinstance(value, str):
+            text = value.strip()
+            try:  # numeric string, e.g. "2" or "2.0"
+                return cls(int(float(text)))
+            except ValueError:
+                pass
+            try:  # member name, case-insensitive
+                return cls[text.upper()]
+            except KeyError:
+                valid = ", ".join(m.name for m in cls)
+                msg = f"invalid method {value!r}, must be an int or one of: {valid}"
+                raise ValueError(msg) from None
+
+        if isinstance(value, numbers.Real):
+            as_int = int(value)
+            if as_int != value:  # reject non-integral values like 2.5
+                msg = f"invalid method {value!r}: not an integer value"
+                raise ValueError(msg)
+            return cls(as_int)
+
+        msg = f"cannot interpret {value!r} ({type(value).__name__}) as a method"
+        raise TypeError(msg)
 
 
 type GSolveSolverReturn = tuple[
