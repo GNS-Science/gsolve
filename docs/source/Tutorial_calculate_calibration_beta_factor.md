@@ -17,6 +17,7 @@ from gsolve import (
     ReferenceGravity,
     DialToMgalConverter,
     GSolveReport,
+    GSolveSolverMethod,
 )
 
 from gsolve.tide.earth_tide import LongmanTidalCorrection
@@ -118,11 +119,15 @@ surv = GravitySurvey(obs, sites)
 
 ## Run the network adjustment
 
-As this is a calibration survey we call the method `solve_calibration_factor`.  Here we use solve method "2", as we have high confidence in our absolute stations.  We process each loop individually and use all data (confidence_interval=100).
+As this is a calibration survey we call the method `solve_calibration_factor`.  Here we use the
+partially constrained solver method (`GSolveSolverMethod.PARTIALLY_CONSTRAINED`, equivalent to the
+int `2`), as we have high confidence in our absolute stations.  We process each loop individually and use all data (confidence_interval=100).
 
 ```python
 results = surv.solve_calibration_factor(
-    method=2, use_loops=True, confidence_interval=100
+    method=GSolveSolverMethod.PARTIALLY_CONSTRAINED,
+    use_loops=True,
+    confidence_interval=100,
 )
 ```
 
