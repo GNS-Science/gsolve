@@ -45,7 +45,7 @@ class GSolveSolutionParameters(GSolveParameters):
     Attributes
     ----------
     method : GSolveSolverMethod | {1, 2, 3}
-        The gsolve algorithm method used.
+        The gsolve solver method used (a ``GSolveSolverMethod`` member).
     use_loops: bool
         If loops were used in the solution.
     percentile_clipping: float
@@ -99,7 +99,7 @@ class GSolveResults:
     Parameters
     ----------
     method : GSolveSolverMethod | {1, 2, 3}
-        The gsolve algorithm used.
+        The gsolve solver method used (a ``GSolveSolverMethod`` member).
     use_loops: bool
         If loops were used in the solution.
     calculate_calibration_factor : bool

@@ -1792,8 +1792,13 @@ class GravitySurvey:
 
         Parameters
         ----------
-        method : GSolveSolverMethod
-            The solver method to use for the least squares adjustment.
+        method : GSolveSolverMethod | int
+            The solver method to use for the least squares adjustment. Accepts a
+            ``GSolveSolverMethod`` member or the equivalent ``int``:
+
+                - ``GSolveSolverMethod.UNCONSTRAINED`` (``1``)
+                - ``GSolveSolverMethod.PARTIALLY_CONSTRAINED`` (``2``)
+                - ``GSolveSolverMethod.CONSTRAINED`` (``3``)
         percentile_clipping : float, default=100
             The percentile of residuals to use for clipping.  Values outside this
             percentile will be excluded from the adjustment.  Must be between 0 and 100.

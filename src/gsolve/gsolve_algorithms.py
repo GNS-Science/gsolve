@@ -58,11 +58,12 @@ def call_gsolve_lstsq(
     ref_sites : DataFrame
         The reference sites that gravity will be 'tied' to after drift
     method : GSolveSolverMethod | {1, 2, 3}
-        The gsolve solution method to use. Available methods are:
+        The gsolve solution method to use. Accepts a ``GSolveSolverMethod``
+        member or the equivalent ``int``. Available methods are:
 
-            - ``1`` : Unconstrained least squares
-            - ``2`` : Partially constrained least squares
-            - ``3`` : Constrained least squares
+            - ``GSolveSolverMethod.UNCONSTRAINED`` (``1``) : Unconstrained least squares
+            - ``GSolveSolverMethod.PARTIALLY_CONSTRAINED`` (``2``) : Partially constrained least squares
+            - ``GSolveSolverMethod.CONSTRAINED`` (``3``) : Constrained least squares
 
     percentile_clipping: float, default=100.0
         Exclude observations with residuals outside percentile range from
@@ -145,11 +146,12 @@ def call_gsolve_calibration(
     ref_sites : DataFrame
         The reference sites that gravity will be 'tied' to after drift
     method : GSolveSolverMethod | {1, 2, 3}
-        The gsolve solution method to use. Available methods are:
+        The gsolve solution method to use. Accepts a ``GSolveSolverMethod``
+        member or the equivalent ``int``. Available methods are:
 
-            - ``1`` : Unconstrained least squares
-            - ``2`` : Partially constrained least squares
-            - ``3`` : Constrained least squares
+            - ``GSolveSolverMethod.UNCONSTRAINED`` (``1``) : Unconstrained least squares
+            - ``GSolveSolverMethod.PARTIALLY_CONSTRAINED`` (``2``) : Partially constrained least squares
+            - ``GSolveSolverMethod.CONSTRAINED`` (``3``) : Constrained least squares
 
     percentile_clipping: float, default=100.0
         Exclude observations with residuals outside percentile range from
@@ -247,11 +249,12 @@ def g_solver_lstsq(  # ruff: ignore[too-many-positional-arguments]
         If ``True``, drift curves are fit to each loop.
         If ``False``, a single drift curve is fit to all observations.
     method : GSolveSolverMethod | {1, 2, 3}
-        The gsolve solution method to use. Available methods are:
+        The gsolve solution method to use. Accepts a ``GSolveSolverMethod``
+        member or the equivalent ``int``. Available methods are:
 
-            - ``1`` : Unconstrained least squares
-            - ``2`` : Partially constrained least squares
-            - ``3`` : Constrained least squares
+            - ``GSolveSolverMethod.UNCONSTRAINED`` (``1``) : Unconstrained least squares
+            - ``GSolveSolverMethod.PARTIALLY_CONSTRAINED`` (``2``) : Partially constrained least squares
+            - ``GSolveSolverMethod.CONSTRAINED`` (``3``) : Constrained least squares
     calculate_calibration_factor : bool
         Calculate gravity meter calibration factor.
     obs_g_not_detided : ndarray
