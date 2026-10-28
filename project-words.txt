@@ -58,6 +58,7 @@ filt
 fontsize
 fout
 Frese
+frontmatter
 FURB
 gcal
 gcorr
@@ -87,6 +88,7 @@ isscalar
 issubdtype
 jcentury
 Kirkby
+Kiro
 Kudryavtsev
 kwargs
 Lacoste
@@ -95,6 +97,7 @@ lamda
 latgps
 latuser
 linalg
+LLMS
 lmbda
 lodtidecor
 Longman
@@ -126,6 +129,7 @@ perc
 pgtide
 pinv
 poletidecor
+prek
 pydata
 pydatetime
 pygrep
