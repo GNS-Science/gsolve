@@ -71,7 +71,7 @@ From its original release in 1984 `gSolve` has been used in numerous scientific 
 `gSolve` development was supported by the New Zealand Ministry of Business, Innovation and Employment (MBIE) through the Strategic Realignment and Retraining programme (Strategic Science Investment Fund, contract C05X1702)
 
 # AI usage disclosure.
-Generative AI was used to write some unit tests and facilitate debugging.  All original code was written manually.
+Generative AI was used to write some unit tests and facilitate debugging and all output has been manually verified.  All original code was written manually.
 
 # References
 
