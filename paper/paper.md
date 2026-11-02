@@ -59,7 +59,7 @@ From its original release in 1984 `gSolve` has been used in numerous scientific 
 
   * **Network adjustment**: `gSolve` uses the algorithm of [@REILLY1970] for network adjustment with options for unconstrained, decoupled, or constrained least squares solutions using either a loop-based or "all-data" approach.  Reference or absolute gravity values used in the network adjustment are provided separately to the measured relative gravity measurements.
 
-  * **Earth tide and ocean loading**: Earth tide corrections are applied using either Longman or ETERNA tide correction models [@Pygtide].  Ocean loading corrections can be computed using the `pyhardisp` wrapped functions or read from pre-computed results from other software e.g. Quick Tide Pro.
+  * **Earth tide and ocean loading**: Earth tide corrections are applied using either Longman or ETERNA tide correction models [@pygtide].  Ocean loading corrections can be computed using the `pyhardisp` wrapped functions or read from pre-computed results from other software e.g. Quick Tide Pro.
 
   * **Gravity corrections and anomalies**: `gSolve` calculates free-air, simple Bouguer and complete Bouguer anomalies. Free air, atmospheric, Bouguer slab, and spherical Bouguer slab corrections are computed using formula from [@HINZE2005].  Terrain corrections leverage Harmonica [@Harmonica] for rapid calculation of the topographic/bathymetric effect using a prism based approach.
 
