@@ -27,7 +27,7 @@ import numpy as np
 import pandas as pd
 from pydantic import field_validator, model_validator
 
-from gsolve.core._typing import FilePath, GSolveSolverMethod, GSolveSolverReturn
+from gsolve.core._typing import FilePath, GSolveSolverReturn, SolverMethod
 from gsolve.core.data import GSolveParameters
 from gsolve.core.utils import is_list_like, to_naive_utc_datetime
 
@@ -44,8 +44,8 @@ class GSolveSolutionParameters(GSolveParameters):
 
     Attributes
     ----------
-    method : GSolveSolverMethod | {1, 2, 3}
-        The gsolve solver method used (a ``GSolveSolverMethod`` member).
+    method : SolverMethod | {1, 2, 3}
+        The gsolve solver method used (a ``SolverMethod`` member).
     use_loops: bool
         If loops were used in the solution.
     percentile_clipping: float
@@ -62,7 +62,7 @@ class GSolveSolutionParameters(GSolveParameters):
 
     """
 
-    method: GSolveSolverMethod
+    method: SolverMethod
     use_loops: bool
     percentile_clipping: float
     calculate_calibration_factor: bool
@@ -91,27 +91,25 @@ class GSolveSolutionParameters(GSolveParameters):
 
     @field_validator("method", mode="before")
     @classmethod
-    def _coerce_method(
-        cls, value: GSolveSolverMethod | float | str
-    ) -> GSolveSolverMethod:
+    def _coerce_method(cls, value: SolverMethod | float | str) -> SolverMethod:
         """Normalise ``method`` on every ingestion path via ``from_value``.
 
         This applies to direct construction and to ``from_series`` /
         ``from_excel`` alike, so an ``int``, an integral ``float`` (including
         numpy scalars), a numeric string such as ``"2"``, or a member name are
-        all accepted and stored as a :class:`GSolveSolverMethod` member.
+        all accepted and stored as a :class:`SolverMethod` member.
         """
-        return GSolveSolverMethod.from_value(value)
+        return SolverMethod.from_value(value)
 
     def to_dict(self) -> dict:
         """Return parameters as a dict, with ``method`` as a plain ``int``.
 
-        The ``method`` field is a :class:`GSolveSolverMethod` member. It is
+        The ``method`` field is a :class:`SolverMethod` member. It is
         coerced to its integer value here so serialized forms (Series, Excel)
         store a bare integer rather than the enum object.
         """
         data = super().to_dict()
-        data["method"] = GSolveSolverMethod.to_int(self.method)
+        data["method"] = SolverMethod.to_int(self.method)
         return data
 
 
@@ -123,8 +121,8 @@ class GSolveResults:
 
     Parameters
     ----------
-    method : GSolveSolverMethod | {1, 2, 3}
-        The gsolve solver method used (a ``GSolveSolverMethod`` member).
+    method : SolverMethod | {1, 2, 3}
+        The gsolve solver method used (a ``SolverMethod`` member).
     use_loops: bool
         If loops were used in the solution.
     calculate_calibration_factor : bool
@@ -170,7 +168,7 @@ class GSolveResults:
 
     def __init__(
         self,
-        method: GSolveSolverMethod | int,
+        method: SolverMethod | int,
         use_loops: bool,
         calculate_calibration_factor: bool,
         percentile_clipping: float,

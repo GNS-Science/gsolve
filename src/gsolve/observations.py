@@ -55,7 +55,7 @@ from gsolve.core.utils import (
     to_naive_utc_datetime,
 )
 from gsolve.gsolve_algorithms import (
-    GSolveSolverMethod,
+    SolverMethod,
     call_gsolve_calibration,
     call_gsolve_lstsq,
 )
@@ -1784,7 +1784,7 @@ class GravitySurvey:
 
     def solve_lstsq(
         self,
-        method: GSolveSolverMethod | int,
+        method: SolverMethod | int,
         percentile_clipping: float = 100,
         use_loops: bool = True,
     ) -> GSolveResults:
@@ -1792,13 +1792,13 @@ class GravitySurvey:
 
         Parameters
         ----------
-        method : GSolveSolverMethod | int
+        method : SolverMethod | int
             The solver method to use for the least squares adjustment. Accepts a
-            ``GSolveSolverMethod`` member or the equivalent ``int``:
+            ``SolverMethod`` member or the equivalent ``int``:
 
-                - ``GSolveSolverMethod.UNCONSTRAINED`` (``1``)
-                - ``GSolveSolverMethod.PARTIALLY_CONSTRAINED`` (``2``)
-                - ``GSolveSolverMethod.CONSTRAINED`` (``3``)
+                - ``SolverMethod.NORMAL_LSTSQ`` (``1``)
+                - ``SolverMethod.PARTIALLY_CONSTRAINED`` (``2``)
+                - ``SolverMethod.CONSTRAINED`` (``3``)
         percentile_clipping : float, default=100
             The percentile of residuals to use for clipping.  Values outside this
             percentile will be excluded from the adjustment.  Must be between 0 and 100.
@@ -1834,7 +1834,7 @@ class GravitySurvey:
 
     def solve_calibration_factor(
         self,
-        method: GSolveSolverMethod | int = GSolveSolverMethod.PARTIALLY_CONSTRAINED,
+        method: SolverMethod | int = SolverMethod.PARTIALLY_CONSTRAINED,
         percentile_clipping: float = 100,
         use_loops: bool = True,
     ) -> GSolveResults:
@@ -1842,7 +1842,7 @@ class GravitySurvey:
 
         Parameters
         ----------
-        method : GSolveSolverMethod | {1, 2, 3}
+        method : SolverMethod | {1, 2, 3}
             The solver method to use for the least squares adjustment.
             Method 2 - 'Partially constrained least squares' is the appropriate strategy
             for determining calibrations.

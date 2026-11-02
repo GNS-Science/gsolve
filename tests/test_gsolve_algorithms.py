@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from gsolve.core._typing import GSolveSolverMethod
+from gsolve.core._typing import SolverMethod
 from gsolve.gsolve_algorithms import (
     GSolveSolverWarning,
     _check_post_clip_data_are_ok,
@@ -538,36 +538,36 @@ class TestCheckPostClipDataAreOk:
         assert result is True
 
 
-class TestGSolveSolverMethodEnum:
+class TestSolverMethodEnum:
     """The solver method enum and its interchangeability with plain ints."""
 
     def test_members_have_expected_values(self) -> None:
-        assert GSolveSolverMethod.UNCONSTRAINED == 1
-        assert GSolveSolverMethod.PARTIALLY_CONSTRAINED == 2
-        assert GSolveSolverMethod.CONSTRAINED == 3
+        assert SolverMethod.NORMAL_LSTSQ == 1
+        assert SolverMethod.PARTIALLY_CONSTRAINED == 2
+        assert SolverMethod.CONSTRAINED == 3
 
     def test_int_coerces_to_member(self) -> None:
-        assert GSolveSolverMethod(2) is GSolveSolverMethod.PARTIALLY_CONSTRAINED
+        assert SolverMethod(2) is SolverMethod.PARTIALLY_CONSTRAINED
 
     def test_member_behaves_as_int_in_comparisons(self) -> None:
         # Guards the solver's `method == 2` / `method in {1, 2}` branches.
-        assert GSolveSolverMethod.CONSTRAINED not in {1, 2}
-        assert GSolveSolverMethod.PARTIALLY_CONSTRAINED in {1, 2}
+        assert SolverMethod.CONSTRAINED not in {1, 2}
+        assert SolverMethod.PARTIALLY_CONSTRAINED in {1, 2}
 
     def test_invalid_int_raises_value_error(self) -> None:
-        with pytest.raises(ValueError, match="not a valid GSolveSolverMethod"):
-            GSolveSolverMethod(99)
+        with pytest.raises(ValueError, match="not a valid SolverMethod"):
+            SolverMethod(99)
 
     @pytest.mark.parametrize(
         ("as_int", "as_member"),
         [
-            (1, GSolveSolverMethod.UNCONSTRAINED),
-            (2, GSolveSolverMethod.PARTIALLY_CONSTRAINED),
-            (3, GSolveSolverMethod.CONSTRAINED),
+            (1, SolverMethod.NORMAL_LSTSQ),
+            (2, SolverMethod.PARTIALLY_CONSTRAINED),
+            (3, SolverMethod.CONSTRAINED),
         ],
     )
     def test_enum_and_int_produce_identical_solution(
-        self, as_int: int, as_member: GSolveSolverMethod
+        self, as_int: int, as_member: SolverMethod
     ) -> None:
         kwargs = _solver_inputs(use_two_loops=True)
 
@@ -600,53 +600,51 @@ class TestGSolveSolverMethodEnum:
         result = call_gsolve_lstsq(
             obs=obs,
             ref_sites=ref,
-            method=GSolveSolverMethod.PARTIALLY_CONSTRAINED,
+            method=SolverMethod.PARTIALLY_CONSTRAINED,
             use_loops=True,
             percentile_clipping=100.0,
         )
 
         assert isinstance(result, GSolveResults)
-        assert result.params.method == GSolveSolverMethod.PARTIALLY_CONSTRAINED
+        assert result.params.method == SolverMethod.PARTIALLY_CONSTRAINED
 
 
-class TestGSolveSolverMethodFromValue:
-    """`GSolveSolverMethod.from_value` parsing of read-back values."""
+class TestSolverMethodFromValue:
+    """`SolverMethod.from_value` parsing of read-back values."""
 
     @pytest.mark.parametrize(
         ("value", "expected"),
         [
-            (GSolveSolverMethod.CONSTRAINED, GSolveSolverMethod.CONSTRAINED),
-            (2, GSolveSolverMethod.PARTIALLY_CONSTRAINED),
-            (2.0, GSolveSolverMethod.PARTIALLY_CONSTRAINED),
-            (np.int64(1), GSolveSolverMethod.UNCONSTRAINED),
-            (np.float64(3.0), GSolveSolverMethod.CONSTRAINED),
-            ("2", GSolveSolverMethod.PARTIALLY_CONSTRAINED),
-            ("  2  ", GSolveSolverMethod.PARTIALLY_CONSTRAINED),
-            ("2.0", GSolveSolverMethod.PARTIALLY_CONSTRAINED),
-            ("PARTIALLY_CONSTRAINED", GSolveSolverMethod.PARTIALLY_CONSTRAINED),
-            ("constrained", GSolveSolverMethod.CONSTRAINED),
+            (SolverMethod.CONSTRAINED, SolverMethod.CONSTRAINED),
+            (2, SolverMethod.PARTIALLY_CONSTRAINED),
+            (2.0, SolverMethod.PARTIALLY_CONSTRAINED),
+            (np.int64(1), SolverMethod.NORMAL_LSTSQ),
+            (np.float64(3.0), SolverMethod.CONSTRAINED),
+            ("2", SolverMethod.PARTIALLY_CONSTRAINED),
+            ("  2  ", SolverMethod.PARTIALLY_CONSTRAINED),
+            ("2.0", SolverMethod.PARTIALLY_CONSTRAINED),
+            ("PARTIALLY_CONSTRAINED", SolverMethod.PARTIALLY_CONSTRAINED),
+            ("constrained", SolverMethod.CONSTRAINED),
         ],
     )
     def test_from_value_parses_known_forms(
-        self, value: object, expected: GSolveSolverMethod
+        self, value: object, expected: SolverMethod
     ) -> None:
-        result = GSolveSolverMethod.from_value(value)  # type: ignore[arg-type]
+        result = SolverMethod.from_value(value)  # type: ignore[arg-type]
         assert result is expected
 
     def test_from_value_round_trips_to_int(self) -> None:
-        for member in GSolveSolverMethod:
-            assert GSolveSolverMethod.from_value(GSolveSolverMethod.to_int(member)) is (
-                member
-            )
+        for member in SolverMethod:
+            assert SolverMethod.from_value(SolverMethod.to_int(member)) is (member)
 
     @pytest.mark.parametrize("value", [99, "99", 2.5, "nope", ""])
     def test_from_value_rejects_invalid(self, value: object) -> None:
         with pytest.raises(
             ValueError, match=r"invalid method|not an integer|not a valid"
         ):
-            GSolveSolverMethod.from_value(value)  # type: ignore[arg-type]
+            SolverMethod.from_value(value)  # type: ignore[arg-type]
 
     @pytest.mark.parametrize("value", [True, None, [1]])
     def test_from_value_rejects_wrong_type(self, value: object) -> None:
         with pytest.raises(TypeError):
-            GSolveSolverMethod.from_value(value)  # type: ignore[arg-type]
+            SolverMethod.from_value(value)  # type: ignore[arg-type]

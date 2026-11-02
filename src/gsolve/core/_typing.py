@@ -43,13 +43,13 @@ __all__ = [
     "DatetimeScalar",
     "DatetimeScalarOrArray",
     "FilePath",
-    "GSolveSolverMethod",
     "GSolveSolverReturn",
     "IfSheetExists",
     "IfWorkbookExists",
     "Points2D",
     "Points3D",
     "Renamer",
+    "SolverMethod",
     "TCorrDistanceMaskType",
 ]
 
@@ -63,29 +63,28 @@ type IfWorkbookExists = Literal["error", "replace", "append"]
 type IfSheetExists = Literal["error", "replace", "new"]
 
 
-class GSolveSolverMethod(IntEnum):
-    """The least-squares solution method used by the gsolve solver.
+class SolverMethod(IntEnum):
+    """The least-squares method used to perform network adjustment.
 
-    Members are ``IntEnum`` so existing integer call sites (``method == 2``,
-    ``method in {1, 2}``, dict-key lookups) and callers passing a plain ``int``
-    continue to work unchanged.
+    The methods differ in how gravity observations at reference/known gravity sites are
+    treated in the least squares solution.  See documentation for a full discussion.
 
     Members
     -------
-    UNCONSTRAINED
-        ``1`` -- Unconstrained least squares.
+    NORMAL_LSTSQ
+        ``1`` -- Reference site observations are treated identically to all other observations
     PARTIALLY_CONSTRAINED
-        ``2`` -- Partially constrained least squares (the default).
+        ``2`` -- Reference site observations values are partially fixed.
     CONSTRAINED
-        ``3`` -- Constrained least squares.
+        ``3`` -- Reference site observations are fixed to their known reference value.
     """
 
-    UNCONSTRAINED = 1
+    NORMAL_LSTSQ = 1
     PARTIALLY_CONSTRAINED = 2
     CONSTRAINED = 3
 
     @classmethod
-    def to_int(cls, method: GSolveSolverMethod | int) -> int:
+    def to_int(cls, method: SolverMethod | int) -> int:
         """Return a plain ``int`` for a member or an equivalent integer.
 
         Use this at serialization boundaries (e.g. writing to Excel) so the
@@ -94,7 +93,7 @@ class GSolveSolverMethod(IntEnum):
 
         Parameters
         ----------
-        method : GSolveSolverMethod | int
+        method : SolverMethod | int
             A member or its equivalent integer value.
 
         Returns
@@ -105,16 +104,16 @@ class GSolveSolverMethod(IntEnum):
         Raises
         ------
         ValueError
-            If ``method`` is not a valid :class:`GSolveSolverMethod` value.
+            If ``method`` is not a valid :class:`SolverMethod` value.
         """
         return int(cls(method))
 
     @classmethod
-    def from_value(cls, value: GSolveSolverMethod | float | str) -> Self:
+    def from_value(cls, value: SolverMethod | float | str) -> Self:
         """Parse a value read from Excel/CSV/text back into a member.
 
         Round-trips the serialized forms this enum produces or that readers
-        hand back, and returns the matching :class:`GSolveSolverMethod`.
+        hand back, and returns the matching :class:`SolverMethod`.
         Accepted inputs:
 
         - a member (returned unchanged);
@@ -124,12 +123,12 @@ class GSolveSolverMethod(IntEnum):
 
         Parameters
         ----------
-        value : GSolveSolverMethod | int | float | str
+        value : SolverMethod | int | float | str
             The value to interpret.
 
         Returns
         -------
-        GSolveSolverMethod
+        SolverMethod
             The matching member.
 
         Raises
@@ -144,7 +143,7 @@ class GSolveSolverMethod(IntEnum):
 
         if isinstance(value, bool):
             # bool is an int subclass but is never a valid method.
-            msg = f"invalid method {value!r}: bool is not a valid GSolveSolverMethod"
+            msg = f"invalid method {value!r}: bool is not a valid SolverMethod"
             raise TypeError(msg)
 
         if isinstance(value, str):

@@ -454,7 +454,7 @@ def test_is_in_literal() -> None:
     assert is_in_literal("round", AllowedTimestampRoundingMethods) is True
     assert is_in_literal("not-a-member", AllowedTimestampResolution) is False
 
-    # int-based Literal alias (local fixture: GSolveSolverMethod is now an
+    # int-based Literal alias (local fixture: SolverMethod is now an
     # IntEnum, not a Literal alias, so it is no longer valid here).
     type IntChoice = Literal[1, 2, 3]
     assert is_in_literal(1, IntChoice) is True
@@ -593,7 +593,7 @@ def test_convert_single_timestamp_arg() -> None:
     with pytest.raises(ValueError):
         convert_single_timestamp_arg(pd.NaT, allow_nat=False)
 
-    # unparseable input, with error prefix prepended to the message
+    # unparsable input, with error prefix prepended to the message
     with pytest.raises(ValueError, match=r"^PFX: "):
         convert_single_timestamp_arg("not a date", err_prefix="PFX")
 

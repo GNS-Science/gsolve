@@ -26,6 +26,7 @@ boldsymbol
 Bouguer
 Bullard
 burocrata
+capsys
 contextily
 copybutton
 corrgrav

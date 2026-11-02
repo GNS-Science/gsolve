@@ -21,9 +21,9 @@ from gsolve import (
     GravityObservations,
     GravitySites,
     GravitySurvey,
-    GSolveSolverMethod,
     LaCosteRombergDialConverter,
     ReferenceGravity,
+    SolverMethod,
 )
 from gsolve.tide.earth_tide import LongmanTidalCorrection
 
@@ -90,7 +90,7 @@ We process each loop individually and apply a 99 percentile cutoff filter to the
 """
 
 results = survey.solve_calibration_factor(
-    method=GSolveSolverMethod.PARTIALLY_CONSTRAINED,
+    method=SolverMethod.PARTIALLY_CONSTRAINED,
     use_loops=True,
     percentile_clipping=99,
 )
