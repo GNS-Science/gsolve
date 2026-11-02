@@ -1,5 +1,5 @@
 ---
-title: 'gSolve - a python package for processing gravity data from relative terrestrial gravity meters'
+title: 'gSolve - a python package for processing gravity data from terrestrial relative gravity meters'
 tags:
   - Python
   - gravity
@@ -40,7 +40,7 @@ Several tools exist for gravity data processing through to the network adjusted 
 
 `Gtools` [@BATTAGLIA2022] is an open-source matlab package from the USGS designed for time-varying measurements that computes the drift-corrected network adjustment and includes ocean loading.  `GSAdjust` [@KENNEDY2020a] is a python tool, also from USGS, with a graphical user interface which computes the drift-corrected network adjustment.  `CG6TOOL`[@CG6TOOL]  is developed by the International Gravimetric Bureau and is the latest version of a series of software applications that supports Scintrex gravimeter data, beginning with CG3TOOL. It is written in Java and runs on both Linux and Windows platforms.  `CG6TOOL` [@CG6TOOL] carries out daily corrections including earth tides, drift by least-squares adjustment of repeated sites, station height adjustment using a free air gradient, and network adjustment.
 
-Terrain correction computations (required for complete Bouguer anomlay) are typically only found in commercial software (e.g. Oasis Montaj or Intrepid), or are standalone programms in other free software, for example `TOPOSk` [@ZAHOREC2017a], requiring manual integration with other software to produce the final anomalies.
+Terrain correction computations (required for complete Bouguer anomaly) are typically only found in commercial software (e.g. Oasis Montaj or Intrepid), or are stand alone programmes in other free software, for example `TOPOSk` [@ZAHOREC2017a], requiring manual integration with other software to produce the final anomalies.
 
 # Software design
 `gSolve`'s design philosophy is based on the following core principles: (1) A modern object oriented, user-friendly API, that (2) meets opensource standards for documentation and testing.  We deliberately moved to an object-oriented API from the previous gui version and completely rewrote all functions.  
@@ -55,9 +55,9 @@ From its original release in 1984 `gSolve` has been used in numerous scientific 
 # Features
 `gSolve` is written in python 3 and provides API based functionality.  Pandas dataframes are utilised for input/output, storage and data manipulation, meaning that additional calculations not provided by gSolve (such as the differencing of time varying surveys) are easily possible.  
 
-  * **Data import**: `gSolve` can read instrument files from Scintrex CG6 meters as well as from manually read or "Nomad" files from La Coste and Romberg G or D meters.  Non-standard files with appropriately labelled columns can be imported using read functions.  For manually read LaCoste and Romberg meters a meter calibration file is required to convert unitless dial mearurements to gravity in mGal.
+  * **Data import**: `gSolve` can read instrument files from Scintrex CG6 meters as well as from manually read or "Nomad" files from La Coste and Romberg G or D meters.  Non-standard files with appropriately labelled columns can be imported using read functions.  For manually read LaCoste and Romberg meters a meter calibration file is required to convert unitless dial measurements to gravity in mGal.
 
-  * **Network adjustment**: `gSolve` uses the algorithm of [@REILLY1970] for network adjustment with options for unconstrained, decoupled, or constrained least squares solutions using either a loop-based or "all-data" approach.  Reference or absolute gravity values used in the network adjustement are provided separately to the measured relative gravity measurements.
+  * **Network adjustment**: `gSolve` uses the algorithm of [@REILLY1970] for network adjustment with options for unconstrained, decoupled, or constrained least squares solutions using either a loop-based or "all-data" approach.  Reference or absolute gravity values used in the network adjustment are provided separately to the measured relative gravity measurements.
 
   * **Earth tide and ocean loading**: Earth tide corrections are applied using either Longman or ETERNA tide correction models [@Pygtide].  Ocean loading corrections can be computed using the `pyhardisp` wrapped functions or read from pre-computed results from other software e.g. Quick Tide Pro.
 
