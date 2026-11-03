@@ -23,6 +23,7 @@ from gsolve import (
     GravitySurvey,
     LaCosteRombergDialConverter,
     ReferenceGravity,
+    SolverMethod,
 )
 from gsolve.tide.earth_tide import LongmanTidalCorrection
 
@@ -89,7 +90,9 @@ We process each loop individually and apply a 99 percentile cutoff filter to the
 """
 
 results = survey.solve_calibration_factor(
-    method=2, use_loops=True, percentile_clipping=99
+    method=SolverMethod.PARTIALLY_CONSTRAINED,
+    use_loops=True,
+    percentile_clipping=99,
 )
 
 # results.site_solution contains the adjusted gravity per station

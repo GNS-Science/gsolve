@@ -25,9 +25,12 @@ mpl.use("Agg")  # headless backend; no display required for tests
 
 import matplotlib.pyplot as plt
 import numpy as np
+import openpyxl
 import pandas as pd
 import pytest
+from pydantic import ValidationError
 
+from gsolve.core._typing import SolverMethod
 from gsolve.gsolve_outputs import (
     GSolveResults,
     GSolveSolutionParameters,
@@ -512,3 +515,144 @@ class TestPlotResidualDrift:
         target = tmp_path / "drift.png"
         r.plot_residual_drift(loop="L1", filename=str(target), show=False)
         assert (tmp_path / "drift_loop_L1.png").exists()
+
+
+class TestSolverMethodSerialization:
+    """`SolverMethod.to_int` and int-on-export of the ``method`` field."""
+
+    def test_to_int_accepts_member_and_int(self) -> None:
+        assert SolverMethod.to_int(SolverMethod.CONSTRAINED) == 3
+        assert SolverMethod.to_int(2) == 2
+
+    def test_to_int_returns_plain_int(self) -> None:
+        result = SolverMethod.to_int(SolverMethod.NORMAL_LSTSQ)
+        assert type(result) is int
+
+    def test_to_int_rejects_invalid_value(self) -> None:
+        with pytest.raises(ValueError, match="not a valid SolverMethod"):
+            SolverMethod.to_int(99)
+
+    def test_to_dict_exports_method_as_plain_int(self) -> None:
+        params = GSolveSolutionParameters(
+            method=SolverMethod.PARTIALLY_CONSTRAINED,
+            use_loops=True,
+            percentile_clipping=100.0,
+            calculate_calibration_factor=False,
+        )
+        exported = params.to_dict()["method"]
+        assert exported == 2
+        assert type(exported) is int
+
+    def test_to_series_round_trips_method(self) -> None:
+        params = GSolveSolutionParameters(
+            method=SolverMethod.CONSTRAINED,
+            use_loops=True,
+            percentile_clipping=100.0,
+            calculate_calibration_factor=False,
+        )
+        series = params.to_series()
+        assert type(series["method"]) is int
+        assert series["method"] == 3
+
+        restored = GSolveSolutionParameters.from_series(series)
+        assert restored.method == SolverMethod.CONSTRAINED
+
+    def test_excel_stores_method_as_integer(self, tmp_path) -> None:
+        params = GSolveSolutionParameters(
+            method=SolverMethod.PARTIALLY_CONSTRAINED,
+            use_loops=True,
+            percentile_clipping=100.0,
+            calculate_calibration_factor=False,
+        )
+        target = tmp_path / "params.xlsx"
+        params.to_excel(target, sheet_name="params")
+
+        worksheet = openpyxl.load_workbook(target)["params"]
+        method_cells = [
+            row for row in worksheet.iter_rows(values_only=True) if row[0] == "method"
+        ]
+        assert len(method_cells) == 1
+        value = method_cells[0][1]
+        assert value == 2
+        assert isinstance(value, int)
+
+
+class TestSolverMethodDeserialization:
+    """`GSolveSolutionParameters.from_series` normalises the method cell."""
+
+    @staticmethod
+    def _series(method_value: object) -> pd.Series:
+        return pd.Series(
+            {
+                "method": method_value,
+                "use_loops": True,
+                "percentile_clipping": 100.0,
+                "calculate_calibration_factor": False,
+                "calculated_calibration_factor": float("nan"),
+                "gsolve_run_datetime": pd.Timestamp.now("UTC"),
+                "gsolve_version": "x",
+            }
+        )
+
+    @pytest.mark.parametrize(
+        ("method_value", "expected"),
+        [
+            (2, SolverMethod.PARTIALLY_CONSTRAINED),
+            ("2", SolverMethod.PARTIALLY_CONSTRAINED),
+            ("PARTIALLY_CONSTRAINED", SolverMethod.PARTIALLY_CONSTRAINED),
+            ("constrained", SolverMethod.CONSTRAINED),
+        ],
+    )
+    def test_from_series_restores_member(
+        self, method_value: object, expected: SolverMethod
+    ) -> None:
+        params = GSolveSolutionParameters.from_series(self._series(method_value))
+        assert params.method is expected
+
+    def test_excel_write_read_round_trip(self, tmp_path) -> None:
+        original = GSolveSolutionParameters(
+            method=SolverMethod.CONSTRAINED,
+            use_loops=True,
+            percentile_clipping=100.0,
+            calculate_calibration_factor=False,
+        )
+        target = tmp_path / "params.xlsx"
+        original.to_excel(target, sheet_name="params")
+
+        read = pd.read_excel(target, sheet_name="params", index_col=0)["value"]
+        restored = GSolveSolutionParameters.from_series(read)
+        assert restored.method is SolverMethod.CONSTRAINED
+
+
+class TestSolverMethodConstructionCoercion:
+    """Direct construction routes ``method`` through ``from_value`` too."""
+
+    @pytest.mark.parametrize(
+        ("method_value", "expected"),
+        [
+            (2, SolverMethod.PARTIALLY_CONSTRAINED),
+            ("2", SolverMethod.PARTIALLY_CONSTRAINED),
+            ("PARTIALLY_CONSTRAINED", SolverMethod.PARTIALLY_CONSTRAINED),
+            ("constrained", SolverMethod.CONSTRAINED),
+            (SolverMethod.NORMAL_LSTSQ, SolverMethod.NORMAL_LSTSQ),
+        ],
+    )
+    def test_construction_stores_member(
+        self, method_value: object, expected: SolverMethod
+    ) -> None:
+        params = GSolveSolutionParameters(
+            method=method_value,  # type: ignore[arg-type]
+            use_loops=True,
+            percentile_clipping=100.0,
+            calculate_calibration_factor=False,
+        )
+        assert params.method is expected
+
+    def test_construction_rejects_invalid_method(self) -> None:
+        with pytest.raises(ValidationError):
+            GSolveSolutionParameters(
+                method="not-a-method",  # type: ignore[arg-type]
+                use_loops=True,
+                percentile_clipping=100.0,
+                calculate_calibration_factor=False,
+            )

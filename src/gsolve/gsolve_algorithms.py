@@ -22,18 +22,11 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from gsolve.core._typing import GSolveSolverMethod, GSolveSolverReturn
+from gsolve.core._typing import GSolveSolverReturn, SolverMethod
 from gsolve.core.utils import GSolveUserWarning
 from gsolve.gsolve_outputs import GSolveResults
 
-__all__ = ["GSolveSolverMethod", "call_gsolve_calibration", "call_gsolve_lstsq"]
-
-
-_GSOLVE_SOLVER_METHODS: dict[int, str] = {
-    1: "Unconstrained least squares",
-    2: "Partially constrained least squares",
-    3: "Constrained least squares",
-}
+__all__ = ["SolverMethod", "call_gsolve_calibration", "call_gsolve_lstsq"]
 
 
 class GSolveSolverWarning(UserWarning):
@@ -43,7 +36,7 @@ class GSolveSolverWarning(UserWarning):
 def call_gsolve_lstsq(
     obs: pd.DataFrame,
     ref_sites: pd.DataFrame,
-    method: GSolveSolverMethod,
+    method: SolverMethod | int,
     percentile_clipping: float = 100,
     use_loops: bool = True,
 ) -> GSolveResults:
@@ -57,12 +50,13 @@ def call_gsolve_lstsq(
         Other columns are ignored.
     ref_sites : DataFrame
         The reference sites that gravity will be 'tied' to after drift
-    method : {1, 2, 3}
-        The gsolve solution method to use. Available methods are:
+    method : SolverMethod | {1, 2, 3}
+        The gsolve solution method to use. Accepts a ``SolverMethod``
+        member or the equivalent ``int``. Available methods are:
 
-            - ``1`` : Unconstrained least squares
-            - ``2`` : Partially constrained least squares
-            - ``3`` : Constrained least squares
+            - ``SolverMethod.NORMAL_LSTSQ`` (``1``) : Normal least squares
+            - ``SolverMethod.PARTIALLY_CONSTRAINED`` (``2``) : Partially constrained least squares
+            - ``SolverMethod.CONSTRAINED`` (``3``) : Constrained least squares
 
     percentile_clipping: float, default=100.0
         Exclude observations with residuals outside percentile range from
@@ -70,9 +64,10 @@ def call_gsolve_lstsq(
         The default is 100.0, which means no clipping. Clipping is symmetric,
         so if 99.0 is specified, the upper and lower 0.5% of residuals are excluded.
     use_loops : bool, default True
-        Control how survey loops are treated in the solution.
-        If ``True``, drift curves are fit to each loop.
-        If ``False``, a single drift curve is fit to all observations.
+        Control how survey loops are treated in the solution":
+
+            - ``True`` : drift curves are fit to each loop.
+            - ``False`` : a single drift curve is fit to all observations.
 
     Returns
     -------
@@ -130,42 +125,53 @@ def call_gsolve_lstsq(
 def call_gsolve_calibration(
     obs: pd.DataFrame,
     ref_sites: pd.DataFrame,
-    method: GSolveSolverMethod,
+    method: SolverMethod | int = SolverMethod.PARTIALLY_CONSTRAINED,
     percentile_clipping: float = 100,
     use_loops: bool = True,
 ) -> GSolveResults:
-    """Calculate drift and adjust gravity observations.
+    """Calculate calibration factor for a gravity meter.
+
+    .. warning:: Site, loop, and observation gravity values produced during a meter calibration
+      solution should only be used to QC the returned calibration factor.
 
     Parameters
     ----------
     obs : DataFrame
         The gravity observations to be corrected. The DataFrame must include
-        columns labeled ``site_id``, ``gravity``, ``timedelta``, ``loop``, and
-        ``gravity_not_detided``. Other columns are ignored.
+        columns labeled ``'site_id'``, ``'gravity'``, ``'timedelta'``, ``'loop'``, and
+        ``'gravity_not_detided'``. Other columns are ignored.
     ref_sites : DataFrame
         The reference sites that gravity will be 'tied' to after drift
-    method : {1, 2, 3}
-        The gsolve solution method to use. Available methods are:
+    method : SolverMethod | {1, 2, 3}
+        The gsolve solution method to use. Accepts a ``SolverMethod``
+        member or the equivalent ``int``. Available methods are:
 
-            - ``1`` : Unconstrained least squares
-            - ``2`` : Partially constrained least squares
-            - ``3`` : Constrained least squares
+            - ``SolverMethod.NORMAL_LSTSQ`` (``1``) : Normal least squares
+            - ``SolverMethod.PARTIALLY_CONSTRAINED`` (``2``) : Partially constrained least squares
+            - ``SolverMethod.CONSTRAINED`` (``3``) : Constrained least squares
 
     percentile_clipping: float, default=100.0
         Exclude observations with residuals outside percentile range from
-        the final gsolve solution. Must be between a value between 0 and 100.
+        the final gsolve solution. Must be a value between 0 and 100.
         The default is 100.0, which means no clipping. Clipping is symmetric,
         so if 99.0 is specified, the upper and lower 0.5% of residuals are excluded.
     use_loops : bool, default True
-        Control how survey loops are treated in the solution.
-        If True, drift curves are fit to each loop.
-        If False, a single drift curve is fit to all observations.
+        Control how survey loops are treated in the solution:
+
+            - ``True`` : drift curves are fit to each loop.
+            - ``False`` : a single drift curve is fit to all observations.
 
     Returns
     -------
     GSolveResults
-        An object containing the computed drift curves, observation and
-        site residuals, and the model run parameters.
+        An object containing solution outputs:
+
+            - `obs_solution` (DataFrame) : solution for each observation
+            - `site_solution` (DataFrame) : aggregated solution and residuals for each site
+            - `loop_solution` (DataFrame) : drift curve for each loop
+            - `params` (SolveSolutionParameters) :  the model run parameters.
+
+        The calibration factor is included in ``params`` attribute.
     """
     # index in obs where ties are located
     m_ties = ref_sites.index.intersection(obs["site_id"].to_list())
@@ -221,7 +227,7 @@ def g_solver_lstsq(  # ruff: ignore[too-many-positional-arguments]
     ties_g: np.ndarray,
     obs_loop: np.ndarray,
     use_loops: bool,
-    method: GSolveSolverMethod,
+    method: SolverMethod | int,
     calculate_calibration_factor: bool,
     obs_g_not_detided: np.ndarray | None = None,
     percentile_clipping: float = 100.0,
@@ -246,12 +252,13 @@ def g_solver_lstsq(  # ruff: ignore[too-many-positional-arguments]
         Control how survey loops are treated in the solution.
         If ``True``, drift curves are fit to each loop.
         If ``False``, a single drift curve is fit to all observations.
-    method : {1, 2, 3}
-        The gsolve solution method to use. Available methods are:
+    method : SolverMethod | {1, 2, 3}
+        The gsolve solution method to use. Accepts a ``SolverMethod``
+        member or the equivalent ``int``. Available methods are:
 
-            - ``1`` : Unconstrained least squares
-            - ``2`` : Partially constrained least squares
-            - ``3`` : Constrained least squares
+            - ``SolverMethod.NORMAL_LSTSQ`` (``1``) : Normal least squares
+            - ``SolverMethod.PARTIALLY_CONSTRAINED`` (``2``) : Partially constrained least squares
+            - ``SolverMethod.CONSTRAINED`` (``3``) : Constrained least squares
     calculate_calibration_factor : bool
         Calculate gravity meter calibration factor.
     obs_g_not_detided : ndarray
@@ -289,10 +296,12 @@ def g_solver_lstsq(  # ruff: ignore[too-many-positional-arguments]
     gsolve.GravitySurvey.solve_calibration_factor :
 
     """
-    if method not in _GSOLVE_SOLVER_METHODS:
-        valid_methods = tuple(_GSOLVE_SOLVER_METHODS.keys())
+    try:
+        method = SolverMethod(method)
+    except ValueError:
+        valid_methods = tuple(int(m) for m in SolverMethod)
         msg = f"invalid method '{method}', must be one of {valid_methods}"
-        raise ValueError(msg)
+        raise ValueError(msg) from None
 
     percentile_clipping = float(percentile_clipping)
     if percentile_clipping < 0.0 or percentile_clipping > 100.0:
