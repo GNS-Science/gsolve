@@ -43,7 +43,7 @@ Several tools exist for gravity data processing through to the network adjusted 
 Terrain correction computations (required for complete Bouguer anomaly) are typically only found in commercial software (e.g. Oasis Montaj or Intrepid), or are stand alone programmes in other free software, for example `TOPOSk` [@ZAHOREC2017a], requiring manual integration with other software to produce the final anomalies.
 
 # Software design
-`gSolve`'s design philosophy is based on the following core principles: (1) A modern object oriented, user-friendly API, that (2) meets open source standards for documentation and testing.  We deliberately moved to an object-oriented API from the previous GUI version and completely rewrote all functions.  
+`gSolve`'s design philosophy is based on the following core principles: (1) A modern object oriented, user-friendly API, that (2) meets open source standards for documentation and testing.  We deliberately moved to an object-oriented API from the previous GUI version and completely rewrote all functions.  \autoref{fig:diagram}
 
 An important design decision is that where solutions to components of `gSolve` already exist, we chose to incorporate or wrap them rather than rewrite our own.  For example, to implement the ETERNA tidal model we wrapped `pygtide`[@pygtide], whilst for providing ocean loading values we wrapped `pyhardisp`[@pyhardisp].  Normal gravity is calculated using `Boule` [@Boule] with a choice of ellipsoids available.  Likewise for terrain corrections we use the underlying functionality of `Harmonica` [@Harmonica] which efficiently computes the gravity response of a prism.
 
@@ -51,7 +51,7 @@ The software is built around a series of classes.  A base class GSolveParameters
 
 Future work will streamline data entry classes to be similar to the Scintrex class, making data loading more modular.
 
-
+![Figure 1: Diagram illustrating gSolve class architecture and processing flow.[]{label="fig:diagram"}](gsolve_architecture.png)
 
 # Research impact statement
 From its original release in 1984 `gSolve` has been used in numerous scientific papers. The most recent prior version of `gSolve` was widely used in the literature [@MCCUBBINE2018a], the current version builds on this and will be used in future scientific research. It has been used in papers by [@MILLER2022], [@LUTHFIAN2023], [@MILLER2025a], and is used to compute terrain correction values for the New Zealand national gravity database.  `gSolve` has also been used in confidential commercial reports by geothermal and resource exploration companies.
