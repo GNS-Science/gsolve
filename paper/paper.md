@@ -33,7 +33,7 @@ bibliography: paper.bib
 `gSolve` is an open-source software written in Python. The purpose of `gSolve` is to process raw data collected using terrestrial relative or absolute gravity meters for mapping and time-varying gravity surveys, through to products that are useful for geophysical interpretation such as complete Bouguer anomaly using the method of [@REILLY1970].  This software is a complete rewrite of a previous Python 2 GUI-based version [@MCCUBBINE2018a] which itself was a rewrite of fortran code originally called DSolve [@WOODWARD1984].
 
 # Statement of Need
-Gravity data collected using relative or absolute terrestrial gravity meters provides valuable information on the density structure of the subsurface and are useful for many Earth science applications including mineral and geothermal exploration, volcanology, engineering geology and geological mapping.  Measurements of gravity change over time are useful for geothermal, oil and gas, hydrology and volcanology fields.  Processing data from terrestrial relative gravity meters such as Scintrex CG series instruments or LaCoste and Romberg G and D meters requires several steps to convert the relative gravity measurements to "reduced" data that can be analysed for its geoscientific purpose.  `gSolve` provides a modular system to undertake network adjustments and apply corrections including earth tide, ocean loading and terrain correction to calculate free-air, simple and complete Bouguer anomalies.
+Gravity data collected using relative or absolute terrestrial gravity meters provides valuable information on the density structure of the subsurface and are useful for many Earth science applications including mineral and geothermal exploration, volcanology, engineering geology, hydrogeology and geological mapping.  Measurements of gravity change over time are useful for geothermal, oil and gas, hydrology and volcanology fields.  Processing data from terrestrial relative gravity meters such as Scintrex CG series instruments or LaCoste and Romberg G and D meters requires several steps to convert the relative gravity measurements to "reduced" data that can be analysed for its geoscientific purpose.  `gSolve` provides a modular system to undertake network adjustments and apply corrections including earth tide, ocean loading and terrain correction to calculate free-air, simple and complete Bouguer anomalies.
  
 # State of the field
 Several tools exist for gravity data processing through to the network adjusted solution step.  Fewer tools process data through to complete Bouguer anomalies, including terrain correctons.  Prior to beginning the rewrite we undertook an extensive comparison study of available tools [@KIRKBY2023], summarised here.  
@@ -43,7 +43,7 @@ Several tools exist for gravity data processing through to the network adjusted 
 Terrain correction computations (required for complete Bouguer anomaly) are typically only found in commercial software (e.g. Oasis Montaj or Intrepid), or are stand alone programmes in other free software, for example `TOPOSk` [@ZAHOREC2017a], requiring manual integration with other software to produce the final anomalies.
 
 # Software design
-`gSolve`'s design philosophy is based on the following core principles: (1) A modern object oriented, user-friendly API, that (2) meets open source standards for documentation and testing.  We deliberately moved to an object-oriented API from the previous GUI version and completely rewrote all functions.  \autoref{fig:diagram}
+`gSolve`'s design philosophy is based on the following core principles: (1) A modern object oriented, user-friendly API, that (2) meets open source standards for documentation and testing.  We deliberately moved to an object-oriented API from the previous GUI version and completely rewrote all functions.  \autoref{fig:diagram} shows the class structure and processing flow.
 
 An important design decision is that where solutions to components of `gSolve` already exist, we chose to incorporate or wrap them rather than rewrite our own.  For example, to implement the ETERNA tidal model we wrapped `pygtide`[@pygtide], whilst for providing ocean loading values we wrapped `pyhardisp`[@pyhardisp].  Normal gravity is calculated using `Boule` [@Boule] with a choice of ellipsoids available.  Likewise for terrain corrections we use the underlying functionality of `Harmonica` [@Harmonica] which efficiently computes the gravity response of a prism.
 
@@ -51,10 +51,15 @@ The software is built around a series of classes.  A base class GSolveParameters
 
 Future work will streamline data entry classes to be similar to the Scintrex class, making data loading more modular.
 
-![Figure 1: Diagram illustrating gSolve class architecture and processing flow.[]{label="fig:diagram"}](gsolve_architecture.png)
+![Diagram illustrating gSolve class architecture and processing flow.\{label="fig:diagram"}](gsolve_architecture.png)
+
+Full `gSolve` documentation is available [here](https://gns-science.github.io/gsolve/)
 
 # Research impact statement
-From its original release in 1984 `gSolve` has been used in numerous scientific papers. The most recent prior version of `gSolve` was widely used in the literature [@MCCUBBINE2018a], the current version builds on this and will be used in future scientific research. It has been used in papers by [@MILLER2022], [@LUTHFIAN2023], [@MILLER2025a], and is used to compute terrain correction values for the New Zealand national gravity database.  `gSolve` has also been used in confidential commercial reports by geothermal and resource exploration companies.
+From its original release in 1984 `gSolve` has been used in numerous scientific papers as well as many unpublished or commercial reports. The most recent prior version of `gSolve` [@MCCUBBINE2018a] was widely used in the literature. The current version replaces [@MCCUBBINE2018a] and is used in current and future scientific research. Recently the new API version of gSolve has been used in papers by [@MILLER2022], [@LUTHFIAN2023], [@MILLER2025a], and was used to compute terrain correction values for the New Zealand national gravity database consisting of 48000 records.  `gSolve` continues to be used in confidential commercial reports by geothermal and resource exploration companies.
+
+# Benchmarks and validation
+`gSolve` is tested against against many other open source and proprietary tools.  A full comparison of gSolve and other tools is available from [@KIRKBY2023].  A comprehensive test suite included in the package includes benchmark results to ensure code changes reproduce the expected values.
 
 # Features
 `gSolve` is written in python 3 and provides API based functionality.  Pandas data frames are utilised for input/output, storage and data manipulation, meaning that additional calculations not provided by gSolve (such as the differencing of time varying surveys) are easily possible.  
