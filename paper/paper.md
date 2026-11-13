@@ -51,7 +51,7 @@ The software is built around a series of classes illustrated in \autoref{fig:dia
 
 Future work will streamline data entry classes to be similar to the Scintrex class, making data loading more modular.
 
-![Diagram illustrating `gSolve` class architecture and processing flow.[]{label=fig:diagram}](gsolve_architecture.png)
+![Diagram illustrating `gSolve` class architecture and processing flow.[]{label="fig:diagram"}](gsolve_architecture.png)
 
 Full `gSolve` documentation is available [here](https://gns-science.github.io/gsolve/)
 
