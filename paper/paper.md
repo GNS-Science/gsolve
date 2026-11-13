@@ -49,6 +49,10 @@ An important design decision is that where solutions to components of `gSolve` a
 
 The software is built around a series of classes.  A base class GSolveParameters stores parameters related to GSolveTable derived classes. The GravityObservations class handles raw data loading and applying calibration, tide and ocean loading corrections.  The GravitySites class stores gravity location meta data while the ReferenceGravity class handles data from absolute gravity reference stations.  The GravitySurvey class combines observation and site information and performs least squares adjustments.  The TerrainCorrectionParameters class stores parameters for computing terrain corrections for a single correction zone, while the TerrainCorrectionData class stores terrain correction outputs and parameters. GravityCorrectionParameters stores parameters for normal gravity and anomaly calculations.  The GSolveReport class is for summarizing and reporting results of a gSolve network adjustment, correction and anomaly calculations.
 
+Future work will streamline data entry classes to be similar to the Scintrex class, making data loading more modular.
+
+
+
 # Research impact statement
 From its original release in 1984 `gSolve` has been used in numerous scientific papers. The most recent prior version of `gSolve` was widely used in the literature [@MCCUBBINE2018a], the current version builds on this and will be used in future scientific research. It has been used in papers by [@MILLER2022], [@LUTHFIAN2023], [@MILLER2025a], and is used to compute terrain correction values for the New Zealand national gravity database.  `gSolve` has also been used in confidential commercial reports by geothermal and resource exploration companies.
 
