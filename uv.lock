@@ -757,6 +757,7 @@ dependencies = [
     { name = "boule" },
     { name = "harmonica" },
     { name = "matplotlib" },
+    { name = "mplcursors" },
     { name = "numpy" },
     { name = "openpyxl" },
     { name = "pandas", extra = ["plot"] },
@@ -806,6 +807,7 @@ requires-dist = [
     { name = "boule", specifier = "==0.6.*" },
     { name = "harmonica", specifier = "<0.8" },
     { name = "matplotlib", specifier = ">=3.11.1" },
+    { name = "mplcursors", specifier = ">=0.7.1" },
     { name = "numpy", specifier = ">=2.4.6" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pandas", extras = ["plot"], specifier = ">=2.2" },
@@ -1421,6 +1423,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d6/54/cfe61301667036ec958cb99bd3efefba235e65cdeb9c84d24a8293ba1d90/mdurl-0.1.2.tar.gz", hash = "sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba", size = 8729, upload-time = "2022-08-14T12:40:10.846Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8", size = 9979, upload-time = "2022-08-14T12:40:09.779Z" },
+]
+
+[[package]]
+name = "mplcursors"
+version = "0.7.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "matplotlib" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/76/e1/434939d426b967e86312f9b53913a96a0ec195e42392d9fdfcb20a2298cd/mplcursors-0.7.1.tar.gz", hash = "sha256:b567d7380415f4c7c2c23825809be6fa597ff32f2f5299886b14a473e46da7dd", size = 89014, upload-time = "2026-03-18T19:23:01.228Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e9/4b/3a89414c611e6effbf4666d2102737a310cc03c8a38aab36f4ad24de87f5/mplcursors-0.7.1-py3-none-any.whl", hash = "sha256:eb38f23c90d15c37693a1db1ab64e9b81d1939aabc5a519e1261613ab488508f", size = 20595, upload-time = "2026-03-18T19:22:59.879Z" },
 ]
 
 [[package]]

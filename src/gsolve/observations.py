@@ -27,6 +27,7 @@ from typing import Any, ClassVar, Literal, Self
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+import mplcursors
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
@@ -1164,6 +1165,7 @@ class GravityObservations(GSolveTable):
         figsize: tuple[float, float] = (12, 8),
         ax: plt.Axes | None = None,
         show: bool = True,
+        show_data_labels: bool = True,
         **kwargs,
     ) -> tuple[plt.Figure, plt.Axes]:
         """
@@ -1189,6 +1191,8 @@ class GravityObservations(GSolveTable):
             will be created but not displayed.  This can be useful when calling this method
             from a non-interactive environment, or when further modifying the figure before
             displaying or saving it.
+        show_data_labels : bool, default=True
+            Show data label popout when mouse pointer hovers on a plotted point.
         kwargs : dict
             Optional keyword arguments passed directly to matplotlib.pyplot.plot().
 
@@ -1199,7 +1203,16 @@ class GravityObservations(GSolveTable):
         ax : matplotlib.axes.Axes
             The axes object in which the plot is drawn.
         """
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize)
+        elif isinstance(ax, plt.Axes):
+            fig = ax.figure.get_figure(root=True)
+        else:
+            msg = f"invalid ax arg of type '{type(ax).__name__}'"
+            raise TypeError(msg)
+
         if loop == "all":
+            df = self.data
             y_data = self.data.loc[:, y_column]
             x_data = self.data.loc[:, x_column]
         else:
@@ -1208,15 +1221,19 @@ class GravityObservations(GSolveTable):
                 msg = f"loop '{loop}' not found in data"
                 raise ValueError(msg)
             this_loop = self.data["loop"].eq(loop)
-            y_data = self.data.loc[this_loop, y_column]
-            x_data = self.data.loc[this_loop, x_column]
+            df = self.data.loc[this_loop]
 
-        if "marker" not in kwargs:
-            kwargs["marker"] = "x"
+        y_data = df.loc[:, y_column]
+        x_data = df.loc[:, x_column]
+        idx = df.index
 
-        fig = plt.figure(figsize=figsize)
-        ax = fig.add_subplot(111)
-        ax.plot(x_data, y_data, **kwargs)
+        kwargs.setdefault("marker", "x")
+        kwargs.setdefault("linestyle", "-")
+        kwargs_line = {k: w for k, w in kwargs.items() if k != "marker"}
+        kwargs_scatter = {k: w for k, w in kwargs.items() if k != "linestyle"}
+
+        ax.plot(x_data, y_data, **kwargs_line)
+        points = ax.scatter(x_data, y_data, **kwargs_scatter)
 
         if x_column == "datetime":
             ax.xaxis.set_major_formatter(mdates.DateFormatter("%d-%m-%Y %H:%M:%S"))
@@ -1229,6 +1246,15 @@ class GravityObservations(GSolveTable):
         ax.set_title(f"Plot of the observed data for loop {loop}.")
         ax.set_ylabel("mGal")
         plt.tight_layout()
+
+        if show_data_labels:
+            cursor = mplcursors.cursor(points, hover=2)
+
+            @cursor.connect("add")
+            def on_add(sel):
+                i = round(sel.index)
+                site_id, site_dt = df.loc[idx[i], ["site_id", "datetime"]]
+                sel.annotation.set_text(f"{site_id}@{site_dt}")
 
         if savefilename is not None:
             fout = pathlib.Path(savefilename)
