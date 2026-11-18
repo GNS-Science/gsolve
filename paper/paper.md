@@ -9,12 +9,12 @@ authors:
   - name: Adrian Benson
     orcid: 0000-0003-1428-3016
     affilation: 1
+  - name: Craig Miller
+    orcid: 0000-0001-8499-0352
+    affiliation: 1 
   - name: Alison Kirkby
     orcid: 0000-0003-1361-440X
     affilation: 1
-  - name: Craig Miller
-    orcid: 0000-0001-8499-0352
-    affiliation: 1  
   - name: Alexsandr Spesitsev
     orcid:
     affilation: 1
