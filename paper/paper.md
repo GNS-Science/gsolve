@@ -15,7 +15,7 @@ authors:
   - name: Alison Kirkby
     orcid: 0000-0003-1361-440X
     affilation: 1
-  - name: Alexsandr Spesitsev
+  - name: Aleksandr Spesivtsev
     orcid:
     affilation: 1
   - name: Vaughan Stagpoole
