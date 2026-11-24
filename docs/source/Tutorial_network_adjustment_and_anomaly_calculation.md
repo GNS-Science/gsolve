@@ -173,15 +173,15 @@ survey = GravitySurvey(obs, sites)
 
 ## Run the network adjustment
 
-Here we use the partially constrained solver method
-(`SolverMethod.PARTIALLY_CONSTRAINED`, equivalent to the int `2`), see
+Here we use the decoupled least squares solver method
+(`SolverMethod.DECOUPLED`, equivalent to the int `2`), see
 [gSolve algorithms](gsolve_algorithms.md) documentation.  We process each loop individually
 and apply a 99 percentile cutoff filter to the residuals.  As this is not a calibration
 survey we do not need to calculate the calibration factor
 
 ```python
 results = survey.solve_lstsq(
-    method=SolverMethod.PARTIALLY_CONSTRAINED,
+    method=SolverMethod.DECOUPLED,
     use_loops=True,
     calculate_calibration=False,
     percentile_clipping=95,

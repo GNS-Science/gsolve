@@ -1796,8 +1796,8 @@ class GravitySurvey:
             The solver method to use for the least squares adjustment. Accepts a
             ``SolverMethod`` member or the equivalent ``int``:
 
-                - ``SolverMethod.NORMAL_LSTSQ`` (``1``)
-                - ``SolverMethod.PARTIALLY_CONSTRAINED`` (``2``)
+                - ``SolverMethod.NORMAL`` (``1``)
+                - ``SolverMethod.DECOUPLED`` (``2``)
                 - ``SolverMethod.CONSTRAINED`` (``3``)
         percentile_clipping : float, default=100
             The percentile of residuals to use for clipping.  Values outside this
@@ -1834,7 +1834,7 @@ class GravitySurvey:
 
     def solve_calibration_factor(
         self,
-        method: SolverMethod | int = SolverMethod.PARTIALLY_CONSTRAINED,
+        method: SolverMethod | int = SolverMethod.DECOUPLED,
         percentile_clipping: float = 100,
         use_loops: bool = True,
     ) -> GSolveResults:
@@ -1844,7 +1844,7 @@ class GravitySurvey:
         ----------
         method : SolverMethod | {1, 2, 3}
             The solver method to use for the least squares adjustment.
-            Method 2 - 'Partially constrained least squares' is the appropriate strategy
+            Method 2 - 'Decoupled least squares' is the appropriate strategy
             for determining calibrations.
         percentile_clipping : float, default=100
             The percentile of residuals to use for clipping.  Values outside this

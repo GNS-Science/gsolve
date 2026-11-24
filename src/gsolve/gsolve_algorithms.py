@@ -54,8 +54,8 @@ def call_gsolve_lstsq(
         The gsolve solution method to use. Accepts a ``SolverMethod``
         member or the equivalent ``int``. Available methods are:
 
-            - ``SolverMethod.NORMAL_LSTSQ`` (``1``) : Normal least squares
-            - ``SolverMethod.PARTIALLY_CONSTRAINED`` (``2``) : Partially constrained least squares
+            - ``SolverMethod.NORMAL`` (``1``) : Normal least squares
+            - ``SolverMethod.DECOUPLED`` (``2``) : Decoupled least squares
             - ``SolverMethod.CONSTRAINED`` (``3``) : Constrained least squares
 
     percentile_clipping: float, default=100.0
@@ -125,7 +125,7 @@ def call_gsolve_lstsq(
 def call_gsolve_calibration(
     obs: pd.DataFrame,
     ref_sites: pd.DataFrame,
-    method: SolverMethod | int = SolverMethod.PARTIALLY_CONSTRAINED,
+    method: SolverMethod | int = SolverMethod.DECOUPLED,
     percentile_clipping: float = 100,
     use_loops: bool = True,
 ) -> GSolveResults:
@@ -146,8 +146,8 @@ def call_gsolve_calibration(
         The gsolve solution method to use. Accepts a ``SolverMethod``
         member or the equivalent ``int``. Available methods are:
 
-            - ``SolverMethod.NORMAL_LSTSQ`` (``1``) : Normal least squares
-            - ``SolverMethod.PARTIALLY_CONSTRAINED`` (``2``) : Partially constrained least squares
+            - ``SolverMethod.NORMAL`` (``1``) : Normal least squares
+            - ``SolverMethod.DECOUPLED`` (``2``) : Decoupled least squares
             - ``SolverMethod.CONSTRAINED`` (``3``) : Constrained least squares
 
     percentile_clipping: float, default=100.0
@@ -256,8 +256,8 @@ def g_solver_lstsq(  # ruff: ignore[too-many-positional-arguments]
         The gsolve solution method to use. Accepts a ``SolverMethod``
         member or the equivalent ``int``. Available methods are:
 
-            - ``SolverMethod.NORMAL_LSTSQ`` (``1``) : Normal least squares
-            - ``SolverMethod.PARTIALLY_CONSTRAINED`` (``2``) : Partially constrained least squares
+            - ``SolverMethod.NORMAL`` (``1``) : Normal least squares
+            - ``SolverMethod.DECOUPLED`` (``2``) : Decoupled least squares
             - ``SolverMethod.CONSTRAINED`` (``3``) : Constrained least squares
     calculate_calibration_factor : bool
         Calculate gravity meter calibration factor.

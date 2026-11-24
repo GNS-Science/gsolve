@@ -108,7 +108,7 @@ survey = GravitySurvey(obs, sites)
 
 ```python
 # `method` accepts a SolverMethod member or the equivalent int;
-# here we pass the int 1 (== SolverMethod.NORMAL_LSTSQ).
+# here we pass the int 1 (== SolverMethod.NORMAL).
 results = survey.solve_lstsq(
     method=1, use_loops=True, calculate_calibration_factor=False, percentile_clipping=99
 )

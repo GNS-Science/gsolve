@@ -101,7 +101,7 @@ Run the network adjustment.
 Here we use solve method "2", see documentation.  We process each loop individually
 and apply a 95 percentile cutoff filter to the residuals."""
 results = survey.solve_lstsq(
-    method=SolverMethod.PARTIALLY_CONSTRAINED,
+    method=SolverMethod.DECOUPLED,
     use_loops=True,
     percentile_clipping=95,
 )

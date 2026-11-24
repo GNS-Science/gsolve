@@ -542,17 +542,17 @@ class TestSolverMethodEnum:
     """The solver method enum and its interchangeability with plain ints."""
 
     def test_members_have_expected_values(self) -> None:
-        assert SolverMethod.NORMAL_LSTSQ == 1
-        assert SolverMethod.PARTIALLY_CONSTRAINED == 2
+        assert SolverMethod.NORMAL == 1
+        assert SolverMethod.DECOUPLED == 2
         assert SolverMethod.CONSTRAINED == 3
 
     def test_int_coerces_to_member(self) -> None:
-        assert SolverMethod(2) is SolverMethod.PARTIALLY_CONSTRAINED
+        assert SolverMethod(2) is SolverMethod.DECOUPLED
 
     def test_member_behaves_as_int_in_comparisons(self) -> None:
         # Guards the solver's `method == 2` / `method in {1, 2}` branches.
         assert SolverMethod.CONSTRAINED not in {1, 2}
-        assert SolverMethod.PARTIALLY_CONSTRAINED in {1, 2}
+        assert SolverMethod.DECOUPLED in {1, 2}
 
     def test_invalid_int_raises_value_error(self) -> None:
         with pytest.raises(ValueError, match="not a valid SolverMethod"):
@@ -561,8 +561,8 @@ class TestSolverMethodEnum:
     @pytest.mark.parametrize(
         ("as_int", "as_member"),
         [
-            (1, SolverMethod.NORMAL_LSTSQ),
-            (2, SolverMethod.PARTIALLY_CONSTRAINED),
+            (1, SolverMethod.NORMAL),
+            (2, SolverMethod.DECOUPLED),
             (3, SolverMethod.CONSTRAINED),
         ],
     )
@@ -600,13 +600,13 @@ class TestSolverMethodEnum:
         result = call_gsolve_lstsq(
             obs=obs,
             ref_sites=ref,
-            method=SolverMethod.PARTIALLY_CONSTRAINED,
+            method=SolverMethod.DECOUPLED,
             use_loops=True,
             percentile_clipping=100.0,
         )
 
         assert isinstance(result, GSolveResults)
-        assert result.params.method == SolverMethod.PARTIALLY_CONSTRAINED
+        assert result.params.method == SolverMethod.DECOUPLED
 
 
 class TestSolverMethodFromValue:
@@ -616,14 +616,14 @@ class TestSolverMethodFromValue:
         ("value", "expected"),
         [
             (SolverMethod.CONSTRAINED, SolverMethod.CONSTRAINED),
-            (2, SolverMethod.PARTIALLY_CONSTRAINED),
-            (2.0, SolverMethod.PARTIALLY_CONSTRAINED),
-            (np.int64(1), SolverMethod.NORMAL_LSTSQ),
+            (2, SolverMethod.DECOUPLED),
+            (2.0, SolverMethod.DECOUPLED),
+            (np.int64(1), SolverMethod.NORMAL),
             (np.float64(3.0), SolverMethod.CONSTRAINED),
-            ("2", SolverMethod.PARTIALLY_CONSTRAINED),
-            ("  2  ", SolverMethod.PARTIALLY_CONSTRAINED),
-            ("2.0", SolverMethod.PARTIALLY_CONSTRAINED),
-            ("PARTIALLY_CONSTRAINED", SolverMethod.PARTIALLY_CONSTRAINED),
+            ("2", SolverMethod.DECOUPLED),
+            ("  2  ", SolverMethod.DECOUPLED),
+            ("2.0", SolverMethod.DECOUPLED),
+            ("DECOUPLED", SolverMethod.DECOUPLED),
             ("constrained", SolverMethod.CONSTRAINED),
         ],
     )

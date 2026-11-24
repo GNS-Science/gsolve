@@ -32,8 +32,6 @@ import xarray as xr
 from numpy.typing import ArrayLike, NDArray
 from pandas import DatetimeIndex, Index, Series
 
-# from pandas.api.typing.aliases import TimedeltaConvertibleTypes
-
 __all__ = [
     "AllowedTimestampResolution",
     "AllowedTimestampRoundingMethods",
@@ -53,7 +51,7 @@ __all__ = [
     "TCorrDistanceMaskType",
 ]
 
-# Aliases by gsolve for various functions arguments
+# Aliases for various functions arguments
 type AllowedTimestampResolution = Literal[
     "year", "month", "day", "hour", "minute", "second", "microsecond", "nanosecond"
 ]
@@ -64,23 +62,23 @@ type IfSheetExists = Literal["error", "replace", "new"]
 
 
 class SolverMethod(IntEnum):
-    """The least-squares method used to perform network adjustment.
+    """The least-squares method used to perform drift corrections and network adjustment.
 
     The methods differ in how gravity observations at reference/known gravity sites are
     treated in the least squares solution.  See documentation for a full discussion.
 
     Members
     -------
-    NORMAL_LSTSQ
+    NORMAL
         ``1`` -- Reference site observations are treated identically to all other observations
-    PARTIALLY_CONSTRAINED
-        ``2`` -- Reference site observations values are partially fixed.
+    DECOUPLED
+        ``2`` -- Reference site observations values are removed from drift calculations.
     CONSTRAINED
         ``3`` -- Reference site observations are fixed to their known reference value.
     """
 
-    NORMAL_LSTSQ = 1
-    PARTIALLY_CONSTRAINED = 2
+    NORMAL = 1
+    DECOUPLED = 2
     CONSTRAINED = 3
 
     @classmethod
@@ -119,7 +117,7 @@ class SolverMethod(IntEnum):
         - a member (returned unchanged);
         - an integer, or an integral float (e.g. ``2`` or ``2.0``);
         - a numeric string (e.g. ``"2"`` -- CSV reads a mixed column as text);
-        - a member name, case-insensitive (e.g. ``"PARTIALLY_CONSTRAINED"``).
+        - a member name, case-insensitive (e.g. ``"DECOUPLED"``).
 
         Parameters
         ----------
@@ -170,8 +168,16 @@ class SolverMethod(IntEnum):
         raise TypeError(msg)
 
 
+type _NDARRAY_1D_FLOAT64 = np.ndarray[tuple[int], np.dtype[np.float64]]
+
 type GSolveSolverReturn = tuple[
-    NDArray, NDArray, NDArray, NDArray, NDArray, float | np.float64 | None, NDArray
+    _NDARRAY_1D_FLOAT64,
+    _NDARRAY_1D_FLOAT64,
+    _NDARRAY_1D_FLOAT64,
+    _NDARRAY_1D_FLOAT64,
+    _NDARRAY_1D_FLOAT64,
+    float | np.float64 | None,
+    _NDARRAY_1D_FLOAT64,
 ]
 
 type FilePath = str | PathLike

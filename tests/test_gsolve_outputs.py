@@ -525,7 +525,7 @@ class TestSolverMethodSerialization:
         assert SolverMethod.to_int(2) == 2
 
     def test_to_int_returns_plain_int(self) -> None:
-        result = SolverMethod.to_int(SolverMethod.NORMAL_LSTSQ)
+        result = SolverMethod.to_int(SolverMethod.NORMAL)
         assert type(result) is int
 
     def test_to_int_rejects_invalid_value(self) -> None:
@@ -534,7 +534,7 @@ class TestSolverMethodSerialization:
 
     def test_to_dict_exports_method_as_plain_int(self) -> None:
         params = GSolveSolutionParameters(
-            method=SolverMethod.PARTIALLY_CONSTRAINED,
+            method=SolverMethod.DECOUPLED,
             use_loops=True,
             percentile_clipping=100.0,
             calculate_calibration_factor=False,
@@ -559,7 +559,7 @@ class TestSolverMethodSerialization:
 
     def test_excel_stores_method_as_integer(self, tmp_path) -> None:
         params = GSolveSolutionParameters(
-            method=SolverMethod.PARTIALLY_CONSTRAINED,
+            method=SolverMethod.DECOUPLED,
             use_loops=True,
             percentile_clipping=100.0,
             calculate_calibration_factor=False,
@@ -597,9 +597,9 @@ class TestSolverMethodDeserialization:
     @pytest.mark.parametrize(
         ("method_value", "expected"),
         [
-            (2, SolverMethod.PARTIALLY_CONSTRAINED),
-            ("2", SolverMethod.PARTIALLY_CONSTRAINED),
-            ("PARTIALLY_CONSTRAINED", SolverMethod.PARTIALLY_CONSTRAINED),
+            (2, SolverMethod.DECOUPLED),
+            ("2", SolverMethod.DECOUPLED),
+            ("DECOUPLED", SolverMethod.DECOUPLED),
             ("constrained", SolverMethod.CONSTRAINED),
         ],
     )
@@ -630,11 +630,11 @@ class TestSolverMethodConstructionCoercion:
     @pytest.mark.parametrize(
         ("method_value", "expected"),
         [
-            (2, SolverMethod.PARTIALLY_CONSTRAINED),
-            ("2", SolverMethod.PARTIALLY_CONSTRAINED),
-            ("PARTIALLY_CONSTRAINED", SolverMethod.PARTIALLY_CONSTRAINED),
+            (2, SolverMethod.DECOUPLED),
+            ("2", SolverMethod.DECOUPLED),
+            ("DECOUPLED", SolverMethod.DECOUPLED),
             ("constrained", SolverMethod.CONSTRAINED),
-            (SolverMethod.NORMAL_LSTSQ, SolverMethod.NORMAL_LSTSQ),
+            (SolverMethod.NORMAL, SolverMethod.NORMAL),
         ],
     )
     def test_construction_stores_member(

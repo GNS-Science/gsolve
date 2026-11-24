@@ -120,12 +120,13 @@ surv = GravitySurvey(obs, sites)
 ## Run the network adjustment
 
 As this is a calibration survey we call the method `solve_calibration_factor`.  Here we use the
-partially constrained solver method (`SolverMethod.PARTIALLY_CONSTRAINED`, equivalent to the
-int `2`), as we have high confidence in our absolute stations.  We process each loop individually and use all data (confidence_interval=100).
+decoupled least squares solver method (`SolverMethod.DECOUPLED` or `2`), as we have
+high confidence in our absolute stations.  We process each loop individually and
+use all data (confidence_interval=100).
 
 ```python
 results = surv.solve_calibration_factor(
-    method=SolverMethod.PARTIALLY_CONSTRAINED,
+    method=SolverMethod.DECOUPLED,
     use_loops=True,
     confidence_interval=100,
 )
