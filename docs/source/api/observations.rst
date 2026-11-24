@@ -36,7 +36,6 @@ Data Attributes and Methods
    GravityObservations.loop_ids
    GravityObservations.loop_summary
    GravityObservations.site_summary
-   GravityObservations.params
    GravityObservations.activate
    GravityObservations.deactivate
 
