@@ -84,13 +84,20 @@ class GravityObservationsParameters(GSolveParameters):
     Attributes
     ----------
     timedelta_unit : pandas.Timedelta, default "1h"
-        The time interval unit used in calculating survey time deltas.
-    fixed_time_datum : pandas.Timestamp, default is pandas.NaT
-        The fixed time datum used for calculating survey time deltas.
-    earthtide_correction_method: str = ""
-        The method used for earth tide correction, e.g. "Longman".
-    ocean_load_correction_method: str = ""
-        The method used for ocean load correction, e.g. "Longman".
+        The time interval unit used in calculating survey time deltas. Set by calling
+        ``GravityObservations.set_timedelta_unit()``
+    fixed_time_datum : pandas.Timestamp or None, default is None
+        The time datum used for calculating survey time deltas. If None, the use the
+        datetime of the earliest observation in:
+
+          - a given loop for computing the ``loop_tdelta` field
+          - the survey for computing the ``survey_tdelta`` field
+    earthtide_correction_method : str, default is ""
+        The method used for earth tide correction. Set when earth tide corrections are
+        applied.
+    ocean_load_correction_method: str, default ""
+        The method used for ocean load correction. Set when ocean load corrections are
+        applied.
     """
 
     timedelta_unit: pd.Timedelta = pd.Timedelta("1h")
