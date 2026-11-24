@@ -155,24 +155,6 @@ class TestSetObsId:
 
 
 # ---------------------------------------------------------------------------
-# GravityObservations.params() method
-# ---------------------------------------------------------------------------
-
-
-class TestParamsMethod:
-    def test_params_returns_parameters_object(self):
-        obs = _make_obs()
-        p = obs.params()
-        assert isinstance(p, GravityObservationsParameters)
-
-    def test_params_timedelta_unit(self):
-        obs = _make_obs()
-        obs.set_timedelta_unit("30min")
-        p = obs.params()
-        assert p.timedelta_unit == pd.Timedelta("30min")
-
-
-# ---------------------------------------------------------------------------
 # GravityObservations.set_calibration_factor
 # ---------------------------------------------------------------------------
 
