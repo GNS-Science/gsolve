@@ -296,10 +296,6 @@ class GravityObservations(GSolveTable):
 
     data: pd.DataFrame
     params: GravityObservationsParameters
-    _timedelta_unit: pd.Timedelta
-    _fixed_time_datum: pd.Timestamp | None
-    _earthtide_correction_method: str
-    _ocean_load_correction_method: str
 
     def __init__(
         self,
@@ -312,13 +308,14 @@ class GravityObservations(GSolveTable):
         obs_id: npt.ArrayLike | None = None,
         loop: npt.ArrayLike | None = None,
         active: npt.ArrayLike | None = None,
-        timedelta_unit: TimedeltaScalar = "1h",
+        timedelta_unit: TimedeltaScalar | None = "1h",
         fixed_time_datum: DatetimeScalar | None = None,
         **kwargs,
     ) -> None:
 
-        self._earthtide_correction_method = ""
-        self._ocean_load_correction_method = ""
+        self.params = GravityObservationsParameters(
+            fixed_time_datum=fixed_time_datum, timedelta_unit=timedelta_unit
+        )
 
         n_readings = -1
         if meter_reading is not None:
@@ -374,8 +371,6 @@ class GravityObservations(GSolveTable):
             )
 
         _ = self._data_ok(warn=True)
-        self.set_timedelta_unit(timedelta_unit, set_tdelta=False)
-        self.set_fixed_time_datum(fixed_time_datum, set_tdelta=False)
         self.set_tdelta()
 
     def __repr__(self) -> str:
@@ -563,7 +558,7 @@ class GravityObservations(GSolveTable):
         pandas.Timedelta
 
         """
-        return self._timedelta_unit
+        return self.params.timedelta_unit
 
     def set_timedelta_unit(
         self, unit: TimedeltaScalar, set_tdelta: bool = True
@@ -588,7 +583,7 @@ class GravityObservations(GSolveTable):
             Whether to update the timedelta values immediately.
 
         """
-        self._timedelta_unit = pd.Timedelta(unit)
+        self.params.timedelta_unit = unit
         if set_tdelta:
             self.set_tdelta()
 
@@ -600,7 +595,7 @@ class GravityObservations(GSolveTable):
         Timestamp or None
             None if no fixed time datum has been set.
         """
-        return self._fixed_time_datum
+        return self.params.fixed_time_datum
 
     def set_fixed_time_datum(
         self, t: DatetimeScalar | None, set_tdelta: bool = True
@@ -638,35 +633,9 @@ class GravityObservations(GSolveTable):
         TypeError
             If ``t`` is specified, but is not interpretable as a ``pandas.Timestamp``.
         """
-        if t is None or pd.isna(t):
-            self._fixed_time_datum = None
-        else:
-            t = to_naive_utc_datetime(t)
-            if isinstance(t, pd.Timestamp):
-                self._fixed_time_datum = t
-            elif t is pd.NaT:
-                self._fixed_time_datum = None
-            else:
-                msg = f"invalid fixed_time_datum of type '{type(t).__name__}'"
-                raise TypeError(msg)
-
+        self.params.fixed_time_datum = t
         if set_tdelta:
             self.set_tdelta()
-
-    def params(self) -> GravityObservationsParameters:
-        """Return parameters as a ``GravityObservationsParameters`` object.
-
-        Returns
-        -------
-        GravityObservationsParameters
-            The parameters object.
-        """
-        return GravityObservationsParameters(
-            timedelta_unit=self._timedelta_unit,
-            fixed_time_datum=self._fixed_time_datum,
-            earthtide_correction_method=self._earthtide_correction_method,
-            ocean_load_correction_method=self._ocean_load_correction_method,
-        )
 
     def apply_dial_to_mgal(
         self,
@@ -754,9 +723,7 @@ class GravityObservations(GSolveTable):
             **kwargs,
         )
         self.set_column(column_name, et_corr)
-        identifier = tide_corrector.identifier(**kwargs)
-        self._earthtide_correction_method = identifier
-        # self.set_column(f"{column_name}_method", identifier)
+        self.params.earthtide_correction_method = tide_corrector.identifier(**kwargs)
 
     def apply_ocean_load_correction(
         self,
@@ -811,7 +778,7 @@ class GravityObservations(GSolveTable):
             **kwargs,
         )
         self.set_column(label=column_name, data=corrections)
-        self._ocean_load_correction_method = corrector.identifier()
+        self.params.ocean_load_correction_method = corrector.identifier()
 
     def set_calibration_factor(
         self,
@@ -891,11 +858,10 @@ class GravityObservations(GSolveTable):
         loop_tdelta_col = "loop_tdelta"
 
         # set survey tdelta's
-        has_fixed_time_datum = self.fixed_time_datum() is not None
-        t0 = self.fixed_time_datum()
+        t0 = self.params.fixed_time_datum
         if t0 is None:
             t0 = self.starttime
-        td_unit_seconds = self.timedelta_unit().total_seconds()
+        td_unit_seconds = self.params.timedelta_unit.total_seconds()
 
         td: pd.Series = (
             (self.data[datetime_col] - t0).dt.total_seconds().div(td_unit_seconds)
@@ -903,7 +869,7 @@ class GravityObservations(GSolveTable):
         self.set_column(surv_tdelta_col, td)
 
         # set loop tdelta's
-        if has_fixed_time_datum:
+        if self.params.fixed_time_datum is not None:
             self.set_column(loop_tdelta_col, td)
         else:
             temp_col = self.data[loop_tdelta_col].copy()
@@ -1663,8 +1629,11 @@ class GravityObservations(GSolveTable):
         )
 
         new_grav_obs = type(self).from_dataframe(combined_df, use_index=True)
-        new_grav_obs.set_fixed_time_datum(self.fixed_time_datum())
-        new_grav_obs.set_timedelta_unit(self.timedelta_unit())
+        new_grav_obs.set_fixed_time_datum(
+            self.params.fixed_time_datum, set_tdelta=False
+        )
+        new_grav_obs.set_timedelta_unit(self.params.timedelta_unit, set_tdelta=False)
+        new_grav_obs.set_tdelta()
 
         if regen_obs_ids:
             new_grav_obs.set_obs_id()
