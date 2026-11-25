@@ -11,39 +11,20 @@ hooks = [
 ]
 
 [[repos]]
-repo = "https://github.com/astral-sh/ruff-pre-commit"
-rev = "v0.16.7" # Ruff version.
+repo = "local"
 hooks = [
+    # run lock check - fail if not synced
+    { id = "uv-lock-check", name = "uv lock check", entry = "uv lock --check", language = "system", files = "^(pyproject\\.toml|uv\\.lock)$", pass_filenames = false },
     # Run the linter.
-    { id = "ruff-check", args = [
-        "--fix",
-    ], types_or = [
+    { id = "ruff-check", name = "ruff check", entry = "uv run ruff check --fix", language = "system", types = [
         "python",
-        "pyi",
-        "pyproject",
     ] },
-
-    # Run the formatter.
-    { id = "ruff-format", types_or = [
+    # run formatter
+    { id = "ruff-format", name = "ruff format", entry = "uv run ruff format", language = "system", types = [
         "python",
-        "pyi",
-        "markdown",
     ] },
-]
-
-[[repos]]
-repo = "https://github.com/astral-sh/ty-pre-commit"
-rev = "v0.0.80"                                     # ty version.
-hooks = [{ id = "ty" }]
-
-[[repos]]
-repo = "https://github.com/astral-sh/uv-pre-commit"
-rev = "0.13.1"
-hooks = [
-    { id = "uv-lock" },
-    { id = "uv-export", args = [
-        "--frozen",
-        "--output-file=requirements-custom.txt",
-        "--quiet",
-    ] },
+    # type checking
+    { id = "ty", name = "ty check", entry = "uv run ty check", language = "system", types = [
+        "python",
+    ], pass_filenames = false },
 ]
