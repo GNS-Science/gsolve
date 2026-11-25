@@ -25,9 +25,9 @@ from typing import Any, Literal
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 
-from gsolve.core._typing import FilePath, GSolveSolverMethod, GSolveSolverReturn
+from gsolve.core._typing import FilePath, GSolveSolverReturn, SolverMethod
 from gsolve.core.data import GSolveParameters
 from gsolve.core.utils import is_list_like, to_naive_utc_datetime
 
@@ -44,8 +44,8 @@ class GSolveSolutionParameters(GSolveParameters):
 
     Attributes
     ----------
-    method : {1, 2, 3}
-        The gsolve algorithm method used.
+    method : SolverMethod | {1, 2, 3}
+        The gsolve solver method used (a ``SolverMethod`` member).
     use_loops: bool
         If loops were used in the solution.
     percentile_clipping: float
@@ -62,7 +62,7 @@ class GSolveSolutionParameters(GSolveParameters):
 
     """
 
-    method: GSolveSolverMethod
+    method: SolverMethod
     use_loops: bool
     percentile_clipping: float
     calculate_calibration_factor: bool
@@ -89,6 +89,29 @@ class GSolveSolutionParameters(GSolveParameters):
 
         return data
 
+    @field_validator("method", mode="before")
+    @classmethod
+    def _coerce_method(cls, value: SolverMethod | float | str) -> SolverMethod:
+        """Normalise ``method`` on every ingestion path via ``from_value``.
+
+        This applies to direct construction and to ``from_series`` /
+        ``from_excel`` alike, so an ``int``, an integral ``float`` (including
+        numpy scalars), a numeric string such as ``"2"``, or a member name are
+        all accepted and stored as a :class:`SolverMethod` member.
+        """
+        return SolverMethod.from_value(value)
+
+    def to_dict(self) -> dict:
+        """Return parameters as a dict, with ``method`` as a plain ``int``.
+
+        The ``method`` field is a :class:`SolverMethod` member. It is
+        coerced to its integer value here so serialized forms (Series, Excel)
+        store a bare integer rather than the enum object.
+        """
+        data = super().to_dict()
+        data["method"] = SolverMethod.to_int(self.method)
+        return data
+
 
 class GSolveResults:
     """Class to store the results from a gsolve network adjustment.
@@ -98,8 +121,8 @@ class GSolveResults:
 
     Parameters
     ----------
-    method : {1, 2, 3}
-        The gsolve algorithm used.
+    method : SolverMethod | {1, 2, 3}
+        The gsolve solver method used (a ``SolverMethod`` member).
     use_loops: bool
         If loops were used in the solution.
     calculate_calibration_factor : bool
@@ -145,7 +168,7 @@ class GSolveResults:
 
     def __init__(
         self,
-        method: GSolveSolverMethod,
+        method: SolverMethod | int,
         use_loops: bool,
         calculate_calibration_factor: bool,
         percentile_clipping: float,
