@@ -59,49 +59,64 @@ class GSolveReport:
 
     Attributes
     ----------
-    obs_data : Dataframe
+    obs_data : Dataframe or None
         Gravity observation input data and network adjusted outputs.
-    site_data : Dataframe
+    site_data : Dataframe or None
         All site related data, including input data, site solutions, normal gravity
         corrections and anomalies.
-    loop_data : Dataframe
+    loop_data : Dataframe or None
         gSolve network adjustment solutions for each loop.
-    terrain_correction_data : Dataframe
+    terrain_correction_data : Dataframe or None
         Terrain corrections for each site, if provided.
     params : dict
         A dictionary of objects storing the various parameters used in
         reducing input data, performing network adjustment and calculating anomalies.
         The dictionary provides the following keys:
 
-                        - 'observations' : GravityObservationsParameters.
-                        - 'solution' : GSolveSolutionParameters.
-                        - 'anomalies' : GravityCorrectionParameters, if ``anomalies`` argument provided.
-            - 'terrain_corrections': dict of terrain correction parameters of the form
-                            {"zone_id": TerrainCorrectionParameters}.
+          - 'observations' : GravityObservationsParameters or None.
+          - 'sites' : None (in future may contain a sites params object)
+          - 'solution' : GSolveSolutionParameters or None.
+          - 'anomalies' : GravityCorrectionParameters or None.
+
+        If terrain_corrections are included with anomalies or specified directly, then
+        the parameters for each terrain_correction zone will be included as
+        "zone_id", TerrainCorrectionParameters pairs.
 
     """
 
-    site_data: pd.DataFrame
-    obs_data: pd.DataFrame
-    loop_data: pd.DataFrame
+    site_data: pd.DataFrame | None
+    obs_data: pd.DataFrame | None
+    loop_data: pd.DataFrame | None
     terrain_correction_data: pd.DataFrame | None
-    params: dict[str, GSolveParameters]
+    params: dict[str, GSolveParameters | None]
     _tcorr_added_from_anomalies: bool
 
     def __init__(
         self,
-        observations: GravityObservations | GravitySurvey,
-        sites: GravitySites | GravitySurvey,
-        results: GSolveResults,
+        observations: GravityObservations | GravitySurvey | None = None,
+        sites: GravitySites | GravitySurvey | None = None,
+        results: GSolveResults | None = None,
         anomalies: GravityAnomalies | None = None,
         terrain_corrections: TerrainCorrectionData | None = None,
     ) -> None:
         self.terrain_correction_data = None
-        self.params = {}
+        self.loop_data = None
+        self.site_data = None
+        self.obs_data = None
+
+        self.params = {
+            "observations": None,
+            "sites": None,
+            "solution": None,
+            "anomalies": None,
+        }
         self._tcorr_added_from_anomalies = False
 
-        if sites is None or results is None or observations is None:
-            msg = "'observations', 'sites' and 'results' arguments must be provided."
+        if all(
+            o is None
+            for o in (observations, sites, results, anomalies, terrain_corrections)
+        ):
+            msg = "Cannot create GSolveReport object: all arguments are None"
             raise ValueError(msg)
 
         if isinstance(observations, GravitySurvey):
@@ -122,7 +137,7 @@ class GSolveReport:
             anomalies=anomalies,
         )
         self._set_obs_data(obs_input=observations, results=results)
-        self._set_loop_data(results=results, obs_input=observations)
+        self._set_loop_data(results=results)
         self._set_terrain_correction_data(terrain_corrections=terrain_corrections)
 
     def copy(self) -> Self:
@@ -135,16 +150,23 @@ class GSolveReport:
 
     def _set_params(
         self,
-        observations: GravityObservations,
-        sites: GravitySites,
-        results: GSolveResults,
+        observations: GravityObservations | None,
+        sites: GravitySites | None,
+        results: GSolveResults | None,
         anomalies: GravityAnomalies | None = None,
     ) -> None:
+        """Set the params attribute from observations, sites, results and anomalies."""
+        self.params["observations"] = (
+            observations.params.copy() if observations is not None else None
+        )
 
-        self.params["observations"] = observations.params()
-        if hasattr(sites, "params"):
+        if hasattr(sites, "params") and sites.params is not None:
             self.params["sites"] = sites.params.copy()
-        self.params["solution"] = results.params.copy()
+        else:
+            self.params["sites"] = None
+
+        self.params["solution"] = results.params.copy() if results is not None else None
+
         if anomalies is not None:
             self.params["anomalies"] = anomalies.params.copy()
             if anomalies.tcorr_params is not None:
@@ -154,9 +176,9 @@ class GSolveReport:
 
     def _set_site_data(
         self,
-        site_input: GravitySites,
-        obs_input: GravityObservations,
-        results: GSolveResults,
+        site_input: GravitySites | None,
+        obs_input: GravityObservations | None,
+        results: GSolveResults | None,
         anomalies: GravityAnomalies | None,
     ) -> None:
         """
@@ -164,13 +186,13 @@ class GSolveReport:
 
         Parameters
         ----------
-        site_input : GravitySites
+        site_input : GravitySites or None
             Gravity site data.
-        obs_input : GravityObservations
+        obs_input : GravityObservations or None
             Gravity observation data.
-        results : GSolveResults
+        results : GSolveResults or None
             Results of gSolve network adjustment.
-        anomalies : GravityAnomalies, optional
+        anomalies : GravityAnomalies, optional or None
             Standard gravity anomalies and corrections for each site.
         """
         merge_kwargs = {
@@ -181,84 +203,109 @@ class GSolveReport:
         }
 
         # start with site input data, will be left side of table
-        df = site_input.data.copy()
+        df = site_input.data.copy() if site_input is not None else None
 
         # merge in site solution
-        if isinstance(results.site_solution, pd.DataFrame):
-            df = df.merge(right=results.site_solution, **merge_kwargs)
+        if results is not None:
+            if df is None:
+                df = results.site_solution.copy()
+            else:
+                df = df.merge(right=results.site_solution, **merge_kwargs)
 
         # merge anomalies if present
         if anomalies is not None:
-            df = df.merge(right=anomalies.data, **merge_kwargs)
+            if df is None:
+                df = anomalies.data.copy()
+            else:
+                df = df.merge(right=anomalies.data, **merge_kwargs)
 
         # clean up duplicate columns
-        df = df.drop(
-            columns=[c for c in df.columns if c.endswith("_duplicate")]
-        ).rename(columns={"n_obs": "n_obs_used"})
+        if df is not None:
+            df = df.drop(
+                columns=[c for c in df.columns if c.endswith("_duplicate")]
+            ).rename(columns={"n_obs": "n_obs_used"}, errors="ignore")
 
-        # add count of obs in original data for each site
-        n_obs_input = obs_input.data["site_id"].value_counts().loc[df.index]
+            # add count of obs in original data for each site
+            if obs_input is not None:
+                n_obs_input = obs_input.data["site_id"].value_counts().loc[df.index]
 
-        i_n_obs_used = df.columns.get_loc("n_obs_used")
-        if not isinstance(i_n_obs_used, int):
-            msg = "unexpected non-integer column index"
-            raise TypeError(msg)
-        df.insert(i_n_obs_used, "n_obs_input", n_obs_input)
+                if "n_obs_input" in df.columns:
+                    df["n_obs_input"] = n_obs_input
+                elif "n_obs_used" in df.columns:
+                    i_n_obs_used = df.columns.get_loc("n_obs_used")
+                    if not isinstance(i_n_obs_used, int):
+                        msg = "unexpected non-integer column index"
+                        raise TypeError(msg)
+                    df.insert(i_n_obs_used, "n_obs_input", n_obs_input)
+                else:
+                    df["n_obs_input"] = n_obs_input
 
         # add a csv string of loops each site is included in
-        loop_df = (
-            obs_input.data.loc[:, ["site_id", "loop"]]
-            .drop_duplicates(ignore_index=True)
-            .sort_values(by=["site_id", "loop"])
-            .groupby("site_id")
-            .agg(lambda x: ",".join(x.astype(str).to_list()))
-        ).iloc[:, 0]
-        df.insert(i_n_obs_used + 1, "in_loops", loop_df)
+        if obs_input is not None and df is not None:
+            loop_df = (
+                obs_input.data.loc[:, ["site_id", "loop"]]
+                .drop_duplicates(ignore_index=True)
+                .sort_values(by=["site_id", "loop"])
+                .groupby("site_id")
+                .agg(lambda x: ",".join(x.astype(str).to_list()))
+            ).iloc[:, 0]
+            if "n_obs_input" in df:
+                df.insert(df.columns.get_loc("n_obs_input") + 1, "in_loops", loop_df)
+            else:
+                df["in_loops"] = loop_df
 
         self.site_data = df
 
     def _set_obs_data(
-        self, obs_input: GravityObservations, results: GSolveResults
+        self, obs_input: GravityObservations | None, results: GSolveResults | None
     ) -> None:
         """Set self.obs_data by merging GravityObservations and GSolveResults objects."""
-        self.params["observations"] = obs_input.params()
-
         # start with observation input data, will be left side of table
-        df = obs_input.data.copy()
+        df = obs_input.data.copy() if obs_input is not None else None
 
         # merge in observation solution
-        df = df.merge(
-            results.obs_solution,
-            left_index=True,
-            right_index=True,
-            how="left",
-            suffixes=[None, "_duplicate"],
-        )
+        if results is not None:
+            if df is None:
+                df = results.obs_solution.copy()
+            else:
+                df = df.merge(
+                    results.obs_solution,
+                    left_index=True,
+                    right_index=True,
+                    how="left",
+                    suffixes=[None, "_duplicate"],
+                )
+        if df is None:
+            self.obs_data = None
+            return
 
         # after gsolve run, 'active' indicates if obs was used in solution
         # rename to 'included_in_solution' for clarity
-        df = df.rename(columns={"active_duplicate": "included_in_solution"})
-        # add flag for if site has a gsolve solution
-        i_included_in_solution = df.columns.get_loc("included_in_solution")
-        if not isinstance(i_included_in_solution, int):
-            msg = "unexpected non-integer column index"
-            raise TypeError(msg)
-        df.insert(
-            loc=i_included_in_solution + 1,
-            column="has_site_solution",
-            value=df["site_id"].isin(results.site_solution.index),
+
+        df = df.rename(
+            columns={"active_duplicate": "included_in_solution"}, errors="ignore"
         )
+        # add flag for if site has a gsolve solution
+        if "included_in_solution" in df.columns and results is not None:
+            i_included_in_solution = df.columns.get_loc("included_in_solution")
+            if not isinstance(i_included_in_solution, int):
+                msg = "unexpected non-integer column index"
+                raise TypeError(msg)
+            df.insert(
+                loc=i_included_in_solution + 1,
+                column="has_site_solution",
+                value=df["site_id"].isin(results.site_solution.index),
+            )
 
         df = df.drop(columns=[c for c in df.columns if c.endswith("_duplicate")])
         self.obs_data = df
 
-    def _set_loop_data(
-        self, results: GSolveResults, obs_input: GravityObservations | GravitySurvey
-    ) -> None:
+    def _set_loop_data(self, results: GSolveResults | None) -> None:
         """Set self.loop_data from GSolveResults and GravityObservations objects."""
-        if isinstance(obs_input, GravitySurvey):
-            obs_input = obs_input.observations
-        # start with loop solution data
+        if results is None:
+            self.loop_data = None
+            return
+
         df = results.loop_solution.copy().rename(columns={"n_obs": "n_obs_input"})
 
         # add count of obs used in solution for each loop
@@ -281,31 +328,31 @@ class GSolveReport:
         """Set self.terrain_correction_data from TerrainCorrectionData object."""
         if terrain_corrections is None:
             self.terrain_correction_data = None
+            return
+
+        if self._tcorr_added_from_anomalies:
+            # terrain corrections were already added from anomalies object, so
+            # check for consistency in both parameters and data
+            tcorr_errmsg = (
+                "terrain correction data provided by 'anomalies' and "
+                "'terrain_corrections' arguments are inconsistent"
+            )
+            # check all zones were added
+            for zone_id, p in terrain_corrections.params.items():
+                if zone_id not in self.params or p != self.params[zone_id]:
+                    raise ValueError(tcorr_errmsg)
+            # check no zones were added that are not in terrain corrections``
+            for k in self.params:
+                if k.startswith("tcorr_") and k not in terrain_corrections.params:
+                    raise ValueError(tcorr_errmsg)
+
         else:
-            if self._tcorr_added_from_anomalies:
-                # terrain corrections were already added from anomalies object, so
-                # check for consistency in both parameters and data
-                tcorr_errmsg = (
-                    "terrain_corrections are inconsistent with "
-                    " terrain corrections data added from anomalies"
-                    "object"
-                )
-                # check all zones were added
-                for zone_id, p in terrain_corrections.params.items():
-                    if zone_id not in self.params or p != self.params[zone_id]:
-                        raise ValueError(tcorr_errmsg)
-                # check no zones were added that are not in terrain corrections``
-                for k in self.params:
-                    if k.startswith("tcorr_") and k not in terrain_corrections.params:
-                        raise ValueError(tcorr_errmsg)
-
-            else:
-                # anomalies object did not provide terrain corrections, so add them here
-                self.terrain_correction_data = terrain_corrections.data.copy()
-                for zone_id, p in terrain_corrections.params.items():
-                    self.params[zone_id] = p.copy()
-
+            # anomalies object did not provide terrain corrections, so add them here
             self.terrain_correction_data = terrain_corrections.data.copy()
+            for zone_id, p in terrain_corrections.params.items():
+                self.params[zone_id] = p.copy()
+
+        self.terrain_correction_data = terrain_corrections.data.copy()
 
     def to_excel(
         self,
@@ -335,6 +382,7 @@ class GSolveReport:
                 - 'error': raise a ValueError
                 - 'replace' : overwrite worksheet.
                 - 'new' : create a new worksheet with a different name.
+
         **kwargs :
             Arguments to be passed to ``DataFrame.to_excel()`` method.
         """
@@ -359,44 +407,47 @@ class GSolveReport:
                     raise ValueError(msg)
 
         # observations
-        write_excel_worksheet(
-            df=prepare_writable_df(
-                df=self.obs_data,
-                expand_datetime="datetime",
-                drop_datetime=False,
-                bool_to_int=True,
-            ),
-            excel_file=filename,
-            sheet_name="observations",
-            if_workbook_exists=if_workbook_exists,
-            if_sheet_exists=if_sheet_exists,
-            **kwargs,
-        )
+        if self.obs_data is not None:
+            write_excel_worksheet(
+                df=prepare_writable_df(
+                    df=self.obs_data,
+                    expand_datetime="datetime",
+                    drop_datetime=False,
+                    bool_to_int=True,
+                ),
+                excel_file=filename,
+                sheet_name="observations",
+                if_workbook_exists=if_workbook_exists,
+                if_sheet_exists=if_sheet_exists,
+                **kwargs,
+            )
 
         # if_workbook_exists, set to "append" for subsequent sheets, as workbook will now exist
 
         # sites
-        write_excel_worksheet(
-            df=prepare_writable_df(
-                df=self.site_data,
-                expand_datetime=None,
-                bool_to_int=True,
-            ),
-            excel_file=filename,
-            sheet_name="sites",
-            if_workbook_exists="append",
-            if_sheet_exists=if_sheet_exists,
-            **kwargs,
-        )
+        if self.site_data is not None:
+            write_excel_worksheet(
+                df=prepare_writable_df(
+                    df=self.site_data,
+                    expand_datetime=None,
+                    bool_to_int=True,
+                ),
+                excel_file=filename,
+                sheet_name="sites",
+                if_workbook_exists="append",
+                if_sheet_exists=if_sheet_exists,
+                **kwargs,
+            )
 
         # loop
-        write_excel_worksheet(
-            df=prepare_writable_df(self.loop_data),
-            excel_file=filename,
-            sheet_name="loops",
-            if_workbook_exists="append",
-            if_sheet_exists=if_sheet_exists,
-        )
+        if self.loop_data is not None:
+            write_excel_worksheet(
+                df=prepare_writable_df(self.loop_data),
+                excel_file=filename,
+                sheet_name="loops",
+                if_workbook_exists="append",
+                if_sheet_exists=if_sheet_exists,
+            )
 
         if self.terrain_correction_data is not None:
             write_excel_worksheet(
@@ -411,34 +462,36 @@ class GSolveReport:
         # Write all parameters to a single spreadsheet
         all_params = []
 
-        # This is a kludge - should create method on parameter objects to
-        # to normalize parameter outputs for writing to excel.
-        def _format_value(x: Any) -> str | float | int | bool:
-            if isinstance(x, pd.Timedelta):
-                return x.total_seconds()
-            if isinstance(x, Path):
-                return str(x)
-            return x
+        if any(p is not None for p in self.params.values()):
+            # TODO: Make these conversions part of parameters base class
+            def _format_value(x: Any) -> str | float | int | bool:
+                if isinstance(x, pd.Timedelta):
+                    return x.total_seconds()
+                if isinstance(x, Path):
+                    return str(x)
+                return x
 
-        for section, param_obj in self.params.items():
-            df: pd.DataFrame = (
-                param_obj.to_series(series_name="value", index_name="parameter")
-                .to_frame()
-                .reset_index()
-            ).copy()
-            df.iloc[:, 1] = df.iloc[:, 1].map(_format_value)
-            df.insert(0, "section", section)
-            all_params.append(df)
+            for section, param_obj in self.params.items():
+                if param_obj is None:
+                    continue
+                df: pd.DataFrame = (
+                    param_obj.to_series(series_name="value", index_name="parameter")
+                    .to_frame()
+                    .reset_index()
+                ).copy()
+                df.iloc[:, 1] = df.iloc[:, 1].map(_format_value)
+                df.insert(0, "section", section)
+                all_params.append(df)
 
-        if "index" in kwargs:
-            _ = kwargs.pop("index")
+            if "index" in kwargs:
+                _ = kwargs.pop("index")
 
-        write_excel_worksheet(
-            df=pd.concat(all_params),
-            excel_file=filename,
-            sheet_name="metadata",
-            if_workbook_exists="append",
-            if_sheet_exists=if_sheet_exists,
-            index=False,
-            **kwargs,
-        )
+            write_excel_worksheet(
+                df=pd.concat(all_params),
+                excel_file=filename,
+                sheet_name="metadata",
+                if_workbook_exists="append",
+                if_sheet_exists=if_sheet_exists,
+                index=False,
+                **kwargs,
+            )

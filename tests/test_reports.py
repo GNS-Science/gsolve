@@ -104,12 +104,9 @@ class _DummyTerrainCorrections:
 
 class TestGSolveReportAssembly:
     def test_init_requires_required_inputs(self) -> None:
-        obs = _make_observations()
-        sites = _make_sites()
-        results = _make_results(obs)
 
-        with pytest.raises(ValueError, match="must be provided"):
-            GSolveReport(observations=None, sites=sites, results=results)  # type: ignore[arg-type]
+        with pytest.raises(ValueError, match=" all arguments are None"):
+            GSolveReport()
 
     def test_assembly_builds_site_obs_loop_tables(self) -> None:
         obs = _make_observations()
@@ -155,7 +152,7 @@ class TestGSolveReportTerrainCorrectionConsistency:
             params={"tcorr_zone_1": {"min_dist": 0.0, "max_dist": 900.0}},
         )
 
-        with pytest.raises(ValueError, match="terrain_corrections are inconsistent"):
+        with pytest.raises(ValueError, match="arguments are inconsistent"):
             GSolveReport(
                 observations=obs,
                 sites=sites,

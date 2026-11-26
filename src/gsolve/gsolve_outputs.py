@@ -116,8 +116,8 @@ class GSolveSolutionParameters(GSolveParameters):
 class GSolveResults:
     """Class to store the results from a gsolve network adjustment.
 
-    This class is returned by ``gsolve_algorithms.gsolve_lstsq()`` and is not intended to be
-    created directly by the user.
+    This class is returned by ``gsolve_algorithms.gsolve_lstsq()``.  It is not intended
+    to be created directly.
 
     Parameters
     ----------
